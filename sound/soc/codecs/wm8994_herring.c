@@ -253,7 +253,32 @@ struct gain_info_t cdma_playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.reg  = WM8994_RIGHT_OPGA_VOLUME,   /* 21h */
 		.mask = WM8994_MIXOUTR_VOL_MASK,
 		.gain = WM8994_MIXOUT_VU | 0x39
-    },
+    }, { /* DOCK */
+                .mode = PLAYBACK_EXTRA_DOCK_SPEAKER,
+                .reg  = WM8994_OUTPUT_MIXER_5,          /* 31h */
+                .mask = WM8994_DACL_MIXOUTL_VOL_MASK,
+                .gain = 0x0 << WM8994_DACL_MIXOUTL_VOL_SHIFT
+        }, {
+                .mode = PLAYBACK_EXTRA_DOCK_SPEAKER,
+                .reg  = WM8994_OUTPUT_MIXER_6,          /* 32h */
+                .mask = WM8994_DACR_MIXOUTR_VOL_MASK,
+                .gain = 0x0 << WM8994_DACR_MIXOUTR_VOL_SHIFT
+        }, {
+                .mode = PLAYBACK_EXTRA_DOCK_SPEAKER,
+                .reg  = WM8994_LEFT_OPGA_VOLUME,        /* 20h */
+                .mask = WM8994_MIXOUTL_VOL_MASK,
+                .gain = WM8994_MIXOUT_VU | 0x39
+        }, {
+                .mode = PLAYBACK_EXTRA_DOCK_SPEAKER,
+                .reg  = WM8994_RIGHT_OPGA_VOLUME,       /* 21h */
+                .mask = WM8994_MIXOUTR_VOL_MASK,
+                .gain = WM8994_MIXOUT_VU | 0x39
+        }, {
+                .mode = PLAYBACK_EXTRA_DOCK_SPEAKER,
+                .reg  = WM8994_LINE_OUTPUTS_VOLUME,     /* 1Eh */
+                .mask = WM8994_LINEOUT2_VOL_MASK,
+                .gain = 0x0 << WM8994_LINEOUT2_VOL_SHIFT
+        },
 };
 
 struct gain_info_t cdma_voicecall_gain_table[VOICECALL_GAIN_NUM] = {
@@ -3221,6 +3246,89 @@ void wm8994_set_voicecall_headphone(struct snd_soc_codec *codec)
 
 }
 
+void wm8994_set_playback_extra_dock_speaker(struct snd_soc_codec *codec)
+{
+        //struct wm8994_priv *wm8994 = codec->private_data;
+
+        u16 val;
+
+        DEBUG_LOG("");
+
+        //OUTPUT mute
+        val = wm8994_read(codec, WM8994_POWER_MANAGEMENT_3);
+        val &= ~(WM8994_LINEOUT2N_ENA_MASK | WM8994_LINEOUT2P_ENA_MASK);
+        wm8994_write(codec, WM8994_POWER_MANAGEMENT_3, val);
+
+        // For X-talk of VPS's L/R line. It's requested by H/W team.
+        wm8994_write(codec, WM8994_ADDITIONAL_CONTROL, 0x00);
+        wm8994_write(codec, WM8994_ANTIPOP_1, 0x80);
+
+        val = wm8994_read(codec,WM8994_OUTPUT_MIXER_1);
+        val &= ~(WM8994_DAC1L_TO_MIXOUTL_MASK);
+        val |= (WM8994_DAC1L_TO_MIXOUTL);
+        wm8994_write(codec,WM8994_OUTPUT_MIXER_1,val);
+
+        val = wm8994_read(codec,WM8994_OUTPUT_MIXER_2);
+        val &= ~(WM8994_DAC1R_TO_MIXOUTR_MASK);
+        val |= (WM8994_DAC1R_TO_MIXOUTR);
+        wm8994_write(codec,WM8994_OUTPUT_MIXER_2,val);
+
+        /* Unmute DAC1 left */
+        val = wm8994_read(codec, WM8994_DAC1_LEFT_VOLUME);
+        val &= ~(WM8994_DAC1L_MUTE_MASK);
+        wm8994_write(codec, WM8994_DAC1_LEFT_VOLUME, val);
+
+        /* Unmute and volume ctrl RightDAC */
+        val = wm8994_read(codec, WM8994_DAC1_RIGHT_VOLUME);
+        val &= ~(WM8994_DAC1R_MUTE_MASK);
+        wm8994_write(codec, WM8994_DAC1_RIGHT_VOLUME, val);
+
+        val = wm8994_read(codec,WM8994_LINE_MIXER_2);
+        val &= ~(WM8994_MIXOUTR_TO_LINEOUT2N_MASK | WM8994_MIXOUTL_TO_LINEOUT2N_MASK | WM8994_LINEOUT2_MODE_MASK | WM8994_MIXOUTR_TO_LINEOUT2P_MASK);
+        val |= (WM8994_MIXOUTL_TO_LINEOUT2N | WM8994_LINEOUT2_MODE | WM8994_MIXOUTR_TO_LINEOUT2P);
+        wm8994_write(codec,WM8994_LINE_MIXER_2,val);
+
+        val = wm8994_read(codec,WM8994_POWER_MANAGEMENT_5);
+        val &= ~(WM8994_DAC1R_ENA_MASK | WM8994_DAC1L_ENA_MASK | WM8994_AIF1DAC1R_ENA_MASK | WM8994_AIF1DAC1L_ENA_MASK);
+        val |= (WM8994_AIF1DAC1L_ENA | WM8994_AIF1DAC1R_ENA | WM8994_DAC1L_ENA | WM8994_DAC1R_ENA);
+        wm8994_write(codec,WM8994_POWER_MANAGEMENT_5,val);
+
+        val = wm8994_read(codec,WM8994_AIF1_DAC1_FILTERS_1);
+        val &= ~(WM8994_AIF1DAC1_MUTE_MASK |WM8994_AIF1DAC1_MONO_MASK);
+        val |= (WM8994_AIF1DAC1_UNMUTE);
+        wm8994_write(codec,WM8994_AIF1_DAC1_FILTERS_1,val);
+
+        val = wm8994_read(codec,WM8994_LINE_OUTPUTS_VOLUME);
+        val &= ~(WM8994_LINEOUT2N_MUTE_MASK | WM8994_LINEOUT2P_MUTE_MASK);
+        wm8994_write(codec,WM8994_LINE_OUTPUTS_VOLUME,val);
+
+        val = wm8994_read(codec,WM8994_DAC1_LEFT_MIXER_ROUTING);
+        val &= ~(WM8994_AIF1DAC1L_TO_DAC1L_MASK);
+        val |= (WM8994_AIF1DAC1L_TO_DAC1L);
+        wm8994_write(codec,WM8994_DAC1_LEFT_MIXER_ROUTING,val);
+
+        val = wm8994_read(codec,WM8994_DAC1_RIGHT_MIXER_ROUTING);
+        val &= ~(WM8994_AIF1DAC1R_TO_DAC1R_MASK);
+        val |= (WM8994_AIF1DAC1R_TO_DAC1R);
+        wm8994_write(codec,WM8994_DAC1_RIGHT_MIXER_ROUTING,val);
+
+        val = wm8994_read(codec, WM8994_CLOCKING_1);
+        val &= ~(WM8994_DSP_FS1CLK_ENA_MASK | WM8994_DSP_FSINTCLK_ENA_MASK);
+        val |= (WM8994_DSP_FS1CLK_ENA | WM8994_DSP_FSINTCLK_ENA);
+        wm8994_write(codec, WM8994_CLOCKING_1, val);
+
+        val = wm8994_read(codec,WM8994_POWER_MANAGEMENT_3);
+        val &= ~(WM8994_LINEOUT2N_ENA_MASK | WM8994_LINEOUT1P_ENA_MASK | WM8994_MIXOUTLVOL_ENA_MASK | WM8994_MIXOUTRVOL_ENA_MASK | WM8994_MIXOUTL_ENA_MASK | WM8994_MIXOUTR_ENA_MASK);
+        val |= (WM8994_LINEOUT2N_ENA | WM8994_LINEOUT2P_ENA | WM8994_MIXOUTL_ENA | WM8994_MIXOUTR_ENA | WM8994_MIXOUTRVOL_ENA | WM8994_MIXOUTLVOL_ENA);
+        wm8994_write(codec,WM8994_POWER_MANAGEMENT_3,val);
+
+        val = wm8994_read(codec,WM8994_POWER_MANAGEMENT_1 );
+        val &= ~(WM8994_BIAS_ENA_MASK | WM8994_VMID_SEL_MASK | WM8994_HPOUT2_ENA_MASK );
+        val |= (WM8994_BIAS_ENA | WM8994_VMID_SEL_NORMAL );
+        wm8994_write(codec,WM8994_POWER_MANAGEMENT_1,val);
+
+}
+
 void wm8994_set_voicecall_speaker(struct snd_soc_codec *codec)
 {
 	struct wm8994_priv *wm8994 = codec->drvdata;
@@ -4828,6 +4936,9 @@ int wm8994_set_codec_gain(struct snd_soc_codec *codec, u16 mode, u16 device)
 			break;
 		case PLAYBACK_HP_NO_MIC:
 			gain_set_bits |= PLAYBACK_HP_NO_MIC;
+			break;
+		case PLAYBACK_EXTRA_DOCK_SPEAKER:
+			gain_set_bits |= PLAYBACK_EXTRA_DOCK_SPEAKER;
 			break;
 		default:
 			pr_err("playback modo gain flag is wrong\n");

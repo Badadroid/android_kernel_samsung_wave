@@ -122,7 +122,7 @@ select_route universal_wm8994_playback_paths[] = {
 	wm8994_disable_path, wm8994_set_playback_receiver,
 	wm8994_set_playback_speaker, wm8994_set_playback_headset,
 	wm8994_set_playback_headset, wm8994_set_playback_bluetooth,
-	wm8994_set_playback_speaker_headset
+	wm8994_set_playback_speaker_headset, wm8994_set_playback_extra_dock_speaker
 };
 
 select_route universal_wm8994_voicecall_paths[] = {
@@ -287,7 +287,7 @@ static int wm899x_inpga_put_volsw_vu(struct snd_kcontrol *kcontrol,
 #define MAX_VOICECALL_PATH 8
 static const char *playback_path[] = {
 	"OFF", "RCV", "SPK", "HP", "HP_NO_MIC", "BT", "SPK_HP",
-	"RING_SPK", "RING_HP", "RING_NO_MIC", "RING_SPK_HP"
+	"RING_SPK", "RING_HP", "RING_NO_MIC", "RING_SPK_HP", "EXTRA_DOCK_SPEAKER"
 };
 static const char *voicecall_path[] = { "OFF", "RCV", "SPK", "HP",
 					"HP_NO_MIC", "BT", "TTY_VCO",
@@ -403,6 +403,11 @@ static int wm8994_set_path(struct snd_kcontrol *kcontrol,
 	case RING_SPK_HP:
 		DEBUG_LOG("routing to %s\n", mc->texts[path_num]);
 		wm8994->ringtone_active = RING_ON;
+		path_num -= 4;
+		break;
+        case EXTRA_DOCK_SPEAKER:
+                DEBUG_LOG("routing to %s\n", mc->texts[path_num]);
+                wm8994->ringtone_active = RING_OFF;
 		path_num -= 4;
 		break;
 	default:
