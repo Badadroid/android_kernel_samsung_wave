@@ -303,6 +303,7 @@ static void cypress_touchkey_early_resume(struct early_suspend *h)
 		return;
 	}
 	devdata->is_dead = false;
+	enable_irq(devdata->client->irq);
 	devdata->is_powering_on = false;
 	devdata->is_sleeping = false;
 	mod_timer(&bl_timer, jiffies + msecs_to_jiffies(BACKLIGHT_TIMEOUT));
