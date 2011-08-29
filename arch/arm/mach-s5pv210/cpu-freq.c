@@ -58,10 +58,9 @@ static struct cpufreq_frequency_table freq_table[] = {
 	{L1, 1200*1000},
 	{L2, 1000*1000},
 	{L3, 800*1000},
-	{L4, 600*1000},
-	{L5, 400*1000},
-	{L6, 200*1000},
-	{L7, 100*1000},
+	{L4, 400*1000},
+	{L5, 200*1000},
+	{L6, 100*1000},
 	{0, CPUFREQ_TABLE_END},
 };
 
@@ -72,7 +71,6 @@ unsigned int freq_uv_table[8][3] = {
 	{1200000,	1350,	1350},
 	{1000000,	1250,	1250},
 	{800000,	1200,	1200},
-	{600000,	1150,	1150},
 	{400000,	1050,	1050},
 	{200000,	950,	950},
 	{100000,	950,	950},
@@ -87,7 +85,7 @@ struct s5pv210_dvs_conf {
 
 #ifdef CONFIG_DVFS_LIMIT
 static unsigned int g_dvfs_high_lock_token = 0;
-static unsigned int g_dvfs_high_lock_limit = 4;
+static unsigned int g_dvfs_high_lock_limit = 6;
 static unsigned int g_dvfslockval[DVFS_LOCK_TOKEN_NUM];
 //static DEFINE_MUTEX(dvfs_high_lock);
 #endif
@@ -110,30 +108,25 @@ static struct s5pv210_dvs_conf dvs_conf[] = {
 	//1000
 	[L2] = {
 		.arm_volt   = 1250000,
-		.int_volt   = 1150000,
+		.int_volt   = 1100000,
 	},
 	//800
 	[L3] = {
 		.arm_volt   = 1200000,
-		.int_volt   = 1150000,
-	},
-	//600
-	[L4] = {
-		.arm_volt   = 1150000,
-		.int_volt   = 1150000,
+		.int_volt   = 1100000,
 	},
 	//400
-	[L5] = {
+	[L4] = {
 		.arm_volt   = 1050000,
-		.int_volt   = 1150000,
+		.int_volt   = 1100000,
 	},
 	//200
-	[L6] = {
+	[L5] = {
 		.arm_volt   = 950000,
-		.int_volt   = 1150000,
+		.int_volt   = 1100000,
 	},
 	//100
-	[L7] = {
+	[L6] = {
 		.arm_volt   = 950000,
 		.int_volt   = 1000000,
 	},
@@ -145,16 +138,14 @@ static u32 clkdiv_val[8][11] = {
 	 * HCLK_DSYS, PCLK_DSYS, HCLK_PSYS, PCLK_PSYS, ONEDRAM,
 	 * MFC, G3D }
 	 */
-	//1300
+	// L0 : 1300
 	{0, 5, 5, 1, 3, 1, 4, 1, 3, 0, 0},
-	/* L0 : [1200/200/200/100][166/83][133/66][200/200] */
+	/* L1 : [1200/200/200/100][166/83][133/66][200/200] */
 	{0, 5, 5, 1, 3, 1, 4, 1, 3, 0, 0},
-	/* L1 : [1000/200/200/100][166/83][133/66][200/200] */
+	/* L2 : [1000/200/200/100][166/83][133/66][200/200] */
 	{0, 4, 4, 1, 3, 1, 4, 1, 3, 0, 0},
-	/* L2 : [800/200/200/100][166/83][133/66][200/200] */
+	/* L3 : [800/200/200/100][166/83][133/66][200/200] */
 	{0, 3, 3, 1, 3, 1, 4, 1, 3, 0, 0},
-	// L3
-	{1, 3, 2, 1, 3, 1, 4, 1, 3, 0, 0}, 
 	/* L4: [400/200/200/100][166/83][133/66][200/200] */
 	{1, 3, 1, 1, 3, 1, 4, 1, 3, 0, 0},
 	/* L5 : [200/200/200/100][166/83][133/66][200/200] */
@@ -209,18 +200,7 @@ static struct s3c_freq clk_info[] = {
 		.hclk_dsys  = 166750,
 		.pclk_dsys  = 83375,
 	},
-	[L4] = {	/* 600MHz */
-		.fclk       = 800000,
-		.armclk     = 600000,
-		.hclk_tns   = 0,
-		.hclk       = 133000,
-		.pclk       = 66000,
-		.hclk_msys  = 200000,
-		.pclk_msys  = 100000,
-		.hclk_dsys  = 166750,
-		.pclk_dsys  = 83375,
-	},
-	[L5] = {	/* L4: 400MHz */
+	[L4] = {	/* L4: 400MHz */
 		.fclk       = 800000,
 		.armclk     = 400000,
 		.hclk_tns   = 0,
@@ -231,7 +211,7 @@ static struct s3c_freq clk_info[] = {
 		.hclk_dsys  = 166750,
 		.pclk_dsys  = 83375,
 	},
-	[L6] = {	/* L5: 200MHz */
+	[L5] = {	/* L5: 200MHz */
 		.fclk       = 800000,
 		.armclk     = 200000,
 		.hclk_tns   = 0,
@@ -242,7 +222,7 @@ static struct s3c_freq clk_info[] = {
 		.hclk_dsys  = 166750,
 		.pclk_dsys  = 83375,
 	},
-	[L7] = {	/* L6: 100MHz */
+	[L6] = {	/* L6: 100MHz */
 		.fclk       = 800000,
 		.armclk     = 100000,
 		.hclk_tns   = 0,
@@ -850,7 +830,7 @@ static int __init s5pv210_cpufreq_driver_init(struct cpufreq_policy *policy)
 
 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
 
-	policy->cpuinfo.transition_latency = 35000; /* <1us */
+	policy->cpuinfo.transition_latency = 40000; /* 40 us */
 
 	rate = clk_get_rate(mpu_clk);
 	i = 0;
@@ -890,6 +870,11 @@ static int __init s5pv210_cpufreq_driver_init(struct cpufreq_policy *policy)
 //is dat some more uv?
 	previous_arm_volt = (dvs_conf[level].arm_volt - (exp_UV_mV[level]*1000));
 	freq_uv_table[level][2] = (int) previous_arm_volt / 1000;
+
+#ifdef CONFIG_DVFS_LIMIT
+	for (i = 0; i < DVFS_LOCK_TOKEN_NUM; i++)
+		g_dvfslockval[i] = MAX_PERF_LEVEL;
+#endif
 
 	cpufreq_frequency_table_cpuinfo(policy, freq_table);
 //Set initial max speed to 1ghz for people who don't want to overclock
