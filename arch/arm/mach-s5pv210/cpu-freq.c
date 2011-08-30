@@ -64,8 +64,8 @@ static struct cpufreq_frequency_table freq_table[] = {
 	{0, CPUFREQ_TABLE_END},
 };
 
-extern int exp_UV_mV[8]; //Needed for uv
-unsigned int freq_uv_table[8][3] = {
+extern int exp_UV_mV[7]; //Needed for uv
+unsigned int freq_uv_table[7][3] = {
 	//freq, stock, current
 	{1300000,	1400,	1400},
 	{1200000,	1350,	1350},
@@ -75,7 +75,7 @@ unsigned int freq_uv_table[8][3] = {
 	{200000,	950,	950},
 	{100000,	950,	950},
 };
-//extern int enabled_freqs[8];
+//extern int enabled_freqs[7];
 //extern int update_states = 0;
 
 struct s5pv210_dvs_conf {
