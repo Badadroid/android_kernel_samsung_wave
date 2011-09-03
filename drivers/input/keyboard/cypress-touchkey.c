@@ -48,6 +48,7 @@
 
 int bl_on = 0;
 static DECLARE_MUTEX(enable_sem);
+static DECLARE_MUTEX(i2c_sem);
 
 struct cypress_touchkey_devdata *bl_devdata;
 
@@ -74,11 +75,14 @@ static int i2c_touchkey_read_byte(struct cypress_touchkey_devdata *devdata,
 	int ret;
 	int retry = 2;
 
+	down(&i2c_sem);
+
 	while (true) {
 		ret = i2c_smbus_read_byte(devdata->client);
 		if (ret >= 0) {
 			*val = ret;
-			return 0;
+			ret = 0;
+			break;
 		}
 
 		if (!retry--) {
@@ -87,6 +91,8 @@ static int i2c_touchkey_read_byte(struct cypress_touchkey_devdata *devdata,
         }
 		msleep(10);
 	}
+
+	up(&i2c_sem);
 
 	return ret;
 }
@@ -97,10 +103,14 @@ static int i2c_touchkey_write_byte(struct cypress_touchkey_devdata *devdata,
 	int ret;
 	int retry = 2;
 
+	down(&i2c_sem);
+
 	while (true) {
 		ret = i2c_smbus_write_byte(devdata->client, val);
-		if (!ret)
-			return 0;
+		if (!ret) {
+			ret = 0;
+			break;
+		}
 
 		if (!retry--) {
             dev_err(&devdata->client->dev, "i2c write error\n");
@@ -108,6 +118,8 @@ static int i2c_touchkey_write_byte(struct cypress_touchkey_devdata *devdata,
         }
 		msleep(10);
 	}
+
+	up(&i2c_sem);
 
 	return ret;
 }
