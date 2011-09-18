@@ -254,12 +254,17 @@ static void notify_led_on(void) {
 	if (unlikely(bl_devdata->is_dead))
 		return;
 
+	down(&enable_sem);
+
 	if (bl_devdata->is_sleeping) {
 		bl_devdata->pdata->touchkey_sleep_onoff(TOUCHKEY_ON);
 		bl_devdata->pdata->touchkey_onoff(TOUCHKEY_ON);
 	}
 	i2c_touchkey_write_byte(bl_devdata, bl_devdata->backlight_on);
 	bl_on = 1;
+
+	up(&enable_sem);
+
 	printk(KERN_DEBUG "%s: notification led enabled\n", __FUNCTION__);
 }
 
@@ -270,7 +275,7 @@ static void notify_led_off(void) {
 	// Avoid race condition with touch key resume
 	down(&enable_sem);
 
-	if (bl_on)
+	if (bl_on && bl_timer.expires < jiffies) // Don't disable if there's a timer scheduled
 		i2c_touchkey_write_byte(bl_devdata, bl_devdata->backlight_off);
 
 	bl_devdata->pdata->touchkey_sleep_onoff(TOUCHKEY_OFF);
@@ -290,6 +295,8 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
 	struct cypress_touchkey_devdata *devdata =
 		container_of(h, struct cypress_touchkey_devdata, early_suspend);
 
+	down(&enable_sem);
+
 	devdata->is_powering_on = true;
 
 	if (unlikely(devdata->is_dead))
@@ -299,6 +306,9 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
 	devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
 	all_keys_up(devdata);
 	devdata->is_sleeping = true;
+
+	up(&enable_sem);
+
 	if (bl_on)
 		notify_led_on();
 }
