@@ -164,6 +164,8 @@ static int recovery_routine(struct cypress_touchkey_devdata *devdata)
 
 	irq_eint = devdata->client->irq;
 
+	down(&enable_sem);
+
 	all_keys_up(devdata);
 
 	disable_irq_nosync(irq_eint);
@@ -184,6 +186,7 @@ static int recovery_routine(struct cypress_touchkey_devdata *devdata)
 	dev_err(&devdata->client->dev, "%s: touchkey died\n", __func__);
 out:
 	dev_err(&devdata->client->dev, "%s: recovery_routine\n", __func__);
+	up(&enable_sem);
 	return ret;
 }
 
@@ -299,8 +302,10 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
 
 	devdata->is_powering_on = true;
 
-	if (unlikely(devdata->is_dead))
+	if (unlikely(devdata->is_dead)) {
+		up(&enable_sem);
 		return;
+	}
 
 	disable_irq(devdata->client->irq);
 	devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
@@ -328,6 +333,7 @@ static void cypress_touchkey_early_resume(struct early_suspend *h)
 		devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
 		dev_err(&devdata->client->dev, "%s: touch keypad not responding"
 				" to commands, disabling\n", __func__);
+		up(&enable_sem);
 		return;
 	}
 	devdata->is_dead = false;
