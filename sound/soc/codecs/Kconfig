@@ -323,8 +323,8 @@ config SND_WM8994_EXTENSIONS_RECORD_PRESETS
 
 config SND_WM8994_EXTENSIONS_FM
 	bool "FM radio: frequency response and levels optimizations"
-	depends on SND_WM8994_EXTENSIONS && ARIES_EUR
-	default n
+	depends on SND_WM8994_EXTENSIONS && (SAMSUNG_GALAXYS || SAMSUNG_GALAXYSB)
+	default y
 	help
 	  Adds a control to enable or disable the high-pass filter on FM radio
 

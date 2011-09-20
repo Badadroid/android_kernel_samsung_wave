@@ -461,9 +461,6 @@ bool is_path(int unified_path)
 
 	// FM Radio on headphones
 	case RADIO_HEADPHONES:
-#ifdef NEXUS_S
-		return false;
-#else
 #ifdef M110S
 		return false;
 #else
@@ -475,7 +472,6 @@ bool is_path(int unified_path)
 #else
 		return (wm8994->codec_state & FMRADIO_ACTIVE)
 		    && (wm8994->fmradio_path == FMR_HP);
-#endif
 #endif
 #endif
 #endif

@@ -4141,9 +4141,9 @@ void wm8994_set_fmradio_common(struct snd_soc_codec *codec)
 	wm8994_write(codec, WM8994_AIF2_CONTROL_2, val);
 
 	/* DRC for Noise-gate (AIF2) */
-	//wm8994_write(codec, WM8994_AIF2_ADC_FILTERS, 0xF800);
-	//wm8994_write(codec, WM8994_AIF2_DAC_FILTERS_1, 0x0036);
-	//wm8994_write(codec, WM8994_AIF2_DAC_FILTERS_2, 0x0010);
+	wm8994_write(codec, WM8994_AIF2_ADC_FILTERS, 0xF800);
+	wm8994_write(codec, WM8994_AIF2_DAC_FILTERS_1, 0x0036);
+	wm8994_write(codec, WM8994_AIF2_DAC_FILTERS_2, 0x0010);
 	wm8994_write(codec, WM8994_AIF2_DRC_2, 0x0840);
 	wm8994_write(codec, WM8994_AIF2_DRC_3, 0x2400);
 	wm8994_write(codec, WM8994_AIF2_DRC_4, 0x0000);
