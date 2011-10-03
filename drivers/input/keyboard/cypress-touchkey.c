@@ -254,7 +254,7 @@ static irqreturn_t touchkey_interrupt_handler(int irq, void *touchkey_devdata)
 }
 
 static void notify_led_on(void) {
-	if (unlikely(bl_devdata->is_dead))
+	if (unlikely(bl_devdata->is_dead) || bl_on)
 		return;
 
 	down(&enable_sem);
@@ -272,7 +272,7 @@ static void notify_led_on(void) {
 }
 
 static void notify_led_off(void) {
-	if (unlikely(bl_devdata->is_dead))
+	if (unlikely(bl_devdata->is_dead) || !bl_on)
 		return;
 
 	// Avoid race condition with touch key resume
@@ -308,14 +308,14 @@ static void cypress_touchkey_early_suspend(struct early_suspend *h)
 	}
 
 	disable_irq(devdata->client->irq);
-	devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
+
+	if (!bl_on)
+		devdata->pdata->touchkey_onoff(TOUCHKEY_OFF);
+
 	all_keys_up(devdata);
 	devdata->is_sleeping = true;
 
 	up(&enable_sem);
-
-	if (bl_on)
-		notify_led_on();
 }
 
 static void cypress_touchkey_early_resume(struct early_suspend *h)
