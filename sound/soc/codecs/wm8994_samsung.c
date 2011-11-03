@@ -381,7 +381,7 @@ static int wm8994_set_path(struct snd_kcontrol *kcontrol,
 		return -ENODEV;
 	}
 
-#if defined(CONFIG_SAMSUNG_FASCINATE)
+#if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
 	if (fsa9480_get_dock_status())
 		path_num = 11;
 #endif
