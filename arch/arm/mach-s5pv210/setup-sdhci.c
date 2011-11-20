@@ -28,7 +28,7 @@
 #include <mach/gpio.h>
 #include <asm/mach-types.h>
 
-#if defined (CONFIG_SAMSUNG_GALAXYS)
+#if defined (CONFIG_SAMSUNG_GALAXYS) || defined(CONFIG_SAMSUNG_FASCINATE)
 #	define DRVSTR S3C_GPIO_DRVSTR_3X
 #else
 #	define DRVSTR S3C_GPIO_DRVSTR_2X
