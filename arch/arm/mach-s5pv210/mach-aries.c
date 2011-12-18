@@ -1224,8 +1224,9 @@ static const int touch_keypad_code[] = {
 #if defined (CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB)
 	KEY_MENU,
 	KEY_BACK,
-	0,
-	0
+	/* Unofficial support for the Telus Fascinate - same internals as I9000 */
+	KEY_HOME,
+	KEY_SEARCH
 #else
 	KEY_MENU,
 	KEY_HOME,
