@@ -635,7 +635,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
 	if (mm) {
 		down_write(&mm->mmap_sem);
 		vma = proc->vma;
-		if (vma && mm != vma->vm_mm) {
+		if (vma && mm != proc->vma_vm_mm) {
 			pr_err("binder: %d: vma mm and task mm mismatch\n",
 				proc->pid);
 			vma = NULL;
