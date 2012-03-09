@@ -115,6 +115,17 @@ static unsigned int sdhci_s3c_get_max_clk(struct sdhci_host *host)
 	return max;
 }
 
+#ifdef CONFIG_MACH_P1
+static void sdhci_s3c_translate_vdd(struct sdhci_host *host, unsigned int vdd)
+{
+	struct sdhci_s3c *ourhost = to_s3c(host);
+	struct s3c_sdhci_platdata *pdata = ourhost->pdata;
+
+	if (pdata->translate_vdd)
+		pdata->translate_vdd(ourhost->pdev, vdd);
+}
+#endif
+
 static void sdhci_s3c_set_ios(struct sdhci_host *host,
 			      struct mmc_ios *ios)
 {
@@ -354,6 +365,9 @@ static int sdhci_s3c_platform_8bit_width(struct sdhci_host *host, int width)
 static struct sdhci_ops sdhci_s3c_ops = {
 	.get_max_clock		= sdhci_s3c_get_max_clk,
 	.set_clock		= sdhci_s3c_set_clock,
+#ifdef CONFIG_MACH_P1
+	.translate_vdd  = sdhci_s3c_translate_vdd,
+#endif
 	.get_min_clock		= sdhci_s3c_get_min_clock,
 	.platform_8bit_width	= sdhci_s3c_platform_8bit_width,
 	.set_ios		= sdhci_s3c_set_ios,

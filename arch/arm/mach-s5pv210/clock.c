@@ -458,7 +458,11 @@ static struct clk init_clocks_off[] = {
 	}, {
 		.name		= "i2c",
 		.id		= 1,
+#ifdef CONFIG_MACH_ARIES
 		.parent		= &clk_pclk_psys.clk,
+#else
+		.parent		= &clk_pclk_dsys.clk,
+#endif
 		.enable		= s5pv210_clk_ip3_ctrl,
 		.ctrlbit	= (1 << 10),
 	}, {
@@ -521,6 +525,14 @@ static struct clk init_clocks_off[] = {
 		.parent		= &clk_p,
 		.enable		= s5pv210_clk_ip3_ctrl,
 		.ctrlbit	= (1 << 6),
+#if defined (CONFIG_VIDEO_NM6XX)
+	}, {
+		.name		= "i2s_v32",
+		.id 	= 2,
+		.parent 	= &clk_p,
+		.enable 	= s5pv210_clk_ip3_ctrl,
+		.ctrlbit	= (1 << 6),
+#endif
 	}, {
 		.name		= "spdif",
 		.id		= -1,
@@ -550,7 +562,11 @@ static struct clk init_clocks_off[] = {
 #endif
 		.name		= "i2c-hdmiphy",
 		.id		= -1,
+#ifdef CONFIG_MACH_ARIES
 		.parent		= &clk_pclk_psys.clk,
+#else
+		.parent		= &clk_pclk_dsys.clk,
+#endif
 		.enable		= s5pv210_clk_ip3_ctrl,
 		.ctrlbit	= (1 << 11),
 	}, {
@@ -595,6 +611,15 @@ static struct clk init_clocks_off[] = {
 		.enable		= s5pv210_clk_ip4_ctrl,
 		.ctrlbit	= (1 << 3),
 	},
+#if defined(CONFIG_VIDEO_TSI)
+	{
+		.name		= "tsi",
+		.id		= -1,
+		.parent 	= &clk_pclk_psys.clk,
+		.enable		= s5pv210_clk_ip2_ctrl,
+		.ctrlbit	= S5P_CLKGATE_IP2_TSI,
+	},
+#endif
 };
 
 static struct clk init_dmaclocks[] = {
@@ -1536,8 +1561,10 @@ void __init_or_cpufreq s5pv210_setup_clocks(void)
 	for (ptr = 0; ptr < ARRAY_SIZE(clksrcs); ptr++) {
 		pclkSrc = &clksrcs[ptr];
 		if (!strcmp(pclkSrc->clk.name, "sclk_mdnie")) {
+#if !defined(CONFIG_FB_S3C_LVDS)
 			clk_set_parent(&pclkSrc->clk, &clk_mout_mpll.clk);
 			clk_set_rate(&pclkSrc->clk, 167*MHZ);
+#endif
 		} else if (!strcmp(pclkSrc->clk.name, "sclk_mmc")) {
 			clk_set_parent(&pclkSrc->clk, &clk_mout_mpll.clk);
 

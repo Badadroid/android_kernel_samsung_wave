@@ -20,6 +20,11 @@ obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
 obj-$(CONFIG_S5PV210_POWER_DOMAIN)	+= power-domain.o
 obj-$(CONFIG_S5PV210_CORESIGHT) += coresight.o
 
+# P1 compat
+ifdef CONFIG_MACH_P1
+sec_switch-y	:=  p1-sec_switch.o
+endif
+
 # machine support
 
 obj-$(CONFIG_MACH_AQUILA)	+= mach-aquila.o
@@ -47,6 +52,11 @@ obj-$(CONFIG_PHONE_ARIES_CDMA)	+= dev-s1-phone.o
 obj-$(CONFIG_PHONE_ARIES_CDMA)	+= level.o
 obj-$(CONFIG_PHONE_CRESPO)	+= dev-aries-phone.o
 
+obj-$(CONFIG_MACH_P1)		+= mach-p1.o p1-rfkill.o sec_switch.o
+obj-$(CONFIG_MACH_P1)		+= p1-watchdog.o
+obj-$(CONFIG_PHONE_P1_GSM)	+= dev-p1-phone.o
+obj-$(CONFIG_PHONE_P1) 		+= level.o
+
 # device support
 
 obj-y				+= dev-audio.o
@@ -70,3 +80,5 @@ obj-$(CONFIG_S5PV210_SETUP_FIMC2)	+= setup-fimc2.o
 
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
 obj-$(CONFIG_CPU_FREQ)		+= dev-cpufreq.o
+
+obj-$(CONFIG_SEC_HEADSET)	+= sec_jack.o

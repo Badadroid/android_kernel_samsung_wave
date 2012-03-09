@@ -83,7 +83,7 @@
 #define S5P_MIXER_OUT_SEL	S5P_CLKREG(0x7004)
 
 #define S5P_EPLL_EN     (1<<31)
-#define S5P_EPLL_MASK   0xffffffff 
+#define S5P_EPLL_MASK   0xffffffff
 #define S5P_EPLLVAL(_v,_m,_p,_s)   ((_v) << 27 | (_m) << 16 | ((_p) << 8) | ((_s)))
 
 #define S5P_EPLL_MASK_VSEL		(0x1<<27)
@@ -136,7 +136,7 @@
 #define S5P_ARM_MCS_CON		S5P_CLKREG(0x6100)
 
 /* IP Clock Gate 0 Registers */
-#define S5P_CLKGATE_IP0_CSIS		(1<<31)	
+#define S5P_CLKGATE_IP0_CSIS		(1<<31)
 #define S5P_CLKGATE_IP0_IPC		(1<<30)
 #define S5P_CLKGATE_IP0_ROTATOR		(1<<29)
 #define S5P_CLKGATE_IP0_JPEG		(1<<28)
@@ -154,7 +154,7 @@
 #define S5P_CLKGATE_IP0_DMC0		(1<<0)
 
 /* IP Clock Gate 1 Registers */
-#define S5P_CLKGATE_IP1_NFCON		(1<<28)	
+#define S5P_CLKGATE_IP1_NFCON		(1<<28)
 #define S5P_CLKGATE_IP1_SROMC		(1<<26)
 #define S5P_CLKGATE_IP1_CFCON		(1<<25)
 #define S5P_CLKGATE_IP1_NANDXL		(1<<24)
@@ -169,7 +169,7 @@
 #define S5P_CLKGATE_IP1_FIMD		(1<<0)
 
 /* IP Clock Gate 2 Registers */
-#define S5P_CLKGATE_IP2_TZIC3		(1<<31)	
+#define S5P_CLKGATE_IP2_TZIC3		(1<<31)
 #define S5P_CLKGATE_IP2_TZIC2		(1<<30)
 #define S5P_CLKGATE_IP2_TZIC1		(1<<29)
 #define S5P_CLKGATE_IP2_TZIC0		(1<<28)
@@ -215,7 +215,7 @@
 #define S5P_CLKGATE_IP3_I2C0		(1<<7)
 #define S5P_CLKGATE_IP3_I2S2		(1<<6)
 #define S5P_CLKGATE_IP3_I2S1		(1<<5)
-#define S5P_CLKGATE_IP3_I2S0		(1<<4)	
+#define S5P_CLKGATE_IP3_I2S0		(1<<4)
 #define S5P_CLKGATE_IP3_AC97		(1<<1)
 #define S5P_CLKGATE_IP3_SPDIF		(1<<0)
 
@@ -371,6 +371,9 @@
 #define S5P_OTHERS_RET_MMC		(1 << 29)
 #define S5P_OTHERS_RET_UART		(1 << 28)
 #define S5P_OTHERS_USB_SIG_MASK		(1 << 16)
+
+/* MIPI */
+#define S5P_MIPI_DPHY_EN		(3)
 
 /* S5P_DAC_CONTROL */
 #define S5P_DAC_ENABLE			(1)

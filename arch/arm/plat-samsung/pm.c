@@ -56,14 +56,19 @@ struct pmstats {
 
 static struct pmstats *pmstats;
 static struct pmstats *pmstats_last;
+#ifdef CONFIG_MACH_ARIES
+#define PMSTATS_LEN 4096
+#else // CONFIG_MACH_P1
+#define PMSTATS_LEN sizeof(struct pmstats)
+#endif
 
 static ssize_t pmstats_read(struct file *file, char __user *buf,
 			    size_t len, loff_t *offset)
 {
 	if (*offset != 0)
 		return 0;
-	if (len > 4096)
-		len = 4096;
+	if (len > PMSTATS_LEN)
+		len = PMSTATS_LEN;
 
 	if (copy_to_user(buf, file->private_data, len))
 		return -EFAULT;
@@ -88,17 +93,17 @@ void __init pmstats_init(void)
 {
 	pr_info("pmstats at %08x\n", pm_debug_scratchpad);
 	if (pm_debug_scratchpad)
-		pmstats = ioremap(pm_debug_scratchpad, 4096);
+		pmstats = ioremap(pm_debug_scratchpad, PMSTATS_LEN);
 	else
-		pmstats = kzalloc(4096, GFP_ATOMIC);
+		pmstats = kzalloc(PMSTATS_LEN, GFP_ATOMIC);
 
 	if (!memcmp(pmstats->magic, PMSTATS_MAGIC, 16)) {
-		pmstats_last = kzalloc(4096, GFP_ATOMIC);
+		pmstats_last = kzalloc(PMSTATS_LEN, GFP_ATOMIC);
 		if (pmstats_last)
-			memcpy(pmstats_last, pmstats, 4096);
+			memcpy(pmstats_last, pmstats, PMSTATS_LEN);
 	}
 
-	memset(pmstats, 0, 4096);
+	memset(pmstats, 0, PMSTATS_LEN);
 	memcpy(pmstats->magic, PMSTATS_MAGIC, 16);
 
 	debugfs_create_file("pmstats", 0444, NULL, pmstats, &pmstats_ops);

@@ -97,7 +97,7 @@ static unsigned int g_dvfs_high_lock_limit = 6;
 static unsigned int g_dvfslockval[DVFS_LOCK_TOKEN_NUM];
 //static DEFINE_MUTEX(dvfs_high_lock);
 #endif
-
+#ifdef CONFIG_MACH_ARIES
 const unsigned long arm_volt_max = 1350000;
 const unsigned long int_volt_max = 1250000;
 
@@ -127,7 +127,37 @@ static struct s5pv210_dvs_conf dvs_conf[] = {
 		.int_volt   = 1000000,
 	},
 };
+#else // CONFIG_MACH_P1
+const unsigned long arm_volt_max = 1450000;
+const unsigned long int_volt_max = 1250000;
 
+static struct s5pv210_dvs_conf dvs_conf[] = {
+	[OC0] = {
+		.arm_volt   = 1450000,
+		.int_volt   = 1200000,
+	},
+	[L0] = {
+		.arm_volt   = 1350000,
+		.int_volt   = 1100000,
+	},
+	[L1] = {
+		.arm_volt   = 1275000,
+		.int_volt   = 1100000,
+	},
+	[L2] = {
+		.arm_volt   = 1050000,
+		.int_volt   = 1100000,
+	},
+	[L3] = {
+		.arm_volt   = 950000,
+		.int_volt   = 1100000,
+	},
+	[L4] = {
+		.arm_volt   = 950000,
+		.int_volt   = 1000000,
+	},
+};
+#endif
 static u32 clkdiv_val[6][11] = {
 	/*
 	 * Clock divider value for following
@@ -640,7 +670,11 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
 
 	cpufreq_frequency_table_get_attr(s5pv210_freq_table, policy->cpu);
 
+#if CONFIG_MACH_ARIES
 	policy->cpuinfo.transition_latency = 40000;
+#else // CONFIG_MACH_P1
+	policy->cpuinfo.transition_latency = 100000; /* 1us */
+#endif
 
 #ifdef CONFIG_DVFS_LIMIT
 	int i;

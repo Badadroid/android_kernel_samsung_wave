@@ -48,12 +48,21 @@ enum {
 	MAX8998_REG_ONOFF2,
 	MAX8998_REG_ONOFF3,
 	MAX8998_REG_ONOFF4,
+#ifdef CONFIG_MACH_ARIES
 	MAX8998_REG_BUCK1_VOLTAGE1,
 	MAX8998_REG_BUCK1_VOLTAGE2,
 	MAX8998_REG_BUCK1_VOLTAGE3,
 	MAX8998_REG_BUCK1_VOLTAGE4,
 	MAX8998_REG_BUCK2_VOLTAGE1,
 	MAX8998_REG_BUCK2_VOLTAGE2,
+#else // CONFIG_MACH_P1
+	MAX8998_REG_BUCK1_DVSARM1,
+	MAX8998_REG_BUCK1_DVSARM2,
+	MAX8998_REG_BUCK1_DVSARM3,
+	MAX8998_REG_BUCK1_DVSARM4,
+	MAX8998_REG_BUCK2_DVSINT1,
+	MAX8998_REG_BUCK2_DVSINT2,
+#endif
 	MAX8998_REG_BUCK3,
 	MAX8998_REG_BUCK4,
 	MAX8998_REG_LDO2_LDO3,
@@ -278,6 +287,9 @@ enum {
  * @dev: master device of the chip (can be used to access platform data)
  * @i2c: i2c client private data for regulator
  * @rtc: i2c client private data for rtc
+ * @dev_read():	chip register read function
+ * @dev_write(): chip register write function
+ * @dev_update(): chip register update function
  * @iolock: mutex for serializing io access
  * @irqlock: mutex for buslock
  * @irq_base: base IRQ number for max8998, required for IRQs
@@ -291,6 +303,11 @@ struct max8998_dev {
 	struct device *dev;
 	struct i2c_client *i2c;
 	struct i2c_client *rtc;
+#ifdef CONFIG_MACH_P1
+	int (*dev_read)(struct max8998_dev *max8998, u8 reg, u8 *dest);
+	int (*dev_write)(struct max8998_dev *max8998, u8 reg, u8 val);
+	int (*dev_update)(struct max8998_dev *max8998, u8 reg, u8 val, u8 mask);
+#endif
 	struct mutex iolock;
 	struct mutex irqlock;
 
@@ -299,20 +316,36 @@ struct max8998_dev {
 	int ono;
 	u8 irq_masks_cur[MAX8998_NUM_IRQ_REGS];
 	u8 irq_masks_cache[MAX8998_NUM_IRQ_REGS];
+#ifdef CONFIG_MACH_ARIES
 	int type;
 	bool wakeup;
+#endif
 };
 
 int max8998_irq_init(struct max8998_dev *max8998);
 void max8998_irq_exit(struct max8998_dev *max8998);
 int max8998_irq_resume(struct max8998_dev *max8998);
 
+extern int max8998_bulk_read(struct i2c_client *i2c, u8 reg, int count, u8 *buf);
+
+#ifdef CONFIG_MACH_ARIES
 extern int max8998_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest);
-extern int max8998_bulk_read(struct i2c_client *i2c, u8 reg, int count,
-		u8 *buf);
 extern int max8998_write_reg(struct i2c_client *i2c, u8 reg, u8 value);
-extern int max8998_bulk_write(struct i2c_client *i2c, u8 reg, int count,
-		u8 *buf);
+extern int max8998_bulk_write(struct i2c_client *i2c, u8 reg, int count, u8 *buf);
 extern int max8998_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask);
+#else // CONFIG_MACH_P1
+static inline int max8998_read_reg(struct max8998_dev *max8998, u8 reg, u8 *value)
+{
+	return max8998->dev_read(max8998, reg, value);
+}
+static inline int max8998_write_reg(struct max8998_dev *max8998, u8 reg, u8 value)
+{
+	return max8998->dev_write(max8998, reg, value);
+}
+static inline int max8998_update_reg(struct max8998_dev *max8998, u8 reg, u8 value, u8 mask)
+{
+	return max8998->dev_update(max8998, reg, value, mask);
+}
+#endif
 
 #endif /*  __LINUX_MFD_MAX8998_PRIV_H */

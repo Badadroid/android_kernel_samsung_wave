@@ -88,6 +88,10 @@ struct s3c_sdhci_platdata {
 	int		rx_cfg;
 	int		tx_cfg;
 
+#ifdef CONFIG_MACH_P1
+	void            (*translate_vdd)(struct platform_device *pdev, unsigned int vdd);
+#endif
+
         /* add to deal with non-removable device */
         int     built_in;
 

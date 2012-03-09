@@ -1,0 +1,73 @@
+#!/stage1/busybox sh
+export _PATH="$PATH"
+export PATH=/stage1
+
+busybox cd /
+busybox date >>boot.txt
+exec >>boot.txt 2>&1
+busybox rm init
+busybox mount -t proc proc /proc
+busybox mount -t sysfs sysfs /sys
+busybox mount -t yaffs2 /dev/block/mtdblock2 /system
+busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
+
+image=/stage1/boot.cpio
+
+if busybox test -e /cache/.startrecovery || [ `busybox cat /proc/cmdline | busybox grep bootmode | busybox awk '{print $2}'` == bootmode=2 ] ; then
+	# recovery boot
+	busybox rm -fr /cache/.startrecovery
+	image=/stage1/recovery.cpio
+
+	# disable lpm
+	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
+elif ! busybox test -e /system/build.prop ; then
+	# emergency boot
+	busybox umount /cache
+	make_ext4fs -b 4096 -g 32768 -i 8192 -I 256 -a /cache /dev/block/mmcblk0p3
+	busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
+	busybox mkdir /cache/recovery
+
+	busybox mount -t vfat /dev/block/mmcblk0p1 /sdcard
+
+	UPDATE=$(busybox cat /sdcard/cyanogenmod.cfg)
+
+	if busybox test -e $UPDATE ; then
+		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
+	fi
+
+	image=/stage1/recovery.cpio
+
+	# disable lpm
+	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
+fi
+
+busybox umount /cache
+busybox umount /system
+busybox umount /sdcard
+busybox rmdir /sdcard
+
+cpio -i < ${image}
+
+if busybox grep -q 1 /sys/class/power_supply/battery/charging_mode_booting ; then
+	# low power mode
+	busybox cp lpm.rc init.rc
+	busybox rm init.p1.rc
+fi
+
+HW=$(busybox cat /proc/cpuinfo | busybox grep Hardware | busybox sed s/Hardware// | busybox tr '[A-Z]' '[a-z]' | busybox tr -d ' ' | busybox tr -d ':' | busybox tr -d '\t')
+if [ "$HW" != "p1" ] ; then
+	if [ "$image" == "/stage1/boot.cpio" ] ; then
+		busybox ln -s /init.p1.rc /init.$HW.rc
+	elif [ "$image" == "/stage1/recovery.cpio" ] ; then
+		busybox ln -s /init.recovery.p1.rc /init.recovery.$HW.rc
+	fi
+
+	busybox ln -s /ueventd.p1.rc /ueventd.$HW.rc
+fi
+
+busybox umount /sys
+busybox umount /proc
+busybox date >>boot.txt
+busybox rm -fr /stage1 /dev/*
+export PATH="${_PATH}"
+exec /init

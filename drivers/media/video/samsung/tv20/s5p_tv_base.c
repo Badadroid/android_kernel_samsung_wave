@@ -38,7 +38,9 @@
 #include <mach/gpio.h>
 #include <plat/gpio-cfg.h>
 #include <mach/regs-gpio.h>
-/*#include <mach/max8998_function.h>*/
+#ifdef CONFIG_MACH_P1
+#include <mach/gpio-p1.h>
+#endif
 #include <linux/earlysuspend.h>
 #ifdef CONFIG_CPU_FREQ_S5PV210
 #include <mach/cpu-freq-v210.h>
@@ -104,6 +106,10 @@ static struct mutex	*mutex_for_fo;
 
 struct s5p_tv_status	s5ptv_status;
 struct s5p_tv_vo	s5ptv_overlay[2];
+#ifdef CONFIG_MACH_P1
+int Isdrv_open = 0;
+int IsPower_on = 0;
+#endif
 
 #ifdef I2C_BASE
 static struct mutex	*mutex_for_i2c;
@@ -473,8 +479,12 @@ static int s5p_tv_v_open(struct file *file)
 	int ret = 0;
 
 	printk(KERN_INFO "%s", __func__);
+#ifdef CONFIG_MACH_P1
+	TVout_LDO_ctrl(true);
+	Isdrv_open = 1;
+#endif
 	mutex_lock(mutex_for_fo);
-	
+
 	if (s5ptv_status.tvout_output_enable) {
 		BASEPRINTK("tvout drv. already used !!\n");
 		ret =  -EBUSY;
@@ -493,13 +503,9 @@ static int s5p_tv_v_open(struct file *file)
 		if ((s5ptv_status.hpd_status))
 			s5pv210_set_cpufreq_level(RESTRICT_TABLE);
 #endif /* CONFIG_CPU_FREQ_S5PV210 */
-//		s5p_tv_clk_gate(true);
-/*
-		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI)\
-			|| \
-		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB))
-*/
-//				tv_phy_power(true);
+		//s5p_tv_clk_gate( true );
+		//if(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI || s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB)
+		//tv_phy_power( true );
 #ifdef CONFIG_PM
 	} else
 		BASEPRINTK("tv is off\n");
@@ -554,7 +560,17 @@ int s5p_tv_v_release(struct file *filp)
 {
 	printk(KERN_INFO "%s", __func__);
 
+#ifdef CONFIG_MACH_P1
+	TVout_LDO_ctrl(true);
+#endif
+
 #if defined(CONFIG_CPU_S5PV210) && defined(CONFIG_PM)
+#ifdef CONFIG_MACH_P1
+	if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB) ||
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_DVI))
+		tv_phy_power( false );
+#endif
 	if ((s5ptv_status.hpd_status) && !(s5ptv_status.suspend_status)) {
 #endif
 		if (s5ptv_status.vp_layer_enable)
@@ -588,11 +604,9 @@ int s5p_tv_v_release(struct file *filp)
 #ifdef CONFIG_PM
 	if ((s5ptv_status.hpd_status) && !(s5ptv_status.suspend_status)) {
 #endif
-//		s5p_tv_clk_gate(false);
-/*		if (s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI || \
-		s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB)
-*/
-//			tv_phy_power(false);
+		//s5p_tv_clk_gate(false);
+		//if(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI || s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB)
+		//tv_phy_power( false );
 #ifdef CONFIG_CPU_FREQ_S5PV210
 		if (s5ptv_status.hpd_status)
 			s5pv210_set_cpufreq_level(NORMAL_TABLE);
@@ -604,8 +618,12 @@ int s5p_tv_v_release(struct file *filp)
 #endif
 
 	s5p_tv_clk_gate(false);
+#ifdef CONFIG_MACH_P1
+	Isdrv_open = 0;
+	TVout_LDO_ctrl(false);
+#else //CONFIG_MACH_ARIES
 	tv_phy_power(false);
-
+#endif
 	return 0;
 }
 
@@ -853,6 +871,85 @@ struct video_device s5p_tvout[] = {
 #endif
 };
 
+#ifdef CONFIG_MACH_P1
+void TVout_LDO_ctrl(int enable)
+{
+	int i=0;
+	int ret=0;
+	if(IS_ERR_OR_NULL(s5ptv_status.tv_tv))
+	{
+		s5ptv_status.tv_tv = regulator_get(NULL, "tv");
+		if (IS_ERR(s5ptv_status.tv_tv)) {
+			printk(KERN_ERR "%s %d: failed to get resource %s\n",
+					__func__, __LINE__, "tv");
+			return PTR_ERR(s5ptv_status.tv_tv);
+		}
+	}
+	if(IS_ERR_OR_NULL(s5ptv_status.tv_tvout))
+	{
+		s5ptv_status.tv_tvout = regulator_get(NULL, "tvout");
+		if (IS_ERR(s5ptv_status.tv_tvout)) {
+			printk(KERN_ERR "%s %d: failed to get resource %s\n",
+				__func__, __LINE__, "tvout");
+			return PTR_ERR(s5ptv_status.tv_tvout);
+		}
+	}
+	if(enable == true)
+	{
+		if(!IsPower_on)
+		{
+			if (!s5ptv_status.is_reg_tv_tv_enabled) {
+				ret = regulator_enable(s5ptv_status.tv_tv);
+				if (ret)
+					s5ptv_status.is_reg_tv_tv_enabled = 1;
+			}
+
+			if (!s5ptv_status.is_reg_tv_tvout_enabled) {
+				ret = regulator_enable(s5ptv_status.tv_tvout);
+				if (ret)
+					s5ptv_status.is_reg_tv_tvout_enabled = 1;
+			}
+
+			printk("%s: LDO3_8 is enabled by TV \n", __func__);
+			IsPower_on = 1;
+			msleep(120);
+	}
+	}
+	else if(enable == false)
+	{
+		if(gpio_get_value(GPIO_ACCESSORY_INT))
+		{
+		if(s5ptv_status.suspend_status)
+			msleep(520);
+
+			for(i;i<50;i++)
+		{
+			if(Isdrv_open)
+					msleep(50);
+		}
+			if((gpio_get_value(GPIO_ACCESSORY_INT))&&(IsPower_on)&& (!Isdrv_open))
+			{
+				if (s5ptv_status.is_reg_tv_tv_enabled) {
+					ret = regulator_force_disable(s5ptv_status.tv_tv);
+					if (ret)
+						s5ptv_status.is_reg_tv_tv_enabled = 0;
+				}
+				if (s5ptv_status.is_reg_tv_tvout_enabled) {
+					ret = regulator_force_disable(s5ptv_status.tv_tvout);
+					if (ret)
+						s5ptv_status.is_reg_tv_tvout_enabled = 0;
+				}
+
+				printk("%s: LDO3_8 is disabled by TV \n", __func__);
+				IsPower_on = 0;
+			}
+		}
+	}
+}
+
+EXPORT_SYMBOL(TVout_LDO_ctrl);
+#endif
+
 void s5p_handle_cable(void)
 {
 	char env_buf[120];
@@ -860,11 +957,12 @@ void s5p_handle_cable(void)
 	int env_offset = 0;
 
 	printk(KERN_INFO "%s....start", __func__);
-
+#ifdef CONFIG_MACH_ARIES
 	if ((s5ptv_status.tvout_param.out_mode != TVOUT_OUTPUT_HDMI) && \
 	(s5ptv_status.tvout_param.out_mode != TVOUT_OUTPUT_HDMI_RGB) && \
 		(s5ptv_status.tvout_param.out_mode != TVOUT_OUTPUT_DVI))
 		return;
+#endif
 
 	bool previous_hpd_status = s5ptv_status.hpd_status;
 #ifdef CONFIG_HDMI_HPD
@@ -964,6 +1062,7 @@ void s5p_handle_cable(void)
 		envp[env_offset++] = env_buf;
 		envp[env_offset] = NULL;
 		kobject_uevent_env(&(s5p_tvout[0].dev.kobj), KOBJ_CHANGE, envp);
+		printk("[TVOUT]hdmi cable is disconnected\n");
 
 #ifdef CONFIG_CPU_FREQ_S5PV210
 		s5pv210_set_cpufreq_level(NORMAL_TABLE);
@@ -982,6 +1081,7 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 	int	ret;
 	int	i, retval;
 
+	s5ptv_status.dev_fb = &pdev->dev;
 
 	/* Get csis power domain regulator */
 	s5ptv_status.tv_regulator = regulator_get(&pdev->dev, "pd");
@@ -1005,9 +1105,12 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 				__func__, __LINE__, "s3c-tv20 tv");
 		return PTR_ERR(s5ptv_status.tv_tv);
 	}
-	regulator_enable(s5ptv_status.tv_tv);
+	if (!s5ptv_status.is_reg_tv_tv_enabled) {
+		ret = regulator_enable(s5ptv_status.tv_tv);
+		if (ret)
+			s5ptv_status.is_reg_tv_tv_enabled = 1;
+	}
 #endif
-	s5ptv_status.dev_fb = &pdev->dev;
 
 	__s5p_sdout_probe(pdev, 0);
 	__s5p_vp_probe(pdev, 1);
@@ -1023,23 +1126,6 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 	s5p_tv_clk_gate(true);
 	__s5p_hdmi_probe(pdev, 3, 4);
 	__s5p_hdcp_init();
-#endif
-#if defined(CONFIG_MACH_P1)
-	retval = i2c_add_driver(&SII9234A_i2c_driver);
-	if (retval != 0)
-		printk(KERN_ERR "[MHL SII9234A] can't add i2c driver");
-
-	retval = i2c_add_driver(&SII9234B_i2c_driver);
-	if (retval != 0)
-		printk(KERN_ERR "[MHL SII9234B] can't add i2c driver");
-
-	retval = i2c_add_driver(&SII9234C_i2c_driver);
-	if (retval != 0)
-		printk(KERN_ERR "[MHL SII9234C] can't add i2c driver");
-
-	retval = i2c_add_driver(&SII9234_i2c_driver);
-	if (retval != 0)
-		printk(KERN_ERR "[MHL SII9234] can't add i2c driver");
 #endif
 
 #ifdef FIX_27M_UNSTABLE_ISSUE /* for smdkc100 pop */
@@ -1064,6 +1150,11 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_CPU_S5PV210
 #ifdef CONFIG_HDMI_HPD
+#ifdef CONFIG_MACH_P1
+	if(0 == gpio_get_value(GPIO_ACCESSORY_INT))  //docking station attached
+    	s5ptv_status.hpd_status= s5p_hpd_get_state();
+	else
+#endif
 	s5ptv_status.hpd_status = 0;
 #else
 	s5ptv_status.hpd_status = 0;
@@ -1108,11 +1199,12 @@ static int __devinit s5p_tv_probe(struct platform_device *pdev)
 
 #ifndef CONFIG_USER_ALLOC_TVOUT
 	s5p_tv_clk_gate(true);
-/*
+#ifdef CONFIG_MACH_P1
 	if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||
-		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB))
-*/
-		tv_phy_power(true);
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB) ||
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_DVI))
+#endif
+	tv_phy_power(true);
 	_s5p_tv_if_set_disp();
 #endif
 	s5ptvfb_set_lcd_info(&s5ptv_status);
@@ -1186,6 +1278,7 @@ out:
  */
 static int s5p_tv_remove(struct platform_device *pdev)
 {
+	int ret;
 	__s5p_hdmi_release(pdev);
 	__s5p_sdout_release(pdev);
 	__s5p_mixer_release(pdev);
@@ -1196,12 +1289,7 @@ static int s5p_tv_remove(struct platform_device *pdev)
 #ifdef I2C_BASE
 	i2c_del_driver(&hdcp_i2c_driver);
 #endif
-#if defined(CONFIG_MACH_P1)
-	i2c_del_driver(&SII9234A_i2c_driver);
-	i2c_del_driver(&SII9234B_i2c_driver);
-	i2c_del_driver(&SII9234C_i2c_driver);
-	i2c_del_driver(&SII9234_i2c_driver);
-#endif
+
 	clk_disable(s5ptv_status.tvenc_clk);
 	clk_disable(s5ptv_status.vp_clk);
 	clk_disable(s5ptv_status.mixer_clk);
@@ -1227,15 +1315,29 @@ static int s5p_tv_remove(struct platform_device *pdev)
 	free_irq(IRQ_EINT5, pdev);
 #endif
 
-	regulator_disable(s5ptv_status.tv_regulator);
+	if (s5ptv_status.is_reg_tv_reg_enabled) {
+		ret = regulator_force_disable(s5ptv_status.tv_regulator);
+		if (ret)
+			s5ptv_status.is_reg_tv_reg_enabled = 0;
+	}
 	regulator_put(s5ptv_status.tv_regulator);
 
-	regulator_disable(s5ptv_status.tv_tvout);
+	if (s5ptv_status.is_reg_tv_tvout_enabled) {
+		ret = regulator_force_disable(s5ptv_status.tv_tvout);
+		if (ret)
+			s5ptv_status.is_reg_tv_tvout_enabled = 0;
+	}
 	regulator_put(s5ptv_status.tv_tvout);
+
 #ifdef CONFIG_MACH_P1
-	regulator_disable(s5ptv_status.tv_tv);
+	if (s5ptv_status.is_reg_tv_tv_enabled) {
+		ret = regulator_force_disable(s5ptv_status.tv_tv);
+		if (ret)
+			s5ptv_status.is_reg_tv_tv_enabled = 0;
+	}
 	regulator_put(s5ptv_status.tv_tv);
 #endif
+
 	mutex_destroy(mutex_for_fo);
 #ifdef I2C_BASE
 	mutex_destroy(mutex_for_i2c);
@@ -1289,8 +1391,14 @@ void s5p_tv_early_suspend(struct early_suspend *h)
 
 		/* clk & power off */
 		s5p_tv_clk_gate(false);
-		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||\
+#ifdef CONFIG_MACH_ARIES
+		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||
 		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB))
+#else // CONFIG_MACH_P1
+	    if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||
+			(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB) ||
+			(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_DVI))
+#endif
 			tv_phy_power(false);
 
 #ifdef CONFIG_CPU_FREQ_S5PV210
@@ -1312,7 +1420,12 @@ void s5p_tv_late_resume(struct early_suspend *h)
 
 	mutex_lock(mutex_for_fo);
 	s5ptv_status.suspend_status = false;
-
+#ifdef CONFIG_MACH_P1
+	if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB) ||
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_DVI))
+			s5p_handle_cable();
+#endif
 	if (!(s5ptv_status.hpd_status)) {
 		printk(KERN_INFO "(hpd_status = %d)++\n", \
 				s5ptv_status.hpd_status);
@@ -1325,8 +1438,14 @@ void s5p_tv_late_resume(struct early_suspend *h)
 
 		/* clk & power on */
 		s5p_tv_clk_gate(true);
+#ifdef CONFIG_MACH_ARIES
 		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||\
 		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB))
+#else // CONFIG_MACH_P1
+		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||\
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB) ||\
+		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_DVI))
+#endif
 			tv_phy_power(true);
 
 		/* tv on */

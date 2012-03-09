@@ -101,7 +101,11 @@ int fimc_outdev_stop_streaming(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 		break;
 	case FIMC_OVLY_NONE_SINGLE_BUF:		/* fall through */
 	case FIMC_OVLY_NONE_MULTI_BUF:
+#ifdef CONFIG_MACH_ARIES
 		if (ctx->status == FIMC_STREAMON_IDLE)
+#else // CONFIG_MACH_P1
+		if (ctx->status <= FIMC_READY_ON || ctx->status == FIMC_STREAMON_IDLE)
+#endif
 			ctx->status = FIMC_STREAMOFF;
 		else
 			ctx->status = FIMC_READY_OFF;
@@ -128,6 +132,9 @@ int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	struct fb_info *fbinfo;
 	struct s3cfb_window *win;
 	int ret = -1, idx;
+#if defined(CONFIG_VIDEO_NM6XX)
+	struct fimc_global *fimc = get_fimc_dev();
+#endif
 
 	fbinfo = registered_fb[ctx->overlay.fb_id];
 	win = (struct s3cfb_window *)fbinfo->par;
@@ -146,11 +153,23 @@ int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	win->other_mem_addr = ctx->dst[1].base[FIMC_ADDR_Y];
 	win->other_mem_size = ctx->dst[1].length[FIMC_ADDR_Y];
 
+#ifdef CONFIG_MACH_ARIES
 	/* Update WIN size */
 	var.xres_virtual = fimd_rect.width;
 	var.yres_virtual = fimd_rect.height;
-	var.xres = fimd_rect.width;
-	var.yres = fimd_rect.height;
+#endif
+#if defined(CONFIG_VIDEO_NM6XX)
+	if (fimc->active_camera == CAMERA_ID_MOBILETV)
+	{
+		var.xres = 1024;
+		var.yres = 600;
+	}
+	else
+#endif
+	{
+		var.xres = fimd_rect.width;
+		var.yres = fimd_rect.height;
+	}
 
 	/* Update WIN position */
 	win->x = fimd_rect.left;
@@ -298,12 +317,35 @@ static int fimc_outdev_set_src_buf(struct fimc_control *ctrl,
 
 	return 0;
 }
+#ifdef CONFIG_MACH_P1
+static void fimc_outdev_clear_dst_buf(struct fimc_control *ctrl,
+				   struct fimc_ctx *ctx, int index)
+{
+	void *dst_mem = NULL;
 
+	if ((ctx->overlay.mode != FIMC_OVLY_DMA_AUTO) &&
+			(ctx->overlay.mode != FIMC_OVLY_DMA_MANUAL))
+		return;
+
+	/* clear buffer */
+	dst_mem = (void *)ioremap((int)ctx->dst[index].base[FIMC_ADDR_Y],
+				ctx->dst[index].length[FIMC_ADDR_Y]);
+	if (dst_mem) {
+		memset(dst_mem, 0x0, ctx->dst[index].length[FIMC_ADDR_Y]);
+		iounmap(dst_mem);
+	} else
+		fimc_warn("%s: Failed to clear destination buffers\n",
+					__func__);
+}
+#endif
 static int fimc_outdev_set_dst_buf(struct fimc_control *ctrl,
 				   struct fimc_ctx *ctx)
 {
 	dma_addr_t *curr = &ctrl->mem.curr;
 	dma_addr_t end;
+#ifdef CONFIG_MACH_P1
+	void *dst_mem = NULL;
+#endif
 	u32 width = ctrl->fb.lcd_hres;
 	u32 height = ctrl->fb.lcd_vres;
 	u32 i, size;
@@ -315,7 +357,22 @@ static int fimc_outdev_set_dst_buf(struct fimc_control *ctrl,
 		fimc_err("%s: Reserved memory is not sufficient\n", __func__);
 		return -EINVAL;
 	}
+#ifdef CONFIG_MACH_P1
+	if (ctx->dst[0].base[FIMC_ADDR_Y]) {
+		fimc_warn("%s: already allocated destination buffers\n",
+					__func__);
+		return 0;
+	}
 
+	/* clear buffer */
+	dst_mem = (void *)ioremap((int)*curr, size*FIMC_OUTBUFS);
+	if (dst_mem) {
+		memset(dst_mem, 0x0, size*FIMC_OUTBUFS);
+		iounmap(dst_mem);
+	} else
+		fimc_warn("%s: Failed to clear destination buffers\n",
+					__func__);
+#endif
 	/* Initialize destination buffer addr */
 	for (i = 0; i < FIMC_OUTBUFS; i++) {
 		ctx->dst[i].base[FIMC_ADDR_Y] = *curr;
@@ -695,6 +752,9 @@ static void fimc_outdev_set_dst_dma_offset(struct fimc_control *ctrl,
 	struct v4l2_rect bound, win;
 	struct v4l2_rect *w = &ctx->win.w;
 	u32 pixfmt = ctx->fbuf.fmt.pixelformat;
+#if defined(CONFIG_VIDEO_NM6XX)
+	struct fimc_global *fimc = get_fimc_dev();
+#endif
 
 	memset(&bound, 0, sizeof(bound));
 	memset(&win, 0, sizeof(win));
@@ -746,7 +806,16 @@ static void fimc_outdev_set_dst_dma_offset(struct fimc_control *ctrl,
 	}
 
 	switch (ctx->overlay.mode) {
-	case FIMC_OVLY_DMA_AUTO:	/* fall through */
+	case FIMC_OVLY_DMA_AUTO: // fall through for aries
+#if defined(CONFIG_VIDEO_NM6XX)
+		if(fimc->active_camera != CAMERA_ID_MOBILETV)
+		{
+			win.left = 0;
+			win.top = 0;
+		}
+		fimc_hwset_output_offset(ctrl, pixfmt, &bound, &win);
+		break;
+#endif
 	case FIMC_OVLY_DMA_MANUAL:
 		memset(&bound, 0, sizeof(bound));
 		memset(&win, 0, sizeof(win));
@@ -840,6 +909,9 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 	switch (ctx->overlay.mode) {
 	case FIMC_OVLY_NONE_MULTI_BUF:	/* fall through */
 	case FIMC_OVLY_NONE_SINGLE_BUF:
+#ifdef CONFIG_MACH_P1
+	case FIMC_OVLY_DMA_AUTO:
+#endif
 		real.width = ctx->win.w.width;
 		real.height = ctx->win.w.height;
 
@@ -862,7 +934,9 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 		break;
 
 	case FIMC_OVLY_DMA_MANUAL:	/* fall through */
+#ifdef CONFIG_MACH_ARIES
 	case FIMC_OVLY_DMA_AUTO:
+#endif
 		real.width = ctx->win.w.width;
 		real.height = ctx->win.w.height;
 
@@ -1237,6 +1311,19 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 						__func__, i, buf->vir_addr[i]);
 				}
 			}
+#ifdef CONFIG_MACH_P1
+
+			/* clear destination buffer address */
+			ctrl->mem.curr = ctx->dst[0].base[FIMC_ADDR_Y];
+			for (i = 0; i < FIMC_OUTBUFS; i++) {
+				ctx->dst[i].base[FIMC_ADDR_Y] = 0;
+				ctx->dst[i].length[FIMC_ADDR_Y] = 0;
+				ctx->dst[i].base[FIMC_ADDR_CB] = 0;
+				ctx->dst[i].length[FIMC_ADDR_CB] = 0;
+				ctx->dst[i].base[FIMC_ADDR_CR] = 0;
+				ctx->dst[i].length[FIMC_ADDR_CR] = 0;
+			}
+#endif
 			break;
 		default:
 			break;
@@ -1249,9 +1336,22 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 			if (ret)
 				return ret;
 		} else if (b->memory == V4L2_MEMORY_USERPTR) {
+#ifdef CONFIG_MACH_ARIES
 			if (mode == FIMC_OVLY_DMA_AUTO)
+#else // CONFIG_MACH_P1
+			if (mode == FIMC_OVLY_DMA_AUTO ||
+					mode == FIMC_OVLY_NOT_FIXED)
+#endif
 				ctx->overlay.req_idx = FIMC_USERPTR_IDX;
 		}
+#ifdef CONFIG_MACH_P1
+		/* initialize destination buffers */
+		if (mode == FIMC_OVLY_DMA_AUTO || mode == FIMC_OVLY_NOT_FIXED) {
+			ret = fimc_outdev_set_dst_buf(ctrl, ctx);
+			if (ret)
+				return ret;
+		}
+#endif
 		ctx->is_requested = 1;
 	}
 
@@ -1466,6 +1566,15 @@ int fimc_s_ctrl_output(struct file *filp, void *fh, struct v4l2_control *c)
 		ret = fimc_set_dst_info(ctrl, ctx,
 					(struct fimc_buf *)c->value);
 		break;
+
+	case V4L2_CID_GET_PHY_SRC_YADDR:
+		c->value = ctx->src[c->value].base[FIMC_ADDR_Y];
+		break;
+
+	case V4L2_CID_GET_PHY_SRC_CADDR:
+		c->value = ctx->src[c->value].base[FIMC_ADDR_CB];
+		break;
+
 	default:
 		fimc_err("Invalid control id: %d\n", c->id);
 		ret = -EINVAL;
@@ -1641,12 +1750,14 @@ int fimc_streamon_output(void *fh)
 	if (ctx->overlay.mode == FIMC_OVLY_NOT_FIXED)
 		ctx->overlay.mode = FIMC_OVLY_MODE;
 
+#ifdef CONFIG_MACH_ARIES
 	/* initialize destination buffers */
 	if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO) {
 		ret = fimc_outdev_set_dst_buf(ctrl, ctx);
 		if (ret)
 			return ret;
 	}
+#endif
 
 	ret = fimc_outdev_check_param(ctrl, ctx);
 	if (ret < 0) {
@@ -1709,7 +1820,7 @@ int fimc_streamoff_output(void *fh)
 
 	if (ctrl->out->last_ctx == ctx->ctx_num)
 		ctrl->out->last_ctx = -1;
-
+#ifdef CONFIG_MACH_ARIES
 	if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO) {
 		ctrl->mem.curr = ctx->dst[0].base[FIMC_ADDR_Y];
 
@@ -1724,6 +1835,7 @@ int fimc_streamoff_output(void *fh)
 			ctx->dst[i].length[FIMC_ADDR_CR] = 0;
 		}
 	}
+#endif
 
 	/* check all ctx to change ctrl->status from streamon to streamoff */
 	for (i = 0; i < FIMC_MAX_CTXS; i++) {
@@ -1906,6 +2018,9 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 	struct v4l2_rect fimd_rect;
 	struct fimc_buf_set buf_set;	/* destination addr */
 	int ret = -1, i;
+#if defined(CONFIG_VIDEO_NM6XX)
+	struct fimc_global *fimc = get_fimc_dev();
+#endif
 
 	switch (ctx->status) {
 	case FIMC_READY_ON:
@@ -1926,11 +2041,24 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 		win->other_mem_addr = ctx->dst[1].base[FIMC_ADDR_Y];
 		win->other_mem_size = ctx->dst[1].length[FIMC_ADDR_Y];
 
+#ifdef CONFIG_MACH_ARIES
 		/* Update WIN size */
 		var.xres_virtual = fimd_rect.width;
 		var.yres_virtual = fimd_rect.height;
-		var.xres = fimd_rect.width;
-		var.yres = fimd_rect.height;
+#endif
+
+#if defined(CONFIG_VIDEO_NM6XX)
+		if(fimc->active_camera == CAMERA_ID_MOBILETV)
+		{
+			var.xres = 1024;
+			var.yres = 600;
+		}
+		else
+#endif
+		{
+			var.xres = fimd_rect.width;
+			var.yres = fimd_rect.height;
+		}
 
 		/* Update WIN position */
 		win->x = fimd_rect.left;
@@ -1943,6 +2071,22 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 			return -EINVAL;
 		}
 
+#ifdef CONFIG_MACH_P1
+		mutex_lock(&ctrl->lock);
+		if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO &&
+				ctrl->fb.is_enable == 0) {
+			ret = fb_blank(registered_fb[ctx->overlay.fb_id],
+							FB_BLANK_UNBLANK);
+			if (ret < 0) {
+				fimc_warn("%s: fb_blank: fb[%d] " \
+						"mode=FB_BLANK_UNBLANK\n",
+						__func__, ctx->overlay.fb_id);
+				mutex_unlock(&ctrl->lock);
+			}
+			ctrl->fb.is_enable = 1;
+		}
+		mutex_unlock(&ctrl->lock);
+#endif
 		/* fall through */
 
 	case FIMC_STREAMON_IDLE:
@@ -2072,9 +2216,19 @@ int fimc_qbuf_output(void *fh, struct v4l2_buffer *b)
 		fimc_clk_en(ctrl, true);
 
 		ctx = &ctrl->out->ctx[ctx_num];
+#ifdef CONFIG_MACH_ARIES
 		if (ctx_num != ctrl->out->last_ctx) {
+#else // CONFIG_MACH_P1
+		if ((ctx->overlay.mode == FIMC_OVLY_NONE_SINGLE_BUF) ||
+				(ctx->overlay.mode != FIMC_OVLY_NONE_SINGLE_BUF
+				 && ctx_num != ctrl->out->last_ctx)) {
+#endif
+			ret = fimc_outdev_set_ctx_param(ctrl, ctx);
+			if (ret < 0) {
+				fimc_err("Fail: fimc_outdev_set_ctx_param\n");
+				return -EINVAL;
+			}
 			ctrl->out->last_ctx = ctx->ctx_num;
-			fimc_outdev_set_ctx_param(ctrl, ctx);
 		}
 
 		switch (ctx->overlay.mode) {

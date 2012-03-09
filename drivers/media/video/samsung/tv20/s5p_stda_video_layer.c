@@ -133,10 +133,15 @@ static void _s5p_vlayer_calc_inner_values(void)
 	st->vl_dest_width = d_w;
 	st->vl_dest_height = d_h;
 
-
 	if (o_mode == INTERLACED) {
-		st->vl_src_height	= s_h / 2;
-		st->vl_src_offset_y	= s_oy / 2;
+#ifdef CONFIG_MACH_P1
+		if (st->vl_op_mode.line_skip) {
+#endif
+			st->vl_src_height	= s_h / 2;
+			st->vl_src_offset_y	= s_oy / 2;
+#ifdef CONFIG_MACH_P1
+		}
+#endif
 		st->vl_dest_height	= d_h / 2;
 		st->vl_dest_offset_y	= d_oy / 2;
 	} else {
@@ -799,9 +804,16 @@ bool _s5p_vlayer_set_csc_coef(unsigned long buf_in)
 bool _s5p_vlayer_init_param(unsigned long buf_in)
 {
 	struct s5p_tv_status *st = &s5ptv_status;
+#ifdef CONFIG_MACH_P1
+	struct s5p_vl_param *video = &(s5ptv_status.vl_basic_param);
+#endif
 
 	bool i_mode, o_mode; /* 0 for interlaced, 1 for progressive */
 
+#ifdef CONFIG_MACH_P1
+	u32 s_h = video->src_height;
+	u32 d_h = video->dest_height;
+#endif
 	switch (st->tvout_param.disp_mode) {
 
 	case TVOUT_480P_60_16_9:
@@ -866,6 +878,11 @@ bool _s5p_vlayer_init_param(unsigned long buf_in)
 	} else {
 		/* p to i : line skip 1, ipc 0, auto toggle 0 */
 		if (o_mode == INTERLACED) {
+#ifdef CONFIG_MACH_P1
+			if (d_h > s_h && ((d_h<<16)/s_h < 0x100000))
+				st->vl_op_mode.line_skip = false;
+			else
+#endif
 			st->vl_op_mode.line_skip = true;
 			st->vl2d_ipc		 = false;
 			st->vl_op_mode.toggle_id = false;

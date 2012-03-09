@@ -63,11 +63,12 @@ struct max8998_regulator_data {
 	int				id;
 	struct regulator_init_data	*initdata;
 };
-
+#ifdef CONFIG_MACH_ARIES
 enum cable_type_t {
 	CABLE_TYPE_NONE = 0,
 	CABLE_TYPE_USB,
 	CABLE_TYPE_AC,
+	CABLE_TYPE_IMPROPER_AC,
 };
 
 /**
@@ -83,6 +84,7 @@ struct max8998_charger_callbacks {
 	void (*set_cable)(struct max8998_charger_callbacks *ptr,
 		enum cable_type_t status);
 };
+#endif
 
 /**
  * max8998_charger_data - charger data
@@ -91,10 +93,16 @@ struct max8998_charger_callbacks {
  * @adc_table: adc_table must be ascending adc value order
  */
 struct max8998_charger_data {
+#ifdef CONFIG_MACH_ARIES
 	struct power_supply *psy_fuelgauge;
 	void (*register_callbacks)(struct max8998_charger_callbacks *ptr);
 	struct max8998_adc_table_data *adc_table;
 	int adc_array_size;
+#else // CONFIG_MACH_P1
+	int (*charger_dev_register)(struct charger_device *chgdev);
+	void (*charger_dev_unregister)(struct charger_device *chgdev);
+	struct charger_device *chgdev;
+#endif
 };
 
 /**
@@ -126,6 +134,7 @@ struct max8998_platform_data {
 	int				num_regulators;
 	int				irq_base;
 	int				ono;
+#ifdef CONFIG_MACH_ARIES
 	bool				buck_voltage_lock;
 	int				buck1_voltage1;
 	int				buck1_voltage2;
@@ -140,6 +149,7 @@ struct max8998_platform_data {
 	int				buck2_default_idx;
 	bool				wakeup;
 	bool				rtc_delay;
+#endif
 	struct max8998_charger_data	*charger;
 };
 

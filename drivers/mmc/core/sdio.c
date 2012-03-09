@@ -31,6 +31,8 @@
 #include <linux/mmc/sdio_ids.h>
 #endif
 
+#define BRCM_PATCH
+
 static int sdio_read_fbr(struct sdio_func *func)
 {
 	int ret;
@@ -630,7 +632,7 @@ out:
 static int mmc_sdio_suspend(struct mmc_host *host)
 {
 	int i, err = 0;
-
+#ifndef BRCM_PATCH
 	for (i = 0; i < host->card->sdio_funcs; i++) {
 		struct sdio_func *func = host->card->sdio_func[i];
 		if (func && sdio_func_present(func) && func->dev.driver) {
@@ -657,14 +659,14 @@ static int mmc_sdio_suspend(struct mmc_host *host)
 		sdio_disable_wide(host->card);
 		mmc_release_host(host);
 	}
-
+#endif
 	return err;
 }
 
 static int mmc_sdio_resume(struct mmc_host *host)
 {
 	int i, err = 0;
-
+#ifndef BRCM_PATCH
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
@@ -705,7 +707,7 @@ static int mmc_sdio_resume(struct mmc_host *host)
 			err = pmops->resume(&func->dev);
 		}
 	}
-
+#endif
 	return err;
 }
 

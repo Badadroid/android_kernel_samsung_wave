@@ -73,14 +73,38 @@ void __s5p_tv_powerinitialize_dac_onoff(bool on)
 
 void __s5p_tv_powerset_dac_onoff(bool on)
 {
+	int ret;
 	TVPMPRINTK("(%d)\n\r", on);
 
 	if (on) {
-		regulator_enable(s5ptv_status.tv_tvout);
+		if (!s5ptv_status.is_reg_tv_tvout_enabled) {
+			ret = regulator_enable(s5ptv_status.tv_tvout);
+			if (ret)
+				s5ptv_status.is_reg_tv_tvout_enabled = 1;
+		}
+#ifdef CONFIG_MACH_P1
+		if (!s5ptv_status.is_reg_tv_tv_enabled) {
+			ret = regulator_enable(s5ptv_status.tv_tv);
+			if (ret)
+				s5ptv_status.is_reg_tv_tv_enabled = 1;
+		}
+#endif
+
 		writel(S5P_DAC_ENABLE, S5P_DAC_CONTROL);
 	} else {
 		writel(S5P_DAC_DISABLE, S5P_DAC_CONTROL);
-		regulator_disable(s5ptv_status.tv_tvout);
+		if (s5ptv_status.is_reg_tv_tvout_enabled) {
+			ret = regulator_force_disable(s5ptv_status.tv_tvout);
+			if (ret)
+				s5ptv_status.is_reg_tv_tvout_enabled = 0;
+		}
+#ifdef CONFIG_MACH_P1
+		if (s5ptv_status.is_reg_tv_tv_enabled) {
+			ret = regulator_force_disable(s5ptv_status.tv_tv);
+			if (ret)
+				s5ptv_status.is_reg_tv_tv_enabled = 0;
+		}
+#endif
 	}
 
 	TVPMPRINTK("(0x%08x)\n\r", readl(S5P_DAC_CONTROL));
@@ -107,12 +131,23 @@ bool __s5p_tv_power_get_dac_power_status(void)
 
 void __s5p_tv_poweron(void)
 {
+	int ret;
 	TVPMPRINTK("0x%08x\n\r", readl(S3C_VA_SYS + 0xE804));
 
 	writel(readl(S3C_VA_SYS + 0xE804) | 0x1, S3C_VA_SYS + 0xE804);
 
-	if (regulator_enable(s5ptv_status.tv_regulator))
-		pr_err("%s : failed to turn tv-power-domain on\n", __func__);
+	if (!s5ptv_status.is_reg_tv_reg_enabled) {
+		ret = regulator_enable(s5ptv_status.tv_regulator);
+		if (ret)
+			s5ptv_status.is_reg_tv_reg_enabled = 1;
+	}
+
+#ifdef CONFIG_MACH_P1
+	writel(readl(S5P_NORMAL_CFG) | TVPWR_SUBSYSTEM_ACTIVE, S5P_NORMAL_CFG);
+
+	while (!TVPWR_TV_BLOCK_STATUS(readl(S5P_BLK_PWR_STAT)))
+		msleep(1);
+#endif
 
 	TVPMPRINTK("0x%08x, 0x%08x)\n\r", readl(S5P_NORMAL_CFG),
 		readl(S5P_BLK_PWR_STAT));
@@ -121,12 +156,22 @@ void __s5p_tv_poweron(void)
 
 void __s5p_tv_poweroff(void)
 {
+	int ret;
 	TVPMPRINTK("()\n\r");
 
 	__s5p_tv_powerset_dac_onoff(0);
+	if (s5ptv_status.is_reg_tv_reg_enabled) {
+		ret = regulator_force_disable(s5ptv_status.tv_regulator);
+		if (ret)
+			s5ptv_status.is_reg_tv_reg_enabled = 0;
+	}
 
-	if (regulator_disable(s5ptv_status.tv_regulator))
-		pr_err("%s : failed to turn tv-power-domain off\n", __func__);
+#ifdef CONFIG_MACH_P1
+	writel(readl(S5P_NORMAL_CFG) & ~TVPWR_SUBSYSTEM_ACTIVE, S5P_NORMAL_CFG);
+
+	while (TVPWR_TV_BLOCK_STATUS(readl(S5P_BLK_PWR_STAT)))
+		msleep(1);
+#endif
 
 	TVPMPRINTK("0x%08x, 0x%08x)\n\r", readl(S5P_NORMAL_CFG),
 		readl(S5P_BLK_PWR_STAT));

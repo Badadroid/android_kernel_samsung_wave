@@ -1539,7 +1539,16 @@ static int _regulator_is_enabled(struct regulator_dev *rdev)
 
 	return rdev->desc->ops->is_enabled(rdev);
 }
-
+#ifdef CONFIG_MACH_P1
+// for using specific regulator (not match with use_count)
+void regulator_set_use_count(struct regulator *regulator, int cnt)
+{
+	mutex_lock(&regulator->rdev->mutex);
+	regulator->rdev->use_count = cnt;
+	mutex_unlock(&regulator->rdev->mutex);
+}
+EXPORT_SYMBOL_GPL(regulator_set_use_count);
+#endif
 /**
  * regulator_is_enabled - is the regulator output enabled
  * @regulator: regulator source

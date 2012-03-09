@@ -38,6 +38,10 @@
 
 #include "fimc.h"
 
+#ifdef CONFIG_MACH_P1
+#define CLEAR_FIMC2_BUFF
+#endif
+
 struct fimc_global *fimc_dev;
 
 int fimc_dma_alloc(struct fimc_control *ctrl, struct fimc_buf_set *bs,
@@ -147,7 +151,11 @@ static inline u32 fimc_irq_out_single_buf(struct fimc_control *ctrl,
 		ctrl->out->idxs.active.ctx = -1;
 		ctrl->out->idxs.active.idx = -1;
 		ctx->status = FIMC_STREAMOFF;
+#ifdef CONFIG_MACH_ARIES
 		ctrl->status = FIMC_STREAMOFF;
+#else // CONFIG_MACH_P1
+		ctrl->status = FIMC_STREAMON_IDLE;
+#endif
 
 		return wakeup;
 	}
@@ -255,7 +263,11 @@ static inline u32 fimc_irq_out_dma(struct fimc_control *ctrl,
 		ctrl->out->idxs.active.ctx = -1;
 		ctrl->out->idxs.active.idx = -1;
 		ctx->status = FIMC_STREAMOFF;
+#ifdef CONFIG_MACH_ARIES
 		ctrl->status = FIMC_STREAMOFF;
+#else // CONFIG_MACH_P1
+		ctrl->status = FIMC_STREAMON_IDLE;
+#endif
 		return wakeup;
 	}
 
@@ -632,8 +644,19 @@ int fimc_mmap_out_dst(struct file *filp, struct vm_area_struct *vma, u32 idx)
 
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	vma->vm_flags |= VM_RESERVED;
-
+#ifdef CONFIG_MACH_ARIES
 	pfn = __phys_to_pfn(ctrl->out->ctx[ctx_id].dst[idx].base[0]);
+#else // CONFIG_MACH_P1
+#if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
+	if (ctrl->out->ctx[ctx_id].dst[idx].base[0])
+		pfn = __phys_to_pfn(ctrl->out->ctx[ctx_id].dst[idx].base[0]);
+	else
+		pfn = __phys_to_pfn(ctrl->mem.curr);
+#elif defined (CONFIG_SAMSUNG_P1LN)
+		pfn = __phys_to_pfn(ctrl->mem.base);
+#endif
+#endif
+
 	ret = remap_pfn_range(vma, vma->vm_start, pfn, size, vma->vm_page_prot);
 	if (ret != 0)
 		fimc_err("remap_pfn_range fail.\n");
@@ -722,17 +745,66 @@ static u32 fimc_poll(struct file *filp, poll_table *wait)
 
 	return mask;
 }
-
+#ifdef CONFIG_MACH_P1
+#include <mach/gpio.h>
+#include <plat/gpio-cfg.h>
+#include <mach/gpio-p1.h>
+#include <linux/delay.h>
+#endif
 static
 ssize_t fimc_read(struct file *filp, char *buf, size_t count, loff_t *pos)
 {
-	return 0;
+
+	int err = 0;
+#ifdef CONFIG_MACH_P1
+	printk("%s, for factory test\n", __func__);
+
+
+	gpio_direction_output(S5PV210_MP04(2), 0);
+	gpio_direction_output(S5PV210_MP04(3), 0);
+
+	gpio_free(S5PV210_MP04(2));
+	gpio_free(S5PV210_MP04(3));
+#endif
+	return err;
 }
 
 static
 ssize_t fimc_write(struct file *filp, const char *b, size_t c, loff_t *offset)
 {
-	return 0;
+	int err = 0;
+#ifdef CONFIG_MACH_P1
+	int i = 0;
+
+	printk("%s, for factory test\n", __func__);
+
+	err = gpio_request(S5PV210_MP04(2), "MP04");
+	if (err)
+	{
+		printk(KERN_ERR "failed to request MP04 for camera control\n");
+		return err;
+	}
+	err = gpio_request(S5PV210_MP04(3), "MP04");
+	if (err)
+	{
+		printk(KERN_ERR "failed to request MP04 for camera control\n");
+		return err;
+	}
+	//movie mode
+	gpio_direction_output(S5PV210_MP04(3), 0);
+	for (i = 8; i > 1; i--)
+	{
+		//gpio on
+		gpio_direction_output(S5PV210_MP04(2), 1);
+		udelay(1);
+		//gpio off
+		gpio_direction_output(S5PV210_MP04(2), 0);
+		udelay(1);
+	}
+	gpio_direction_output(S5PV210_MP04(2), 1);
+	mdelay(2);
+#endif
+	return err;
 }
 
 u32 fimc_mapping_rot_flip(u32 rot, u32 flip)
@@ -903,6 +975,9 @@ static int fimc_open(struct file *filp)
 	struct fimc_prv_data *prv_data;
 	int in_use;
 	int ret;
+#ifdef CLEAR_FIMC2_BUFF
+	unsigned int *fimc2_buff;
+#endif
 
 	ctrl = video_get_drvdata(video_devdata(filp));
 	pdata = to_fimc_plat(ctrl->dev);
@@ -960,6 +1035,17 @@ static int fimc_open(struct file *filp)
 			fimc_clk_en(ctrl, false);
 	}
 
+#ifdef CLEAR_FIMC2_BUFF
+	if (2 == ctrl->id) {
+		fimc2_buff = (unsigned int *)ioremap(ctrl->mem.base,
+								ctrl->mem.size);
+		if (fimc2_buff) {
+			memset(fimc2_buff, 0, ctrl->mem.size);
+			iounmap(fimc2_buff);
+		}
+	}
+#endif
+
 	mutex_unlock(&ctrl->lock);
 
 	fimc_info1("%s opened.\n", ctrl->name);
@@ -988,7 +1074,9 @@ static int fimc_release(struct file *filp)
 	struct mm_struct *mm = current->mm;
 	struct fimc_ctx *ctx;
 	int ret = 0, i;
+#ifdef CONFIG_MACH_ARIES
 	ctx = &ctrl->out->ctx[ctx_id];
+#endif
 
 	pdata = to_fimc_plat(ctrl->dev);
 
@@ -1021,6 +1109,9 @@ static int fimc_release(struct file *filp)
 	}
 
 	if (ctrl->out) {
+#ifdef CONFIG_MACH_P1
+		ctx = &ctrl->out->ctx[ctx_id];
+#endif
 		if (ctx->status != FIMC_STREAMOFF) {
 			fimc_clk_en(ctrl, true);
 			ret = fimc_outdev_stop_streaming(ctrl, ctx);
@@ -1047,8 +1138,13 @@ static int fimc_release(struct file *filp)
 				ctx->src[i].state = VIDEOBUF_IDLE;
 				ctx->src[i].flags = V4L2_BUF_FLAG_MAPPED;
 			}
-
+#ifdef CONFIG_MACH_ARIES
 			if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO) {
+#else
+			if ((ctx->overlay.mode == FIMC_OVLY_DMA_AUTO ||
+				ctx->overlay.mode == FIMC_OVLY_NOT_FIXED) &&
+				 ctx->dst[0].base[FIMC_ADDR_Y] != 0) {
+#endif
 				ctrl->mem.curr = ctx->dst[0].base[FIMC_ADDR_Y];
 
 				for (i = 0; i < FIMC_OUTBUFS; i++) {
@@ -1076,10 +1172,21 @@ static int fimc_release(struct file *filp)
 							__func__);
 			}
 		}
-
+#ifdef CONFIG_MACH_ARIES
 		ctrl->ctx_busy[ctx_id] = 0;
+#endif
 		memset(ctx, 0x00, sizeof(struct fimc_ctx));
+#ifdef CONFIG_MACH_P1
 
+		ctx->ctx_num = ctx_id;
+		ctx->overlay.mode = FIMC_OVLY_NOT_FIXED;
+		ctx->status = FIMC_STREAMOFF;
+
+		for (i = 0; i < FIMC_OUTBUFS; i++) {
+			ctx->inq[i] = -1;
+			ctx->outq[i] = -1;
+		}
+#endif
 		if (atomic_read(&ctrl->in_use) == 0) {
 			ctrl->status = FIMC_STREAMOFF;
 			fimc_outdev_init_idxs(ctrl);
@@ -1095,7 +1202,7 @@ static int fimc_release(struct file *filp)
 			filp->private_data = NULL;
 		}
 	}
-
+#ifdef CONFIG_MACH_ARIES
 	/*
 	 * it remain afterimage when I play movie using overlay and exit
 	 */
@@ -1113,7 +1220,10 @@ static int fimc_release(struct file *filp)
 
 		ctrl->fb.is_enable = 0;
 	}
-
+#endif
+#ifdef CONFIG_MACH_P1
+	ctrl->ctx_busy[ctx_id] = 0;
+#endif
 	mutex_unlock(&ctrl->lock);
 
 	fimc_info1("%s released.\n", ctrl->name);

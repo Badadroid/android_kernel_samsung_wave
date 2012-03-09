@@ -265,6 +265,9 @@ struct sdhci_ops {
 	unsigned int	(*get_max_clock)(struct sdhci_host *host);
 	unsigned int	(*get_min_clock)(struct sdhci_host *host);
 	unsigned int	(*get_timeout_clock)(struct sdhci_host *host);
+#ifdef CONFIG_MACH_P1
+	void 	(*translate_vdd)(struct sdhci_host *host, unsigned int vdd);
+#endif
 	int		(*platform_8bit_width)(struct sdhci_host *host,
 					       int width);
 	void (*platform_send_init_74_clocks)(struct sdhci_host *host,

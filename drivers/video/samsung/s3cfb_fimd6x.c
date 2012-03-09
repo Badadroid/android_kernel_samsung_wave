@@ -177,8 +177,13 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	cfg &= ~(S3C_VIDCON0_CLKSEL_MASK | S3C_VIDCON0_CLKVALUP_MASK |
 		 S3C_VIDCON0_VCLKEN_MASK | S3C_VIDCON0_CLKDIR_MASK |
 		 S3C_VIDCON0_CLKVAL_F(-1));
+#if defined(CONFIG_FB_S3C_MDNIE) && defined(CONFIG_FB_S3C_LVDS)
+	cfg |= (S3C_VIDCON0_CLKSEL_SCLK | S3C_VIDCON0_CLKVALUP_ALWAYS |
+		S3C_VIDCON0_VCLKEN_FREERUN);
+#else
 	cfg |= (S3C_VIDCON0_CLKVALUP_ALWAYS | S3C_VIDCON0_VCLKEN_NORMAL |
 		S3C_VIDCON0_CLKDIR_DIVIDED);
+#endif
 
 
 	if (strcmp(pdata->clk_name, "sclk_fimd") == 0) {
@@ -756,3 +761,14 @@ int s3cfb_set_chroma_key(struct s3cfb_global *ctrl, int id)
 	return 0;
 }
 
+#if defined(CONFIG_FB_S3C_MDNIE)
+int s3cfb_ielcd_enable(struct s3cfb_global *ctrl, int en)
+{
+	if(en)
+		writel(0x3, ctrl->regs + S3C_LCDREG(0x27c));
+	else
+		writel(0x0, ctrl->regs + S3C_LCDREG(0x27c));
+
+	return 0;
+}
+#endif

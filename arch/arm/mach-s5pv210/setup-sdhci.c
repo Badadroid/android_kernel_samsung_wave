@@ -28,6 +28,12 @@
 #include <mach/regs-gpio.h>
 #include <mach/gpio.h>
 
+#ifdef CONFIG_MACH_P1
+#include <mach/gpio-p1.h>
+#include <linux/regulator/consumer.h>
+#include <linux/err.h>
+#endif
+
 #include "herring.h"
 
 /* clock sources for the mmc bus clock, order as for the ctrl2[5..4] */
@@ -82,8 +88,8 @@ void s5pv210_setup_sdhci_cfg_card(struct platform_device *dev,
 		if ((ios->clock > range_start) && (ios->clock < range_end))
 			ctrl3 = S3C_SDHCI_CTRL3_FCSELTX_BASIC |
 				S3C_SDHCI_CTRL3_FCSELRX_BASIC;
-		else if (machine_is_herring() && herring_is_cdma_wimax_dev() &&
-								dev->id == 2) {
+		else if (((machine_is_herring() && herring_is_cdma_wimax_dev()) ||
+					machine_is_p1()) && dev->id == 2) {
 			ctrl3 = S3C_SDHCI_CTRL3_FCSELTX_BASIC;
 			//if(card->type & MMC_TYPE_SDIO)
 				ctrl3 |= S3C_SDHCI_CTRL3_FCSELRX_BASIC;
@@ -148,10 +154,78 @@ void universal_sdhci2_cfg_ext_cd(void)
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_VIBRANT)
     s3c_gpio_setpull(S5PV210_GPH3(4), S3C_GPIO_PULL_UP);
 #else
+#if defined(CONFIG_PHONE_P1_GSM)
+	s3c_gpio_cfgpin(GPIO_T_FLASH_DETECT, S3C_GPIO_SFN(GPIO_T_FLASH_DETECT_AF));
+#elif defined(CONFIG_PHONE_P1_CDMA)
+	s3c_gpio_cfgpin(S5PV210_GPH3(4),S3C_GPIO_SFN(0xf));
+#endif
     s3c_gpio_setpull(S5PV210_GPH3(4), S3C_GPIO_PULL_NONE);
 #endif
 	irq_set_irq_type(IRQ_EINT(28), IRQ_TYPE_EDGE_BOTH);
 }
+
+#ifdef CONFIG_MACH_P1
+static unsigned int vreg_sts = 0;
+void s5pv210_sdhci0_translate_vdd(struct platform_device *pdev,
+								 unsigned int vdd)
+{
+	unsigned int flag = 0;
+
+	if (pdev->id != 0)	/* MoviNAND */
+		return;
+
+	flag = 1 << pdev->id;
+
+	if (vdd == 0) {
+		if (vreg_sts & flag) {
+			gpio_set_value(GPIO_MASSMEMORY_EN, GPIO_LEVEL_LOW);
+			printk(KERN_DEBUG "%s.%d: ldo down\n", pdev->name, pdev->id);
+			vreg_sts &= ~flag;
+		}
+	}
+	else {
+		if (!(vreg_sts & flag))	{
+			gpio_set_value(GPIO_MASSMEMORY_EN, GPIO_LEVEL_HIGH);
+			printk(KERN_DEBUG "%s.%d: ldo on\n", pdev->name, pdev->id);
+			vreg_sts |= flag;
+		}
+	}
+}
+
+void s5pv210_sdhci2_translate_vdd(struct platform_device *pdev, unsigned int vdd)
+{
+	unsigned int flag = 0;
+	struct regulator *vcc_vtf;
+
+	if (pdev->id != 2) /* T-FLSH */
+		return;
+
+	flag = 1 << pdev->id;
+
+	vcc_vtf = regulator_get(NULL, "vcc_vtf");
+	if (IS_ERR_OR_NULL(vcc_vtf)) {
+		   pr_err("failed to get T-Flash regulator");
+		   return;
+	}
+
+	if (vdd == 0) {
+		if (vreg_sts & flag) {
+			printk(KERN_DEBUG "%s.%d: ldo down\n", pdev->name, pdev->id);
+			regulator_disable(vcc_vtf);
+			vreg_sts &= ~flag;
+		}
+	}
+	else {
+		if (!(vreg_sts & flag)) {
+			printk(KERN_DEBUG "%s.%d: ldo on\n", pdev->name, pdev->id);
+			regulator_enable(vcc_vtf);
+			vreg_sts |= flag;
+		}
+	}
+
+	regulator_put(vcc_vtf);
+}
+#endif
 
 static struct s3c_sdhci_platdata hsmmc0_platdata = {
 #if defined(CONFIG_S5PV210_SD_CH0_8BIT)
@@ -169,6 +243,9 @@ static struct s3c_sdhci_platdata hsmmc2_platdata = {
 #if defined(CONFIG_S5PV210_SD_CH2_8BIT)
 	.max_width	= 8,
 	.host_caps	= MMC_CAP_8_BIT_DATA,
+#endif
+#ifdef CONFIG_MACH_P1
+	.translate_vdd = s5pv210_sdhci2_translate_vdd,
 #endif
 };
 #endif
@@ -242,18 +319,21 @@ EXPORT_SYMBOL_GPL(sdhci_s3c_force_presence_change);
 void s3c_sdhci_set_platdata(void)
 {
 #if defined(CONFIG_S3C_DEV_HSMMC)
-	if (machine_is_herring() || machine_is_aries()) { /* TODO: move to mach-herring.c */
+	if (machine_is_herring() || machine_is_aries() || machine_is_p1()) {
+		/* TODO: move to mach-herring.c */
 		hsmmc0_platdata.cd_type = S3C_SDHCI_CD_PERMANENT;
 	}
+
 	s3c_sdhci0_set_platdata(&hsmmc0_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC1)
-	if (machine_is_aries()) {
+	if (machine_is_aries() || machine_is_p1()) {
 		hsmmc1_platdata.cd_type = S3C_SDHCI_CD_EXTERNAL;
 		hsmmc1_platdata.ext_cd_init = ext_cd_init_hsmmc1;
 		hsmmc1_platdata.ext_cd_cleanup = ext_cd_cleanup_hsmmc1;
 		hsmmc1_platdata.built_in = 1;
 	}
+
 	s3c_sdhci1_set_platdata(&hsmmc1_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC2)
@@ -273,7 +353,7 @@ void s3c_sdhci_set_platdata(void)
 		}
 	}
 
-	if (machine_is_aries()) {
+	if (machine_is_aries() || machine_is_p1()) {
 		hsmmc2_platdata.cd_type = S3C_SDHCI_CD_GPIO;
 		hsmmc2_platdata.ext_cd_gpio = S5PV210_GPH3(4);
 		hsmmc2_platdata.ext_cd_gpio_invert = true;
@@ -283,12 +363,13 @@ void s3c_sdhci_set_platdata(void)
 	s3c_sdhci2_set_platdata(&hsmmc2_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC3)
-	if (machine_is_herring() || machine_is_aries()) {
+	if (machine_is_herring() || machine_is_aries() || machine_is_p1()) {
 		hsmmc3_platdata.cd_type = S3C_SDHCI_CD_EXTERNAL;
 		hsmmc3_platdata.ext_cd_init = ext_cd_init_hsmmc3;
 		hsmmc3_platdata.ext_cd_cleanup = ext_cd_cleanup_hsmmc3;
 		hsmmc3_platdata.built_in = 1;
 	}
+
 	s3c_sdhci3_set_platdata(&hsmmc3_platdata);
 #endif
 };

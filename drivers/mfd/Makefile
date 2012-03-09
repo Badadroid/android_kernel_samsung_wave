@@ -2,6 +2,11 @@
 # Makefile for multifunction miscellaneous devices
 #
 
+# P1 compat
+ifdef CONFIG_MACH_P1
+max8998-y	:=  max8998-p1.o
+endif
+
 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
 obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
 obj-$(CONFIG_MFD_SM501)		+= sm501.o

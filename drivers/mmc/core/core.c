@@ -1125,6 +1125,7 @@ static inline void mmc_bus_put(struct mmc_host *host)
 int mmc_resume_bus(struct mmc_host *host)
 {
 	unsigned long flags;
+	int err = 0;
 
 	if (!mmc_bus_needs_resume(host))
 		return -EINVAL;
@@ -1139,11 +1140,21 @@ int mmc_resume_bus(struct mmc_host *host)
 	if (host->bus_ops && !host->bus_dead) {
 		mmc_power_up(host);
 		BUG_ON(!host->bus_ops->resume);
-		host->bus_ops->resume(host);
+		err = host->bus_ops->resume(host);
 	}
 
-	if (host->bus_ops->detect && !host->bus_dead)
-		host->bus_ops->detect(host);
+#ifdef CONFIG_MACH_P1
+	if (!err) {
+#endif
+		if (host->bus_ops->detect && !host->bus_dead)
+			host->bus_ops->detect(host);
+#ifdef CONFIG_MACH_P1
+	} else {
+		printk(KERN_WARNING "%s: error %d during resume "
+	                                "(card was removed?)\n",
+	                                mmc_hostname(host), err);
+	}
+#endif
 
 	mmc_bus_put(host);
 	printk("%s: Deferred resume completed\n", mmc_hostname(host));
@@ -1679,10 +1690,15 @@ void mmc_rescan(struct work_struct *work)
 	mmc_release_host(host);
 
  out:
+#if defined(CONFIG_MACH_P1)
+        wake_lock_timeout(&host->detect_wake_lock, 3*HZ);
+#else
 	if (extend_wakelock)
 		wake_lock_timeout(&host->detect_wake_lock, HZ / 2);
 	else
 		wake_unlock(&host->detect_wake_lock);
+#endif
+
 	if (host->caps & MMC_CAP_NEEDS_POLL) {
 		wake_lock(&host->detect_wake_lock);
 		mmc_schedule_delayed_work(&host->detect, HZ);

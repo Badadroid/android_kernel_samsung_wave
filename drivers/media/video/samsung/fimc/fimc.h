@@ -37,7 +37,11 @@
 #define FIMC_PHYBUFS		4
 #define FIMC_OUTBUFS		3
 #define FIMC_INQUEUES		10
+#ifdef CONFIG_MACH_ARIES
 #define FIMC_MAX_CTXS		1
+#else // CONFIG_MACH_P1
+#define FIMC_MAX_CTXS		2
+#endif
 #define FIMC_TPID		3
 #define FIMC_CAPBUFS		16
 #define FIMC_ONESHOT_TIMEOUT	200
@@ -381,7 +385,9 @@ struct fimc_control {
 	wait_queue_head_t		wq;
 	struct device			*dev;
 	int				irq;
-
+#ifdef CONFIG_MACH_P1
+	int	vt_mode;
+#endif
 	/* v4l2 related */
 	struct video_device		*vd;
 	struct v4l2_device		v4l2_dev;

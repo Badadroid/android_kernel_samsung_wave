@@ -115,6 +115,10 @@ struct fsa9480_usbsw {
 	int				mansw;
 };
 
+#ifdef CONFIG_MACH_P1
+static struct fsa9480_usbsw *local_usbsw;
+#endif
+
 static ssize_t fsa9480_show_control(struct device *dev,
 				   struct device_attribute *attr,
 				   char *buf)
@@ -291,6 +295,64 @@ static struct miscdevice dockaudio_device = {
 int cardock_status = 0;
 int deskdock_status = 0;
 
+#ifdef CONFIG_MACH_P1
+void fsa9480_manual_switching(int path)
+{
+	struct i2c_client *client = local_usbsw->client;
+	unsigned int value;
+	unsigned int data = 0;
+	int ret;
+
+	value = i2c_smbus_read_byte_data(client, FSA9480_REG_CTRL);
+	if (value < 0)
+		dev_err(&client->dev, "%s: err %d\n", __func__, value);
+
+	if ((value & ~CON_MANUAL_SW) !=
+			(CON_SWITCH_OPEN | CON_RAW_DATA | CON_WAIT)) {
+		printk("%s: wrong con (%d)\n", __func__, value);
+		return ;
+	}
+
+	printk("%s: path selected (%d)\n", __func__, path);
+
+	if (path == SWITCH_V_Audio_Port) {
+		data = SW_VAUDIO;
+		value &= ~CON_MANUAL_SW;
+		printk("%s: SWITCH_V_Audio_Port (%d)\n", __func__, SWITCH_V_Audio_Port);
+	} else if (path ==  SWITCH_UART_Port) {
+		data = SW_UART;
+		value &= ~CON_MANUAL_SW;
+		printk("%s: SWITCH_UART_Port (%d)\n", __func__, SWITCH_UART_Port);
+	} else if (path ==  SWITCH_Audio_Port) {
+		data = SW_AUDIO;
+		value &= ~CON_MANUAL_SW;
+		printk("%s: SWITCH_Audio_Port (%d)\n", __func__, SWITCH_Audio_Port);
+	} else if (path ==  SWITCH_USB_Port) {
+		data = SW_DHOST;
+		value &= ~CON_MANUAL_SW;
+		printk("%s: SWITCH_USB_Port (%d)\n", __func__, SWITCH_USB_Port);
+	} else if (path ==  AUTO_SWITCH) {
+		data = SW_AUTO;
+		value |= CON_MANUAL_SW;
+		printk("%s: AUTO_SWITCH (%d)\n", __func__, AUTO_SWITCH);
+	} else {
+		printk("%s: wrong path (%d)\n", __func__, path);
+		return ;
+	}
+
+	local_usbsw->mansw = data;
+
+	ret = i2c_smbus_write_byte_data(client, FSA9480_REG_MANSW1, data);
+	if (ret < 0)
+		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+	ret = i2c_smbus_write_byte_data(client, FSA9480_REG_CTRL, value);
+	if (ret < 0)
+		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+}
+#endif
+
 static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 {
 	int device_type, ret;
@@ -304,18 +366,33 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 
 	val1 = device_type & 0xff;
 	val2 = device_type >> 8;
-
+#ifdef CONFIG_MACH_ARIES
 	dev_info(&client->dev, "dev1: 0x%x, dev2: 0x%x\n", val1, val2);
+#else // CONFIG_MACH_P1
+	dev_info(&client->dev, "prev_dev1: 0x%x, prev_dev2: 0x%x\n", usbsw->dev1, usbsw->dev2);
+	dev_info(&client->dev, "new_dev1: 0x%x, new_dev2: 0x%x\n", val1, val2);
+#endif
 
 	/* Attached */
 	if (val1 || val2) {
 		/* USB */
+#ifdef CONFIG_MACH_ARIES
 		if (val1 & DEV_T1_USB_MASK || val2 & DEV_T2_USB_MASK) {
 			if (pdata->usb_cb)
 				pdata->usb_cb(FSA9480_ATTACHED);
 			if (usbsw->mansw) {
 				ret = i2c_smbus_write_byte_data(client,
 					FSA9480_REG_MANSW1, usbsw->mansw);
+#else // CONFIG_MACH_P1
+		if (val1 & DEV_T1_USB_MASK /*|| (val2 & DEV_T2_USB_MASK)*/) { // Remove Jig USB
+			if(pdata->set_usb_switch)
+				pdata->set_usb_switch();
+			if (pdata->usb_cb)
+                pdata->usb_cb(FSA9480_ATTACHED);
+			if (local_usbsw->mansw) {
+				ret = i2c_smbus_write_byte_data(client,
+					FSA9480_REG_MANSW1, local_usbsw->mansw);
+#endif
 				if (ret < 0)
 					dev_err(&client->dev,
 						"%s: err %d\n", __func__, ret);
@@ -324,7 +401,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 		} else if (val1 & DEV_T1_UART_MASK || val2 & DEV_T2_UART_MASK) {
 			if (pdata->uart_cb)
 				pdata->uart_cb(FSA9480_ATTACHED);
-
+#ifdef CONFIG_MACH_ARIES
 			if (usbsw->mansw) {
 				ret = i2c_smbus_write_byte_data(client,
 					FSA9480_REG_MANSW1, SW_UART);
@@ -332,6 +409,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 					dev_err(&client->dev,
 						"%s: err %d\n", __func__, ret);
 			}
+#endif
 		/* CHARGER */
 		} else if (val1 & DEV_T1_CHARGER_MASK) {
 			if (pdata->charger_cb)
@@ -346,19 +424,19 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 				pdata->deskdock_cb(FSA9480_ATTACHED);
 			deskdock_status = 1;
 
-#if defined(CONFIG_MACH_ARIES)
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1)
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
-                        ret = i2c_smbus_write_byte_data(client,
-                                        FSA9480_REG_MANSW1, SW_AUDIO);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+            ret = i2c_smbus_write_byte_data(client,
+                            FSA9480_REG_MANSW1, SW_AUDIO);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
 #else
-                        ret = i2c_smbus_write_byte_data(client,
-                                        FSA9480_REG_MANSW1, SW_VAUDIO);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+            ret = i2c_smbus_write_byte_data(client,
+                            FSA9480_REG_MANSW1, SW_VAUDIO);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
 #endif
 #else
 
@@ -367,7 +445,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 			if (ret < 0)
 				dev_err(&client->dev,
 					"%s: err %d\n", __func__, ret);
-#endif
+#endif //CONFIG_MACH_ARIES || CONFIG_MACH_P1
 
 			ret = i2c_smbus_read_byte_data(client,
 					FSA9480_REG_CTRL);
@@ -386,40 +464,44 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 				pdata->cardock_cb(FSA9480_ATTACHED);
 			cardock_status = 1;
 
-#if defined(CONFIG_MACH_ARIES)
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1)
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
-                        ret = i2c_smbus_write_byte_data(client,
-                                        FSA9480_REG_MANSW1, SW_AUDIO);
+            ret = i2c_smbus_write_byte_data(client,
+                            FSA9480_REG_MANSW1, SW_AUDIO);
 
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
 #else
-                        ret = i2c_smbus_write_byte_data(client,
-                                        FSA9480_REG_MANSW1, SW_VAUDIO);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+            ret = i2c_smbus_write_byte_data(client,
+                            FSA9480_REG_MANSW1, SW_VAUDIO);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
 #endif
-                        ret = i2c_smbus_read_byte_data(client,
-                                        FSA9480_REG_CTRL);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+            ret = i2c_smbus_read_byte_data(client,
+                            FSA9480_REG_CTRL);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
 
-                        ret = i2c_smbus_write_byte_data(client,
-                                FSA9480_REG_CTRL, ret & ~CON_MANUAL_SW);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
-#endif
-
+            ret = i2c_smbus_write_byte_data(client,
+                    FSA9480_REG_CTRL, ret & ~CON_MANUAL_SW);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
+#endif //CONFIG_MACH_ARIES || CONFIG_MACH_P1
 		}
 	/* Detached */
 	} else {
 		/* USB */
+#ifdef CONFIG_MACH_ARIES
 		if (usbsw->dev1 & DEV_T1_USB_MASK ||
 				usbsw->dev2 & DEV_T2_USB_MASK) {
+#else // CONFIG_MACH_P1
+		if (usbsw->dev1 & DEV_T1_USB_MASK
+				/*|| usbsw->dev2 & DEV_T2_USB_MASK*/ ) {  // Remove Jig USB
+#endif
 			if (pdata->usb_cb)
 				pdata->usb_cb(FSA9480_DETACHED);
 		/* UART */
@@ -458,20 +540,20 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 				pdata->cardock_cb(FSA9480_DETACHED);
 			cardock_status = 0;
 
-#if defined(CONFIG_MACH_ARIES)
-                        ret = i2c_smbus_read_byte_data(client,
-                                        FSA9480_REG_CTRL);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1)
 
-                        ret = i2c_smbus_write_byte_data(client,
-                                        FSA9480_REG_CTRL, ret | CON_MANUAL_SW);
-                        if (ret < 0)
-                                dev_err(&client->dev,
-                                        "%s: err %d\n", __func__, ret);
+            ret = i2c_smbus_read_byte_data(client,
+                            FSA9480_REG_CTRL);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
+
+            ret = i2c_smbus_write_byte_data(client,
+                            FSA9480_REG_CTRL, ret | CON_MANUAL_SW);
+            if (ret < 0)
+                    dev_err(&client->dev,
+                            "%s: err %d\n", __func__, ret);
 #endif
-
 		}
 	}
 
@@ -617,6 +699,13 @@ static int __devinit fsa9480_probe(struct i2c_client *client,
 		usbsw->pdata->cfg_gpio();
 
 	fsa9480_reg_init(usbsw);
+#ifdef CONFIG_MACH_P1
+	local_usbsw = usbsw;  // temp
+
+	// set fsa9480 init flag.
+	if (usbsw->pdata->set_init_flag)
+		usbsw->pdata->set_init_flag();
+#endif
 
 	ret = fsa9480_irq_init(usbsw);
 	if (ret)

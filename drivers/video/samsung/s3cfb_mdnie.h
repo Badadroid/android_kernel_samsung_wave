@@ -16,8 +16,8 @@
 
 
 
-#define S3C_MDNIE_PHY_BASE    				0xFAE00000 
-#define S3C_MDNIE_MAP_SIZE    				0x00001000 
+#define S3C_MDNIE_PHY_BASE    				0xFAE00000
+#define S3C_MDNIE_MAP_SIZE    				0x00001000
 
 
 #define S3C_MDNIE_rR1					0x0084
@@ -218,7 +218,7 @@
 #define S3C_MDNIE_TRANSFUNL_9(n)			(((n)&0x7F)<<8)
 
 //R72
-#define S3C_MDNIE_QUADRANT_OFF				(0<<8)	
+#define S3C_MDNIE_QUADRANT_OFF				(0<<8)
 #define S3C_MDNIE_QUADRAND_ON				(1<<8)
 #define S3C_MDNIE_COLOR_TEMP_DEST(n)			((((n)&0xFF)<<0)
 //R73
@@ -329,7 +329,13 @@
 #define SIG_MDNIE_VIDEO_COLD_MODE			3
 #define SIG_MDNIE_CAMERA_MODE				4
 #define SIG_MDNIE_NAVI						5
+#ifdef CONFIG_MACH_ARIES
 #define SIG_MDNIE_BYPASS_MODE				6
+#else // CONFIG_MACH_P1
+#define SIG_MDNIE_DMB_MODE					6
+#define SIG_MDNIE_VT_MODE					7
+#define SIG_MDNIE_GALLERY_MODE				8
+#endif
 
 
 int s3c_mdnie_init(void);

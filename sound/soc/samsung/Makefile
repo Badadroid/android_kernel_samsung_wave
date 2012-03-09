@@ -1,5 +1,5 @@
 # S3c24XX Platform Support
-snd-soc-s3c24xx-objs := dma.o s3c-dma-wrapper.o 
+snd-soc-s3c24xx-objs := dma.o s3c-dma-wrapper.o
 snd-soc-s3c24xx-i2s-objs := s3c24xx-i2s.o
 snd-soc-s3c2412-i2s-objs := s3c2412-i2s.o
 snd-soc-s5pc1xx-i2s-objs := s5pc1xx-i2s.o
@@ -40,6 +40,7 @@ snd-soc-herring-wm8994-objs := herring-wm8994.o
 snd-soc-smdk-spdif-objs := smdk_spdif.o
 snd-soc-smdk-wm8580pcm-objs := smdk_wm8580pcm.o
 snd-soc-speyside-objs := speyside.o
+snd-soc-p1-wm8994-objs := p1-wm8994.o
 
 obj-$(CONFIG_SND_SOC_SAMSUNG_JIVE_WM8750) += snd-soc-jive-wm8750.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_NEO1973_WM8753) += snd-soc-neo1973-wm8753.o
@@ -51,6 +52,7 @@ obj-$(CONFIG_SND_SOC_SAMSUNG_SIMTEC_HERMES) += snd-soc-s3c24xx-simtec-hermes.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_SIMTEC_TLV320AIC23) += snd-soc-s3c24xx-simtec-tlv320aic23.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_H1940_UDA1380) += snd-soc-h1940-uda1380.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_HERRING_WM8994)  += snd-soc-herring-wm8994.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_P1_WM8994)  += snd-soc-p1-wm8994.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_RX1950_UDA1380) += snd-soc-rx1950-uda1380.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_WM8580) += snd-soc-smdk-wm8580.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_WM8994) += snd-soc-smdk-wm8994.o

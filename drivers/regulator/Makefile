@@ -2,6 +2,10 @@
 # Makefile for regulator drivers.
 #
 
+# P1 compat
+ifdef CONFIG_MACH_P1
+max8998-y	:=  max8998-p1.o
+endif
 
 obj-$(CONFIG_REGULATOR) += core.o dummy.o
 obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o

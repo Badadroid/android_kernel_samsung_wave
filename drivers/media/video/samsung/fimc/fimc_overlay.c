@@ -106,6 +106,9 @@ static int fimc_change_fifo_position(struct fimc_control *ctrl,
 	int ret = -1;
 
 	fbinfo = registered_fb[ctx->overlay.fb_id];
+#ifdef CONFIG_MACH_P1
+	win = (struct s3cfb_window *)fbinfo->par;
+#endif
 
 	memset(&fimd_rect, 0, sizeof(struct v4l2_rect));
 
@@ -153,7 +156,9 @@ int fimc_s_fmt_vid_overlay(struct file *filp, void *fh, struct v4l2_format *f)
 			return ret;
 
 		ctx->win = f->fmt.win;
+#ifdef CONFIG_MACH_ARIES
 		fimc_change_fifo_position(ctrl, ctx);
+#endif
 
 		break;
 	case FIMC_STREAMOFF:
@@ -278,6 +283,9 @@ int fimc_s_fbuf(struct file *filp, void *fh, struct v4l2_framebuffer *fb)
 		ctx->overlay.mode = FIMC_OVLY_NONE_SINGLE_BUF;
 	} else {
 		int i;
+#ifdef CONFIG_MACH_P1
+		unsigned int bits_per_pixel = 0;
+#endif
 		struct s3cfb_window *win = NULL;
 		ctx->overlay.fb_id = -1;
 
@@ -285,6 +293,9 @@ int fimc_s_fbuf(struct file *filp, void *fh, struct v4l2_framebuffer *fb)
 			win = (struct s3cfb_window *)registered_fb[i]->par;
 			if (win->id == ctrl->id) {
 				ctx->overlay.fb_id = i;
+#ifdef CONFIG_MACH_P1
+				bits_per_pixel = registered_fb[i]->var.bits_per_pixel;
+#endif
 				fimc_info2("%s: overlay.fb_id = %d\n",
 						__func__, ctx->overlay.fb_id);
 				break;
@@ -306,6 +317,27 @@ int fimc_s_fbuf(struct file *filp, void *fh, struct v4l2_framebuffer *fb)
 		}
 
 		ctx->overlay.mode = FIMC_OVLY_NOT_FIXED;
+#ifdef CONFIG_MACH_P1
+
+		switch (ctx->rotate) {
+		case 0:
+		case 180:
+			ctx->fbuf.fmt.width = ctrl->fb.lcd_hres;
+			ctx->fbuf.fmt.height = ctrl->fb.lcd_vres;
+			break;
+
+		case 90:
+		case 270:
+			ctx->fbuf.fmt.width = ctrl->fb.lcd_vres;
+			ctx->fbuf.fmt.height = ctrl->fb.lcd_hres;
+			break;
+		}
+
+		if (bits_per_pixel == 32)
+			ctx->fbuf.fmt.pixelformat = V4L2_PIX_FMT_RGB32;
+		else
+			ctx->fbuf.fmt.pixelformat = V4L2_PIX_FMT_RGB565;
+#endif
 	}
 
 	return 0;

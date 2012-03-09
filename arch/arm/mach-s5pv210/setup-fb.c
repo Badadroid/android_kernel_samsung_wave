@@ -73,7 +73,11 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 		goto err_clk1;
 	}
 
+#if defined(CONFIG_S5PV210_SCLKFIMD_USE_VPLL)
+	mout_mpll = clk_get(&pdev->dev, "sclk_vpll");
+#else
 	mout_mpll = clk_get(&pdev->dev, "mout_mpll");
+#endif
 	if (IS_ERR(mout_mpll)) {
 		dev_err(&pdev->dev, "failed to get mout_mpll\n");
 		goto err_clk2;
@@ -84,8 +88,63 @@ int s3cfb_clk_on(struct platform_device *pdev, struct clk **s3cfb_clk)
 	if (!rate)
 		rate = 166750000;
 
+#if defined(CONFIG_FB_S3C_LVDS)
+	#if defined(CONFIG_TARGET_PCLK_44_46)
+		rate = 45000000;
+	#elif defined(CONFIG_TARGET_PCLK_47_6)
+		//P1_ATT PCLK -> 47.6MHz
+		rate = 48000000;
+	#else
+		rate = 54000000;
+	#endif
+#endif
+
 	clk_set_rate(sclk, rate);
 	dev_dbg(&pdev->dev, "set fimd sclk rate to %d\n", rate);
+
+#if defined(CONFIG_FB_S3C_MDNIE) && defined(CONFIG_FB_S3C_LVDS)
+	{
+	struct clk * clk_xusb;
+	struct clk * sclk_mdnie;
+	struct clk * sclk_mdnie_pwm;
+	sclk_mdnie = clk_get(&pdev->dev, "sclk_mdnie");
+	if (IS_ERR(sclk_mdnie)) {
+		dev_err(&pdev->dev, "failed to get sclk for mdnie\n");
+		}
+	else
+		{
+		clk_set_parent(sclk_mdnie, mout_mpll);
+
+	#if defined(CONFIG_TARGET_PCLK_44_46)
+		clk_set_rate(sclk_mdnie, 45*1000000);
+	#elif defined(CONFIG_TARGET_PCLK_47_6)
+		//P1_ATT PCLK -> 47.6MHz
+		clk_set_rate(sclk_mdnie, 48*1000000);
+	#else
+		clk_set_rate(sclk_mdnie, 54*1000000);
+	#endif
+		clk_put(sclk_mdnie);
+		}
+	sclk_mdnie_pwm = clk_get(&pdev->dev, "sclk_mdnie_pwm");
+	if (IS_ERR(sclk_mdnie_pwm)) {
+		dev_err(&pdev->dev, "failed to get sclk for mdnie pwm\n");
+		}
+	else
+		{
+		clk_xusb = clk_get(&pdev->dev, "xusbxti");
+		if (IS_ERR(clk_xusb)) {
+			dev_err(&pdev->dev, "failed to get xusbxti for mdnie pwm\n");
+			}
+		else
+			{
+			clk_set_parent(sclk_mdnie_pwm, clk_xusb);
+			clk_put(clk_xusb);
+			}
+		clk_set_rate(sclk_mdnie_pwm, 2400*1000);		// mdnie pwm need to 24Khz*100
+		clk_put(sclk_mdnie_pwm);
+		}
+	}
+#endif
 
 	clk_put(mout_mpll);
 

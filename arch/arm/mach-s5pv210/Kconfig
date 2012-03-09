@@ -249,6 +249,28 @@ config MACH_ARIES
 	help
 	  Machine support for Aries
 
+config MACH_P1
+	bool "P1"
+	select CPU_S5PV210
+	select ARCH_DISCONTIGMEM_ENABLE
+	select S3C_DEV_WDT
+	select S3C_DEV_I2C1
+	select S3C_DEV_I2C2
+	select S5P_DEV_ONENAND
+	select HAVE_PWM
+	select SAMSUNG_DEV_PWM
+	select ARCH_HAS_CPUFREQ
+	select S3C_DEV_HSMMC
+	select S3C_DEV_HSMMC1 if !S5PV210_SD_CH0_8BIT
+	select S3C_DEV_HSMMC2
+	select S3C_DEV_HSMMC3 if !S5PV210_SD_CH2_8BIT
+	select S5PV210_SETUP_SDHCI
+	select S5PV210_POWER_DOMAIN
+	select S5P_DEV_CSIS0
+	select S5P_SETUP_MIPIPHY
+	help
+	  Machine support for P1
+
 if MACH_ARIES
 choice
 	prompt "Select phone Type"
@@ -314,6 +336,53 @@ config SAMSUNG_EPIC
 endchoice
 endif
 
+if MACH_P1
+choice
+prompt "Select device type"
+config PHONE_P1_GSM
+	bool "select p1 gsm"
+	depends on MACH_P1
+	help
+	 Select P1 GSM
+
+config PHONE_P1_CDMA
+	bool "select p1 cdma"
+	depends on MACH_P1
+	help
+	 Select P1 CDMA
+
+endchoice
+endif
+
+if PHONE_P1_CDMA
+choice
+prompt "Select device model"
+config SAMSUNG_P1C
+	bool "P1C"
+	depends on PHONE_P1_CDMA
+	help
+	 Select Samsung Galaxy Tab CDMA SCH-I800/SPH-P100
+
+endchoice
+endif
+
+if PHONE_P1_GSM
+choice
+prompt "Select device model"
+config SAMSUNG_P1
+	bool "P1"
+	depends on PHONE_P1_GSM
+	help
+	 Select Samsung Galaxy Tab GT-P1000
+
+config SAMSUNG_P1LN
+	bool "P1L"
+	depends on PHONE_P1_GSM
+	help
+	 Select Samsung Galaxy Tab GT-P1000L and GT-P1000N
+endchoice
+endif
+
 config S5PV210_SETUP_FB
 	bool
 	depends on FB_S3C
@@ -359,8 +428,43 @@ config CPU_DIDLE
 	depends on CPU_IDLE
 	default n
 
+config S5PV210_SCLKFIMD_USE_VPLL
+	bool "Use VPLL for FIMD sclk source"
+	depends on FB_S3C
+	default n
+	help
+	  Sclk fimd source use vpll, otherwise use mpll.
+
+choice
+	prompt "Target Pixel clock setting"
+	depends on FB_S3C
+	default TARGET_PCLK_54
+
+config TARGET_PCLK_44_46
+	bool "44.46Mhz"
+	help
+	  Support 44.46Mhz
+
+config TARGET_PCLK_47_6
+	bool "47.6Mhz"
+	help
+	  Support 47.6Mhz
+
+config TARGET_PCLK_54
+	bool "54Mhz"
+	help
+	  Support 54Mhz
+
+endchoice
+
 config WIFI_CONTROL_FUNC
        bool "Enable WiFi control function abstraction"
        help
          Enables Power/Reset/Carddetect function abstraction
 endif
+
+config SEC_HEADSET
+	tristate "SEC 2 Wire detection driver"
+	help
+	  Provides support for detecting SEC 2 wire devices, such as wired
+	  headset.

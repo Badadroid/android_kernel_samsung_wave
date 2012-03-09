@@ -564,6 +564,10 @@ struct s5p_tv_status {
 	struct regulator	*tv_tvout;
 	struct regulator	*tv_regulator;
 
+	int is_reg_tv_tv_enabled;
+	int is_reg_tv_tvout_enabled;
+	int is_reg_tv_reg_enabled;
+
 	struct clk *tvenc_clk;
 	struct clk *vp_clk;
 	struct clk *mixer_clk;
@@ -1091,9 +1095,6 @@ extern bool __s5p_start_hdcp(void);
 extern bool __s5p_stop_hdcp(void);
 
 #if defined(CONFIG_MACH_P1)
-extern struct i2c_driver SII9234_i2c_driver;
-extern struct i2c_driver SII9234A_i2c_driver;
-extern struct i2c_driver SII9234B_i2c_driver;
-extern struct i2c_driver SII9234C_i2c_driver;
+extern unsigned int HWREV;
+void TVout_LDO_ctrl(int enable);
 #endif
-

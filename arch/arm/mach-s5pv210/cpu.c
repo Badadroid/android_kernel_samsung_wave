@@ -131,10 +131,12 @@ static void s5pv210_idle(void)
 	local_irq_enable();
 }
 
+#ifndef CONFIG_MACH_P1
 static void s5pv210_sw_reset(void)
 {
 	__raw_writel(0x1, S5P_SWRESET);
 }
+#endif
 
 /* s5pv210_map_io
  *
@@ -215,9 +217,10 @@ int __init s5pv210_init(void)
 	/* set idle function */
 	pm_idle = s5pv210_idle;
 
+#ifndef CONFIG_MACH_P1
 	/* set sw_reset function */
 	if (!(machine_is_herring() || machine_is_aries()))
 		s5p_reset_hook = s5pv210_sw_reset;
-
+#endif
 	return sysdev_register(&s5pv210_sysdev);
 }

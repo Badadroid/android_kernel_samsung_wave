@@ -40,8 +40,13 @@
 #define fimc_dbg fimc_err
 #endif
 
+#ifdef CONFIG_MACH_ARIES
 static int vtmode = 0;
 static int device_id = 0;
+#else // CONFIG_MACH_P1
+int camera_back_check = 0;
+int camera_active_type = 0;
+#endif
 
 static const struct v4l2_fmtdesc capture_fmts[] = {
 	{
@@ -202,6 +207,9 @@ void s3c_csis_start(int lanes, int settle, int align, int width, int height,
 
 static int fimc_camera_init(struct fimc_control *ctrl)
 {
+#ifdef CONFIG_MACH_P1
+	struct fimc_global *fimc = get_fimc_dev();
+#endif
 	int ret;
 
 	fimc_dbg("%s\n", __func__);
@@ -209,6 +217,14 @@ static int fimc_camera_init(struct fimc_control *ctrl)
 	/* do nothing if already initialized */
 	if (ctrl->cam->initialized)
 		return 0;
+#ifdef CONFIG_MACH_P1
+	if (camera_back_check < 0) {
+		printk(KERN_ERR "Camera init is failed.\n");
+		camera_back_check = 0;
+		fimc->active_camera = 0;
+		return -EIO;
+	}
+#endif
 
 	/* enable camera power if needed */
 	if (ctrl->cam->cam_power)
@@ -219,6 +235,16 @@ static int fimc_camera_init(struct fimc_control *ctrl)
 	if (ret == -ENOIOCTLCMD) {
 		fimc_err("%s: init subdev api not supported\n",
 			__func__);
+#ifdef CONFIG_MACH_P1
+		camera_back_check = 0;
+		fimc->active_camera = 0;
+		return ret;
+	}
+	if (ret == -EIO) {
+		fimc_err("%s: init failed \n", __func__);
+		camera_back_check = 0;
+		fimc->active_camera = 0;
+#endif
 		return ret;
 	}
 
@@ -259,34 +285,99 @@ static int fimc_camera_start(struct fimc_control *ctrl)
 {
 	struct v4l2_frmsizeenum cam_frmsize;
 	struct v4l2_control cam_ctrl;
+#ifdef CONFIG_MACH_P1
+	struct fimc_global *fimc = get_fimc_dev();
+#endif
 	int ret;
 	ret = subdev_call(ctrl, video, enum_framesizes, &cam_frmsize);
 	if (ret < 0) {
 		fimc_err("%s: enum_framesizes failed\n", __func__);
-		if (ret != -ENOIOCTLCMD)
+		if (ret != -ENOIOCTLCMD) {
+#ifdef CONFIG_MACH_P1
+			camera_back_check = 0;
+#endif
 			return ret;
+		}
 	} else {
+#ifdef CONFIG_MACH_ARIES
 		if (vtmode == 1 && device_id != 0 && (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+#else // CONFIG_MACH_P1
+		if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
+			&& (fimc->active_camera == CAMERA_ID_FRONT)
+			&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+#endif
 			ctrl->cam->window.left = 136;
 			ctrl->cam->window.top = 0;
 			ctrl->cam->window.width = 368;
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height = cam_frmsize.discrete.height;
+#ifdef CONFIG_MACH_ARIES
 			dev_err(ctrl->dev, "vtmode = 1, rotate = %d, device = front, cam->width = %d, cam->height = %d\n", ctrl->cap->rotate, ctrl->cam->width, ctrl->cam->height);
 		} else if (device_id != 0 && vtmode != 1) {
+#else // CONFIG_MACH_P1
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
+				&& (fimc->active_camera == CAMERA_ID_BACK || fimc->active_camera == CAMERA_ID_MAX
+#if defined(CONFIG_VIDEO_NM6XX)
+				|| fimc->active_camera == CAMERA_ID_MOBILETV
+#endif
+				)
+				&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+			ctrl->cam->window.left = 176;
+			ctrl->cam->window.top = 0;
+			ctrl->cam->window.width = 448;
+			ctrl->cam->window.height = 592;
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = rear(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& (cam_frmsize.discrete.width == 640 && cam_frmsize.discrete.height == 480)) {
+#endif
 			ctrl->cam->window.left = 136;
 			ctrl->cam->window.top = 0;
 			ctrl->cam->window.width = 368;
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height = cam_frmsize.discrete.height;
+#ifdef CONFIG_MACH_ARIES
 			dev_err(ctrl->dev, "%s, crop(368x480), vtmode = 0, device = front, cam->width = %d, cam->height = %d\n", __func__, ctrl->cam->width, ctrl->cam->height);
+#else
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& ((cam_frmsize.discrete.width == 960) && (cam_frmsize.discrete.height == 1280))) {
+			ctrl->cam->window.left = 280;
+			ctrl->cam->window.top = 0;
+			ctrl->cam->window.width = 720;
+			ctrl->cam->window.height = 960;
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& ((cam_frmsize.discrete.width == 1280) && (cam_frmsize.discrete.height == 960))) {
+			ctrl->cam->window.left = 280;
+			ctrl->cam->window.top = 0;
+			ctrl->cam->window.width = 720;
+			ctrl->cam->window.height = 960;
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+#endif
 		} else {
+#ifdef CONFIG_MACH_P1
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+#endif
 			ctrl->cam->window.left = 0;
 			ctrl->cam->window.top = 0;
 			ctrl->cam->window.width = ctrl->cam->width;
 			ctrl->cam->window.height = ctrl->cam->height;
+#ifdef CONFIG_MACH_P1
+			printk("line(%d):vtmode = %d, rotate = %d, device = %d, cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+#endif
 		}
 	}
 
@@ -301,7 +392,14 @@ static int fimc_camera_start(struct fimc_control *ctrl)
 	 */
 	if (ret < 0 && ret != -ENOIOCTLCMD) {
 		ctrl->cam->initialized = 0;
-		fimc_camera_init(ctrl);
+		ret = fimc_camera_init(ctrl);
+#ifdef CONFIG_MACH_P1
+		if(ret < 0) {
+			fimc_err("%s: Error in fimc_camera_init - start\n", __func__);
+			camera_back_check = 0;
+			return ret;
+		}
+#endif
 		ret = subdev_call(ctrl, core, s_ctrl, &cam_ctrl);
 		if (ret < 0 && ret != -ENOIOCTLCMD) {
 			fimc_err("%s: Error in V4L2_CID_CAM_PREVIEW_ONOFF"
@@ -636,6 +734,9 @@ static int fimc_configure_subdev(struct fimc_control *ctrl)
 	if (!sd) {
 		fimc_err("%s: v4l2 subdev board registering failed\n",
 				__func__);
+#ifdef CONFIG_MACH_P1
+		camera_back_check = 0;
+#endif
 	}
 
 	/* Assign subdev to proper camera device pointer */
@@ -651,6 +752,29 @@ int fimc_s_input(struct file *file, void *fh, unsigned int i)
 	int ret = 0;
 
 	fimc_dbg("%s: index %d\n", __func__, i);
+
+#ifdef CONFIG_MACH_P1
+	int err = 0;
+#if defined(CONFIG_VIDEO_NM6XX)
+	if( i == 0 && camera_back_check && camera_active_type == 4 )
+#else
+	if( i == 0 && camera_back_check && camera_active_type == 2 )
+#endif
+		i = camera_active_type;
+
+	/* P1 Project([arun.c@samsung.com]) 2010.05.20. [Implemented ESD code] */
+	/*
+	 * If there is no data is coming from the camera fimc_s_input() is
+	 * called from the "SecCamera.cpp" with a special value = 1000
+	 * Then here we release the camera and reconfigure it.
+	 */
+	if (i == 1000) {
+		dev_err(ctrl->dev, "ESD code is running\n");
+		fimc_release_subdev(ctrl);
+		if (camera_back_check)
+			i = camera_active_type;
+	}
+#endif
 
 	if (i < 0 || i >= FIMC_MAXCAMS) {
 		fimc_err("%s: invalid input index\n", __func__);
@@ -693,7 +817,73 @@ int fimc_s_input(struct file *file, void *fh, unsigned int i)
 
 	mutex_unlock(&ctrl->v4l2_lock);
 
+#ifdef CONFIG_MACH_ARIES
+
 	return 0;
+
+#else // CONFIG_MACH_P1
+	if ((!camera_back_check) && (fimc->active_camera != 1)) {
+		do {
+			struct v4l2_control v_ctrl;
+			err = 0;
+
+			if (ctrl->cam->cam_power) {
+				ctrl->cam->cam_power(1);
+			}
+
+			v_ctrl.id = V4L2_CID_CAM_SENSOR_TYPE;
+			err = ctrl->cam->sd->ops->core->g_ctrl(ctrl->cam->sd,&v_ctrl);
+
+			if (err >= 0) {
+				camera_back_check = 1;
+				camera_active_type = i;
+				fimc->active_camera = i;
+			} else {
+				i=i+2;
+			}
+
+			if (ctrl->cam->cam_power) {
+				ctrl->cam->cam_power(0);
+			}
+
+			if (i <= CAMERA_ID_MAX) {
+				/* If ctrl->cam is not NULL, there is one subdev already registered.
+				 * We need to unregister that subdev first.
+				 */
+				mutex_lock(&ctrl->v4l2_lock);
+				if (i != fimc->active_camera) {
+					fimc_release_subdev(ctrl);
+					ctrl->cam = &fimc->camera[i];
+					ret = fimc_configure_subdev(ctrl);
+					if (ret < 0) {
+						mutex_unlock(&ctrl->v4l2_lock);
+						fimc_err("%s: Could not register camera sensor "
+								"with V4L2.\n", __func__);
+						return -ENODEV;
+					}
+					fimc->active_camera = i;
+				}
+
+				if (ctrl->id == 2) {
+					if (i == fimc->active_camera) {
+						ctrl->cam = &fimc->camera[i];
+					} else {
+						mutex_unlock(&ctrl->v4l2_lock);
+						return -EINVAL;
+					}
+				}
+				mutex_unlock(&ctrl->v4l2_lock);
+			} else {
+				i = -1;
+				camera_back_check = -1;
+			}
+		}while(!camera_back_check && (i <= CAMERA_ID_MAX));
+	}
+	/*printk(KERN_ERR " func(%s):line(%d)fimc->active_camera(%d),i(%d),camera_back_check(%d)camera_active_type(%d)\n",\
+		   __func__,__LINE__,fimc->active_camera,i,camera_back_check,camera_active_type);*/
+
+	return fimc->active_camera;	//index
+#endif
 }
 
 int fimc_enum_fmt_vid_capture(struct file *file, void *fh,
@@ -830,7 +1020,7 @@ static int fimc_fmt_depth(struct fimc_control *ctrl, struct v4l2_format *f)
 int fimc_s_fmt_vid_capture(struct file *file, void *fh, struct v4l2_format *f)
 {
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
-	struct fimc_capinfo *cap;
+	struct fimc_capinfo *cap = ctrl->cap;
 	struct v4l2_mbus_framefmt mbus_fmt;
 	int ret = 0;
 	int depth;
@@ -992,8 +1182,12 @@ int fimc_reqbufs_capture(void *fh, struct v4l2_requestbuffers *b)
 
 	mutex_lock(&ctrl->v4l2_lock);
 
-	if (b->count < 1 || b->count > FIMC_CAPBUFS)
+	if (b->count < 1 || b->count > FIMC_CAPBUFS) {
+#ifdef CONFIG_MACH_P1
+		mutex_unlock(&ctrl->v4l2_lock);
+#endif
 		return -EINVAL;
+	}
 
 	/* It causes flickering as buf_0 and buf_3 refer to same hardware
 	 * address.
@@ -1238,7 +1432,11 @@ int fimc_s_ctrl_capture(void *fh, struct v4l2_control *c)
 		break;
 
 	case V4L2_CID_CAMERA_VT_MODE:
+#ifdef CONFIG_MACH_ARIES
 		vtmode = c->value;
+#else
+		ctrl->vt_mode = c->value;
+#endif
 		ret = subdev_call(ctrl, core, s_ctrl, c);
 		break;
 
@@ -1552,16 +1750,26 @@ static void fimc_reset_capture(struct fimc_control *ctrl)
 int fimc_streamon_capture(void *fh)
 {
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
+#ifdef CONFIG_MACH_P1
+	if (!ctrl->cap || !ctrl->cap->nr_bufs) {
+		fimc_err("%s: Invalid capture setting.\n", __func__);
+		return -EINVAL;
+	}
+#endif
 	struct fimc_capinfo *cap = ctrl->cap;
 	struct v4l2_frmsizeenum cam_frmsize;
+#ifdef CONFIG_MACH_P1
+	struct fimc_global *fimc = get_fimc_dev();
+#endif
 	int rot;
 	int ret;
 
 	fimc_dbg("%s\n", __func__);
+#ifdef CONFIG_MACH_ARIES
 	char *ce147 = "CE147 0-003c";
 	device_id = strcmp(ctrl->cam->sd->name, ce147);
 	fimc_dbg("%s, name(%s), device_id(%d), vtmode(%d)\n", __func__, ctrl->cam->sd->name , device_id, vtmode);
-
+#endif
 	if (!ctrl->cam || !ctrl->cam->sd) {
 		fimc_err("%s: No capture device.\n", __func__);
 		return -ENODEV;
@@ -1588,30 +1796,91 @@ int fimc_streamon_capture(void *fh)
 	ret = subdev_call(ctrl, video, enum_framesizes, &cam_frmsize);
 	if (ret < 0) {
 		dev_err(ctrl->dev, "%s: enum_framesizes failed\n", __func__);
+#ifdef CONFIG_MACH_P1
+		camera_back_check = 0;
+		mutex_unlock(&ctrl->v4l2_lock);
+#endif
 		if(ret != -ENOIOCTLCMD)
 			return ret;
 	} else {
+#ifdef CONFIG_MACH_ARIES
 		if (vtmode == 1 && device_id != 0 && (cap->rotate == 90 || cap->rotate == 270)) {
-		ctrl->cam->window.left = 136;
+#else // CONFIG_MACH_P1
+		if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
+			&& (fimc->active_camera == CAMERA_ID_FRONT)
+			&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+#endif
+			ctrl->cam->window.left = 136;
 			ctrl->cam->window.top = 0;//
 			ctrl->cam->window.width = 368;
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height = cam_frmsize.discrete.height;
+#ifdef CONFIG_MACH_ARIES
 			dev_err(ctrl->dev, "vtmode = 1, rotate = %d, device = front, cam->width = %d, cam->height = %d\n", cap->rotate, ctrl->cam->width, ctrl->cam->height);
 		} else if (device_id != 0 && vtmode != 1) {
+#else // CONFIG_MACH_P1
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
+				&& (fimc->active_camera == CAMERA_ID_BACK || fimc->active_camera == CAMERA_ID_MAX)
+				&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+			ctrl->cam->window.left = 176;
+			ctrl->cam->window.top = 0;
+			ctrl->cam->window.width = 448;
+			ctrl->cam->window.height = 592;
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = rear(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& (cam_frmsize.discrete.width == 640 && cam_frmsize.discrete.height == 480)) {
+#endif
 			ctrl->cam->window.left = 136;
 			ctrl->cam->window.top = 0;
 			ctrl->cam->window.width = 368;
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height =cam_frmsize.discrete.height;
+#ifdef CONFIG_MACH_ARIES
 			dev_err(ctrl->dev, "%s, crop(368x480), vtmode = 0, device = front, cam->width = %d, cam->height = %d\n", __func__, ctrl->cam->width, ctrl->cam->height);
+#else // CONFIG_MACH_P1
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& ((cam_frmsize.discrete.width == 960) && (cam_frmsize.discrete.height == 1280))) {
+			ctrl->cam->window.left = 280;
+			ctrl->cam->window.top = 0;
+			ctrl->cam->window.width = 720;
+			ctrl->cam->window.height = 960;
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+		} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& ((cam_frmsize.discrete.width == 1280) && (cam_frmsize.discrete.height == 960))) {
+			ctrl->cam->window.left = 280;
+			ctrl->cam->window.top = 0;
+			ctrl->cam->window.width = 720;
+			ctrl->cam->window.height = 960;
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+#endif
 		} else {
+#ifdef CONFIG_MACH_P1
+			ctrl->cam->width = cam_frmsize.discrete.width;
+			ctrl->cam->height = cam_frmsize.discrete.height;
+#endif
 			ctrl->cam->window.left = 0;
 			ctrl->cam->window.top = 0;
+#ifdef CONFIG_MACH_ARIES
 			ctrl->cam->width = ctrl->cam->window.width = cam_frmsize.discrete.width;
 			ctrl->cam->height = ctrl->cam->window.height = cam_frmsize.discrete.height;
+#else // CONFIG_MACH_P1
+			ctrl->cam->window.width = ctrl->cam->width;
+			ctrl->cam->window.height = ctrl->cam->height;
+			printk("line(%d):vtmode = %d, rotate = %d, device = %d, cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+#endif
 		}
 	}
 
@@ -1648,11 +1917,17 @@ int fimc_streamon_capture(void *fh)
 			fimc_hwset_output_yuv(ctrl, cap->fmt.pixelformat);
 
 		fimc_hwset_output_size(ctrl, cap->fmt.width, cap->fmt.height);
-
+#ifdef CONFIG_MACH_ARIES
 		if ((device_id != 0) && (vtmode != 1)) {
 			ctrl->cap->rotate = 90;
 			dev_err(ctrl->dev, "%s, rotate 90", __func__);
 		}
+#else // CONFIG_MACH_P1
+		if ((fimc->active_camera == CAMERA_ID_FRONT) && (ctrl->vt_mode == 0)) {
+			ctrl->cap->rotate = 270;
+			dev_err(ctrl->dev, "%s, rotate 270", __func__);
+		}
+#endif
 
 		fimc_hwset_output_scan(ctrl, &cap->fmt);
 		fimc_hwset_output_rot_flip(ctrl, cap->rotate, cap->flip);
@@ -1680,7 +1955,24 @@ int fimc_streamon_capture(void *fh)
 	if (ctrl->cap->fmt.colorspace == V4L2_COLORSPACE_JPEG &&
 			ctrl->id != 2) {
 		struct v4l2_control cam_ctrl;
+#ifdef CONFIG_MACH_P1
+		cam_ctrl.id = V4L2_CID_CAM_CAPTURE;
+		ret = subdev_call(ctrl, core, s_ctrl, &cam_ctrl);
+		if (ret < 0 && ret != -ENOIOCTLCMD) {
+			fimc_reset_capture(ctrl);
+			mutex_unlock(&ctrl->v4l2_lock);
+			fimc_err("%s: Error in V4L2_CID_CAM_CAPTURE\n", \
+					__func__);
+			return -EPERM;
+		}
+	}
 
+	if (ctrl->cap->fmt.colorspace != V4L2_COLORSPACE_JPEG
+			&& (ctrl->vt_mode == 0)
+			&& (fimc->active_camera == CAMERA_ID_FRONT)
+			&& ((ctrl->cam->width == 1280) && (ctrl->cam->height == 960))) {
+		struct v4l2_control cam_ctrl;
+#endif
 		cam_ctrl.id = V4L2_CID_CAM_CAPTURE;
 		ret = subdev_call(ctrl, core, s_ctrl, &cam_ctrl);
 		if (ret < 0 && ret != -ENOIOCTLCMD) {
@@ -1707,6 +1999,9 @@ int fimc_streamoff_capture(void *fh)
 
 	if (!ctrl->cap || !ctrl->cam || !ctrl->cam->sd) {
 		fimc_err("%s: No capture info.\n", __func__);
+#ifdef CONFIG_MACH_P1
+		camera_back_check = 0;
+#endif
 		return -ENODEV;
 	}
 
@@ -1720,12 +2015,12 @@ int fimc_streamoff_capture(void *fh)
 int fimc_qbuf_capture(void *fh, struct v4l2_buffer *b)
 {
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
-
+#ifdef CONFIG_MACH_ARIES
 	if (!ctrl->cap || !ctrl->cap->nr_bufs) {
 		fimc_err("%s: Invalid capture setting.\n", __func__);
 		return -EINVAL;
 	}
-
+#endif
 	if (b->memory != V4L2_MEMORY_MMAP) {
 		fimc_err("%s: invalid memory type\n", __func__);
 		return -EINVAL;

@@ -548,4 +548,35 @@ config OPTICAL_GP2A
 	help
 	  This option enables proximity & light sensors using gp2a driver.
 
+config INPUT_BMA020
+	depends on I2C
+	tristate "BMA020 driver for s5pc110"
+	default n
+	help
+	  This option enables accelerometer sensors using bma020 driver.
+
+config INPUT_AK8973B
+	depends on I2C
+	tristate "AK8973B driver for s5pc11x"
+	default n
+	help
+	  This option enables magnetic sensors using ak8973b driver
+	  It is optimized for s5pc11x
+
+config INPUT_BH1721
+	depends on I2C
+	tristate "BH1721 driver for s5pc11x"
+	default n
+	help
+	  This option enables light sensors using BH1721 driver
+	  It is optimized for s5pc11x
+
+config INPUT_L3G4200D
+	depends on I2C
+	tristate "L3G4200D driver for s5pc11x"
+	default n
+	help
+	  This option enables gyro sensors using L3G4200D driver
+	  It is optimized for s5pc11x
+
 endif

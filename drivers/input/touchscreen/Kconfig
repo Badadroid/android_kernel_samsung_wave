@@ -744,4 +744,21 @@ config TOUCHSCREEN_TPS6507X
 	  To compile this driver as a module, choose M here: the
 	  module will be called tps6507x_ts.
 
+config TOUCHSCREEN_QT602240
+        tristate "QT602240 quantum touchscreen driver"
+        default N
+        help
+          Say Y here to enable the driver for the touchscreen on the
+          S3C spica board.
+
+          If unsure, say N.
+
+          To compile this driver as a module, choose M here: the
+          module will be called melfas_ts.
+
+config TOUCHSCREEN_QT602240_ROT90
+	bool "Rotate QT602240 ts events by 90 degrees"
+	depends on TOUCHSCREEN_QT602240
+	default N
+
 endif

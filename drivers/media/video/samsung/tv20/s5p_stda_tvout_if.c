@@ -178,8 +178,11 @@ bool _s5p_tv_if_init_param(void)
 	st->hdmi_spd_info_frame.trans_type = HDMI_TRANS_EVERY_SYNC;
 	st->hdmi_spd_info_frame.spd_header = NULL;
 	st->hdmi_spd_info_frame.spd_data = NULL;
-
+#ifdef CONFIG_MACH_ARIES
 	st->hdcp_en = false;
+#else // CONFIG_MACH_P1
+	st->hdcp_en = true;
+#endif
 	st->hdmi_audio_type = HDMI_AUDIO_PCM;
 
 	st->tvout_param_available = true;
