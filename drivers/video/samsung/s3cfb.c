@@ -40,7 +40,7 @@
 #endif
 #include "s3cfb.h"
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 #include "logo_rgb24_wvga_portrait.h"
 #include <mach/regs-clock.h>
 #endif

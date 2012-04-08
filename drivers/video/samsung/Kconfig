@@ -102,6 +102,15 @@ config FB_S3C_HT101HD1
 	  This enables support for HT101HD1 WXVGA(1366*768) LCD panel
 endchoice
 
+config FB_S3C_LG4573
+        bool "LG4573"
+        depends on FB_S3C
+        select SPI
+        select SPI_GPIO
+        select SPI_BITBANG
+        ---help---
+          This enables support for Hydis HVA37WV1(LG4573) WVGA LCD panel
+
 config FB_S3C_TL2796
         bool "TL2796"
         depends on FB_S3C

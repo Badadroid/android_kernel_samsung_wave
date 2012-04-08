@@ -47,6 +47,13 @@ obj-$(CONFIG_PHONE_ARIES_CDMA)	+= dev-s1-phone.o
 obj-$(CONFIG_PHONE_ARIES_CDMA)	+= level.o
 obj-$(CONFIG_PHONE_CRESPO)	+= dev-aries-phone.o
 
+obj-$(CONFIG_MACH_WAVE)	+= mach-wave.o wave-rfkill.o
+obj-$(CONFIG_MACH_WAVE)	+= wave-vibrator.o
+obj-$(CONFIG_MACH_WAVE)	+= wave-btlpm.o
+obj-$(CONFIG_MACH_WAVE)	+= wave-watchdog.o
+obj-$(CONFIG_MACH_WAVE)	+= wave-panel.o
+obj-$(CONFIG_MACH_WAVE)	+= dev-wave-phone.o
+
 # device support
 
 obj-y				+= dev-audio.o
