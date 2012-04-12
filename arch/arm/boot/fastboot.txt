@@ -1,0 +1,4 @@
+open
+loadbin zImage 0x44000000 0x43204000
+branch 0x43201000
+exit

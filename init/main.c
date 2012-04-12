@@ -741,6 +741,7 @@ static void run_init_process(const char *init_filename)
  */
 static noinline int init_post(void)
 {
+	printk(KERN_DEBUG "%s begin", __func__);
 	/* need to finish all async __init code before freeing the memory */
 	async_synchronize_full();
 	free_initmem();
