@@ -26,7 +26,6 @@
 #include <linux/spi/spi_gpio.h>
 #include <linux/clk.h>
 #include <linux/usb/ch9.h>
-#include <linux/input/cypress-touchkey.h>
 #include <linux/input.h>
 #include <linux/irq.h>
 #include <linux/skbuff.h>
@@ -1032,7 +1031,7 @@ static int tl2796_reset_lcd(struct platform_device *pdev)
 
 	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
 	if (err) {
-		printk(KERN_ERR "failed to request MP0(5) for "
+		printk(KERN_ERR "failed to request MP05(5) for "
 				"lcd reset control\n");
 		return err;
 	}
@@ -1070,10 +1069,6 @@ static struct s3c_platform_fb tl2796_data __initdata = {
 };
 
 #define LCD_BUS_NUM     3
-#define DISPLAY_CS      S5PV210_MP01(1)
-#define SUB_DISPLAY_CS  S5PV210_MP01(2)
-#define DISPLAY_CLK     S5PV210_MP04(1)
-#define DISPLAY_SI      S5PV210_MP04(3)
 
 static struct spi_board_info spi_board_info[] __initdata = {
 	{
@@ -1083,13 +1078,13 @@ static struct spi_board_info spi_board_info[] __initdata = {
 		.bus_num	= LCD_BUS_NUM,
 		.chip_select	= 0,
 		.mode		= SPI_MODE_3,
-		.controller_data = (void *)DISPLAY_CS,
+		.controller_data = (void *)GPIO_DISPLAY_CS,
 	},
 };
 
 static struct spi_gpio_platform_data tl2796_spi_gpio_data = {
-	.sck	= DISPLAY_CLK,
-	.mosi	= DISPLAY_SI,
+	.sck	= GPIO_DISPLAY_CLK,
+	.mosi	= GPIO_DISPLAY_SI,
 	.miso	= -1,
 	.num_chipselect = 2,
 };
@@ -2772,7 +2767,7 @@ static struct gpio_init_data wave_init_gpios[] = {
 
     // GPB -----------------------------
 	{
-		.num	= S5PV210_GPB(0), // GPIO_CAM_VGA_nSTBY
+		.num	= GPIO_CAM_VGA_nSTBY,
 		.cfg	= S3C_GPIO_OUTPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
 		.pud	= S3C_GPIO_PULL_NONE,
@@ -2790,19 +2785,11 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-#if defined(CONFIG_SAMSUNG_GALAXYSB)
-		.num	= S5PV210_GPB(3), // GPIO_BT_nRST
-		.cfg	= S3C_GPIO_SFN(0xF),
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-#else
-		.num	= S5PV210_GPB(3), // GPIO_BT_nRST
+		.num	= GPIO_BT_nRST, // GPIO_BT_nRST
 		.cfg	= S3C_GPIO_OUTPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-#endif
 	}, {
 		.num	= S5PV210_GPB(4), // GPIO_BOOT_MODE
 		.cfg	= S3C_GPIO_INPUT,
@@ -2816,23 +2803,15 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-#if defined(CONFIG_SAMSUNG_GALAXYSB)
-		.num	= S5PV210_GPB(6),
+		.num	= GPIO_GPB6, //NC
 		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
+		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-#else
-		.num	= S5PV210_GPB(6),
-		.cfg	= S3C_GPIO_INPUT,
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-#endif
 	}, {
-		.num	= S5PV210_GPB(7),
+		.num	= S5PV210_GPB(7), //NC
 		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
+		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	},
@@ -2845,7 +2824,7 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-		.num	= S5PV210_GPC0(1),
+		.num	= S5PV210_GPC0(1), //NC
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
@@ -2904,23 +2883,23 @@ static struct gpio_init_data wave_init_gpios[] = {
 	},
 
 	// GPD0 ----------------------------
-	{
-		.num	= S5PV210_GPD0(0),
+	{ //TODO: on S8530 should be configured by LCD driver
+		.num	= GPIO_LCD_BL_PWM,
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-		.num	= S5PV210_GPD0(1), // GPIO_VIBTONE_PWM
+		.num	= S5PV210_GPD0(1), // NC
 		.cfg	= S3C_GPIO_OUTPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-		.num	= S5PV210_GPD0(2),
-		.cfg	= S3C_GPIO_INPUT,
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
+		.num	= GPIO_VIBTONE_PWM,
+		.cfg	= S3C_GPIO_OUTPUT,
+		.val	= S3C_GPIO_SETPIN_ZERO,
+		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
 		.num	= S5PV210_GPD0(3),
@@ -3061,7 +3040,7 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-		.num	= S5PV210_GPF3(5),
+		.num	= S5PV210_GPF3(5), //NC
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
@@ -3205,31 +3184,23 @@ static struct gpio_init_data wave_init_gpios[] = {
 
 	// GPG3 ----------------------------
 	{
-		.num	= S5PV210_GPG3(0), // GPIO_GPS_nRST
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
-		.pud	= S3C_GPIO_PULL_NONE,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
-		.num	= S5PV210_GPG3(1), // GPIO_GPS_PWR_EN
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
-		.pud	= S3C_GPIO_PULL_NONE,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
-#if defined(CONFIG_SAMSUNG_GALAXYSB)
-		.num	= S5PV210_GPG3(2), // GPIO_GPS_nRST
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
-		.pud	= S3C_GPIO_PULL_NONE,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-#else
-		.num	= S5PV210_GPG3(2), // GPIO_GPS_CLK_INT
+		.num	= S5PV210_GPG3(0), // NC
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
+		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-#endif
+	}, {
+		.num	= S5PV210_GPG3(1), // NC
+		.cfg	= S3C_GPIO_INPUT,
+		.val	= S3C_GPIO_SETPIN_NONE,
+		.pud	= S3C_GPIO_PULL_NONE,
+		.drv	= S3C_GPIO_DRVSTR_1X,
+	}, {
+		.num	= S5PV210_GPG3(2), // NC
+		.cfg	= S3C_GPIO_INPUT,
+		.val	= S3C_GPIO_SETPIN_NONE,
+		.pud	= S3C_GPIO_PULL_NONE,
+		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
 		.num	= S5PV210_GPG3(3), // GPIO_TA_CURRENT_SEL_AP
 		.cfg	= S3C_GPIO_INPUT,
@@ -3249,19 +3220,11 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
-#if defined(CONFIG_SAMSUNG_GALAXYSB)
-		.num	= S5PV210_GPG3(6),
-		.cfg	= S3C_GPIO_INPUT,
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_NONE,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-#else
 		.num	= S5PV210_GPG3(6),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-#endif
 	},
 
 	// GPH0 ----------------------------
@@ -3317,33 +3280,17 @@ static struct gpio_init_data wave_init_gpios[] = {
 
 	// GPH1 ----------------------------
 	{
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-		.num	= S5PV210_GPH1(0),
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-#else
 		.num	= S5PV210_GPH1(0),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-#endif
 	}, {
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-		.num	= S5PV210_GPH1(1),
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S3C_GPIO_DRVSTR_1X,
-#else
 		.num	= S5PV210_GPH1(1),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-#endif
 	}, {
 		.num	= S5PV210_GPH1(2),
 		.cfg	= S3C_GPIO_INPUT,
@@ -3364,14 +3311,14 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, { /* NFC_EN */
 		.num	= S5PV210_GPH1(5),
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ONE,
+		.cfg	= S3C_GPIO_INPUT,
+		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, { /* NFC_FIRM */
 		.num	= S5PV210_GPH1(6),
-		.cfg	= S3C_GPIO_OUTPUT,
-		.val	= S3C_GPIO_SETPIN_ZERO,
+		.cfg	= S3C_GPIO_INPUT,
+		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
@@ -3987,22 +3934,14 @@ void s3c_config_gpio_table(void)
 
 	for (i = 0; i < ARRAY_SIZE(wave_init_gpios); i++) {
 		gpio = wave_init_gpios[i].num;
-		if (system_rev <= 0x07 && gpio == S5PV210_GPJ3(3)) {
-			s3c_gpio_cfgpin(gpio, S3C_GPIO_OUTPUT);
-			gpio_set_value(gpio, S3C_GPIO_SETPIN_ONE);
-		} else if (gpio <= S5PV210_MP05(7)) {
-			s3c_gpio_cfgpin(gpio, wave_init_gpios[i].cfg);
-			s3c_gpio_setpull(gpio, wave_init_gpios[i].pud);
+		s3c_gpio_cfgpin(gpio, wave_init_gpios[i].cfg);
+		s3c_gpio_setpull(gpio, wave_init_gpios[i].pud);
 
-			if (wave_init_gpios[i].val != S3C_GPIO_SETPIN_NONE)
-				gpio_set_value(gpio, wave_init_gpios[i].val);
+		if (wave_init_gpios[i].val != S3C_GPIO_SETPIN_NONE)
+			gpio_set_value(gpio, wave_init_gpios[i].val);
 
-			s3c_gpio_set_drvstrength(gpio, wave_init_gpios[i].drv);
-		}
+		s3c_gpio_set_drvstrength(gpio, wave_init_gpios[i].drv);
 	}
-#ifdef CONFIG_SAMSUNG_FASCINATE
-	s3c_gpio_set_drvstrength(S5PV210_GPH3(7), S3C_GPIO_DRVSTR_2X); 
-#endif
 }
 
 #define S5PV210_PS_HOLD_CONTROL_REG (S3C_VA_SYS+0xE81C)
@@ -4466,6 +4405,7 @@ void s3c_config_sleep_gpio_table(int array_size, unsigned int (*gpio_table)[3])
 
 void s3c_config_sleep_gpio(void)
 {
+	return;
 #if defined(CONFIG_SAMSUNG_CAPTIVATE)
 	// Reported to cause battery drain and other things on captivate, so we'll
 	// disable this for now.
@@ -5112,14 +5052,6 @@ static void __init fsa9480_gpio_init(void)
 	s3c_gpio_setpull(GPIO_JACK_nINT, S3C_GPIO_PULL_NONE);
 }
 
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-static void __init fuelgauge_gpio_init(void)
-{
-	 s3c_gpio_cfgpin(GPIO_KBR3, S5PV210_GPH3_3_EXT_INT33_3);
-	 s3c_gpio_setpull(GPIO_KBR3, S3C_GPIO_PULL_NONE);
-}
-#endif
-
 static void __init setup_ram_console_mem(void)
 {
 	ram_console_resource[0].start = ram_console_start;
@@ -5245,11 +5177,8 @@ static void __init wave_machine_init(void)
 	HWREV = HWREV | (gpio_get_value(GPIO_HWREV_MODE2) << 2);
 	s3c_gpio_cfgpin(GPIO_HWREV_MODE3, S3C_GPIO_INPUT);
 	s3c_gpio_setpull(GPIO_HWREV_MODE3, S3C_GPIO_PULL_NONE);
-#if defined(CONFIG_SAMSUNG_GALAXYSB) // ffosilva : OK
-	HWREV = 0xE;
-#else
 	HWREV = HWREV | (gpio_get_value(GPIO_HWREV_MODE3) << 3);
-#endif
+
 	printk(KERN_INFO "HWREV is 0x%x\n", HWREV);
 
 	/*initialise the gpio's*/
@@ -5295,14 +5224,9 @@ static void __init wave_machine_init(void)
 	fsa9480_gpio_init();
 	i2c_register_board_info(7, i2c_devs7, ARRAY_SIZE(i2c_devs7));
 
-#if defined (CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB)
 	/* fm radio */
 	i2c_register_board_info(8, i2c_devs8, ARRAY_SIZE(i2c_devs8));
-#endif
 
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-	fuelgauge_gpio_init();
-#endif
 
 	/* max17040 */
 	//i2c_register_board_info(9, i2c_devs9, ARRAY_SIZE(i2c_devs9));

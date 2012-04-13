@@ -527,7 +527,7 @@ static void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 
 static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 {
-#ifndef CONFIG_MACH_ARIES
+#if !defined(CONFIG_MACH_ARIES) && !defined(CONFIG_MACH_WAVE)
 	int power_mode = PM_MAX;
 #endif
 	/* wl_pkt_filter_enable_t	enable_parm; */
@@ -545,7 +545,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 			/* Kernel suspended */
 			DHD_ERROR(("%s: force extra Suspend setting \n", __FUNCTION__));
 
-#ifndef CONFIG_MACH_ARIES
+#if !defined(CONFIG_MACH_ARIES) && !defined(CONFIG_MACH_WAVE)
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
 			                 sizeof(power_mode), TRUE, 0);
 #endif
@@ -571,7 +571,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 			/* Kernel resumed  */
 			DHD_TRACE(("%s: Remove extra suspend setting \n", __FUNCTION__));
 
-#ifndef CONFIG_MACH_ARIES
+#if !defined(CONFIG_MACH_ARIES) && !defined(CONFIG_MACH_WAVE)
 			power_mode = PM_FAST;
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
 			                 sizeof(power_mode), TRUE, 0);

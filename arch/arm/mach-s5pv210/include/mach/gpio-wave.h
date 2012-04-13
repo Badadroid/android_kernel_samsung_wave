@@ -303,15 +303,11 @@
 #define GPIO_T_FLASH_D3         S5PV210_GPG2(6)
 #define GPIO_T_FLASH_D3_AF		2
 
-#if defined(CONFIG_SAMSUNG_GALAXYSB) // ffosilva : OK
-#define GPIO_GPS_nRST			S5PV210_GPG3(2)
-#else
-#define GPIO_GPS_nRST			S5PV210_GPG3(0)
-#endif
+#define GPIO_GPG30			S5PV210_GPG3(0)
 
-#define GPIO_GPS_PWR_EN			S5PV210_GPG3(1)
+#define GPIO_GPG31			S5PV210_GPG3(1)
 
-#define GPIO_GPS_CLK_INT		S5PV210_GPG3(2)
+#define GPIO_GPG32			S5PV210_GPG3(2)
 
 #define GPIO_TA_CURRENT_SEL_AP	S5PV210_GPG3(3)
 
@@ -339,12 +335,7 @@
 #define GPIO_AP_PMIC_IRQ		S5PV210_GPH0(7)
 #define GPIO_AP_PMIC_IRQ_AF		0xFF
 
-#if defined(CONFIG_SAMSUNG_FASCINATE)
-#define GPIO_PDA_ACTIVE				S5PV210_GPH1(0)
-#define GPIO_PDA_ACTIVE_AF			0x1
-#else
 #define GPIO_GPH10				S5PV210_GPH1(0)
-#endif
 
 #define GPIO_GPH11				S5PV210_GPH1(1)
 
@@ -373,13 +364,8 @@
 #define GPIO_KBC1				S5PV210_GPH2(1)
 #define GPIO_KBC1_AF			3
 
-#if defined(CONFIG_SAMSUNG_CAPTIVATE)  || defined (CONFIG_SAMSUNG_VIBRANT)
-#define GPIO_EAR_SEND_END35     S5PV210_GPH2(2)
-#define GPIO_EAR_SEND_END35_AF  0xFF
-#else
 #define GPIO_KBC2				S5PV210_GPH2(2)
 #define GPIO_KBC2_AF			3
-#endif
 
 #define GPIO_GPH23				S5PV210_GPH2(3)
 

@@ -106,7 +106,7 @@ static int s3cfb_draw_logo(struct fb_info *fb)
 		}
 	}
 #endif
-#ifndef CONFIG_MACH_ARIES
+#if !defined(CONFIG_MACH_ARIES) && !defined(CONFIG_MACH_WAVE)
 	if (bootloaderfb) {
 		u8 *logo_virt_buf;
 		logo_virt_buf = ioremap_nocache(bootloaderfb,
@@ -1098,7 +1098,7 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
 #endif
-#ifndef CONFIG_MACH_ARIES
+#if !defined(CONFIG_MACH_ARIES) && !defined(CONFIG_MACH_WAVE)
 	if (!bootloaderfb && pdata->reset_lcd)
 		pdata->reset_lcd(pdev);
 #endif
