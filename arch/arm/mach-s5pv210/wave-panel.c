@@ -2412,8 +2412,8 @@ static const u16 s6e63m0_SEQ_DISPLAY_SETTING[] = {
 	SLEEPMSEC, 10,
 	0x0F8,	/* Panel Condition Set Command*/
 	0x101,	/* DOCT */
-	0x127,	/* CLWEA */
-	0x127,	/* CLWEB*/
+	0x127,	/* CLWEA */ //TODO: test with 0x12A
+	0x127,	/* CLWEB*/ //TODO: test with 0x12A
 	0x107,	/* CLTE */
 	0x107,	/* SHE */
 	0x154,	/* FLTE */
@@ -2432,7 +2432,7 @@ static const u16 s6e63m0_SEQ_DISPLAY_SETTING[] = {
 	0x110,	/* HBP */
 	0x110,	/* HFP */
 	0x0F7,	/* Command */
-	0x103,	/* GTCON */
+	0x100,	/* GTCON */ //0x103 by default!
 	0x100,	/* Display Mode */
 	0x100,	/* Vsync/Hsync, DOCCLK, RGB mode */
 	ENDDEF, 0x0000
