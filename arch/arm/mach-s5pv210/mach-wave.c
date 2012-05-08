@@ -4983,7 +4983,7 @@ static void __init wave_fixup(struct machine_desc *desc,
 		struct tag *tags, char **cmdline,
 		struct meminfo *mi)
 {
-	mi->bank[0].start = 0x30000000;
+	mi->bank[0].start = S5PV210_PA_SDRAM;
 	mi->bank[0].size = 80 * SZ_1M;
 
 	mi->bank[1].start = 0x40000000;

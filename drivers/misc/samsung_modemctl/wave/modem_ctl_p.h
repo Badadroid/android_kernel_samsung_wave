@@ -209,13 +209,13 @@ void modem_force_crash(struct modemctl *mc);
 #define MODEM_MSG_SBL_DONE			0x12341234
 #define MODEM_CMD_BINARY_LOAD		0x45674567
 #define MODEM_CMD_AMSSRUNREQ		0x89EF89EF
-#define MODEM_MSG_BINARY_DONE		0xabcdabcd
+#define MODEM_MSG_BINARY_DONE		0xABCDABCD
 
 
 
 /* onedram shared memory map */
-#define OFF_MAGIC		0x00000000
-#define OFF_ACCESS		0x00000004
+#define OFF_MAGIC				0x00000000
+#define OFF_ACCESS				0x00000004
 
 #define OFF_PACKET_RX_HEAD		0x00000010
 #define OFF_PACKET_RX_TAIL		0x00000014
@@ -244,9 +244,9 @@ void modem_force_crash(struct modemctl *mc);
  * and only readable by the (A)pplication (P)rocessor.
  * MBOX_AP is the opposite.
  */
-#define OFF_SEM		0xFFF800
-#define OFF_MBOX_BP	0xFFF820
-#define OFF_MBOX_AP	0xFFF840
+#define OFF_SEM		 	0xFFF800
+#define OFF_MBOX_BP		0xFFF820
+#define OFF_MBOX_AP		0xFFF840
 #define OFF_CHECK_BP	0xFFF8A0
 #define OFF_CHECK_AP	0xFFF8C0
 

@@ -1098,7 +1098,7 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
 #endif
-#if !defined(CONFIG_MACH_ARIES) && !defined(CONFIG_MACH_WAVE)
+#if !defined(CONFIG_MACH_ARIES)// && !defined(CONFIG_MACH_WAVE)
 	if (!bootloaderfb && pdata->reset_lcd)
 		pdata->reset_lcd(pdev);
 #endif

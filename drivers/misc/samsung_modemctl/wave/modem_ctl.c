@@ -588,6 +588,7 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 	enable_irq_wake(mc->irq_mbox);
 
 	modem_debugfs_init(mc);
+	pr_info("modemctl probed\n");
 
 	return 0;
 

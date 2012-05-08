@@ -436,5 +436,7 @@ int modem_io_init(struct modemctl *mc, void __iomem *mmio)
 	if (modem_pipe_register(&mc->packet_pipe, "modem_packet"))
 		pr_err("failed to register modem_fmt pipe\n");
 
+	pr_info("modem_io_init done\n");
+
 	return 0;
 }
