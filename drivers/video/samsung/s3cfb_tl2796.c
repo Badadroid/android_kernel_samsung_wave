@@ -787,8 +787,6 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 	lcd->bl_dev->props.max_brightness = 255;
 	lcd->bl_dev->props.brightness = lcd->bl;
 
-	tl2796_ldi_disable(lcd);
-	tl2796_ldi_enable(lcd);
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	lcd->early_suspend.suspend = tl2796_early_suspend;
 	lcd->early_suspend.resume = tl2796_late_resume;
@@ -811,6 +809,10 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 		printk("%s sysfs_create_group fail\n", __FUNCTION__);
 		pr_err("Failed to create sysfs group for device (%s)!\n", color_tuning_device.name);
 	}
+
+	tl2796_ldi_disable(lcd);
+	msleep(200);
+	tl2796_ldi_enable(lcd);
 
 	// copy the pointer for use with the color tuning sysfs interface
 	lcd_ = lcd;

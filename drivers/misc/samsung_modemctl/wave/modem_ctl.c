@@ -324,7 +324,7 @@ static int modem_reset(struct modemctl *mc)
 
 static int modem_on(struct modemctl *mc)
 {
-	pr_info("[MODEM] modem_reset()\n");
+	pr_info("[MODEM] modem_on()\n");
 
 	/* ensure phone active pin irq type */
 	irq_set_irq_type(mc->gpio_phone_active, IRQ_TYPE_EDGE_BOTH);

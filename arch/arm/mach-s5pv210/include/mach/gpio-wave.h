@@ -613,7 +613,7 @@
 #define AP_I2C_SDA              S5PV210_MP05(3)
 #define AP_I2C_SCL              S5PV210_MP05(2)
 #define AP_I2C_SDA_28V			S5PV210_GPJ3(6)
-#define	AP_I2C_SCL_28V			S5PV210_GPJ3(7)
+#define	 AP_I2C_SCL_28V			S5PV210_GPJ3(7)
 
 #define PMIC_I2C_SDA            S5PV210_GPJ4(0)
 #define PMIC_I2C_SCL            S5PV210_GPJ4(3)
@@ -623,7 +623,7 @@
 #else
 #define GPIO_TOUCH_INT			S5PV210_GPJ0(5)
 #endif
-#define	GPIO_TOUCH_INT_AF		0xFF
+#define GPIO_TOUCH_INT_AF		0xFF
 
 #define	GPIO_GPB6			S5PV210_GPB(6) //S8500 NC, I9000 GPIO_TOUCH_RST	
 

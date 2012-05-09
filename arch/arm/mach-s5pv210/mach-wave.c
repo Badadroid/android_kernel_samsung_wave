@@ -1029,6 +1029,7 @@ static int tl2796_reset_lcd(struct platform_device *pdev)
 {
 	int err;
 
+	printk("tl2796_reset_lcd called\n");
 	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
 	if (err) {
 		printk(KERN_ERR "failed to request MP05(5) for "
@@ -1052,6 +1053,7 @@ static int tl2796_reset_lcd(struct platform_device *pdev)
 
 static int tl2796_backlight_on(struct platform_device *pdev)
 {
+	printk("tl2796_backlight_on <IMPLEMENT_ME>\n");
 	return 0;
 }
 
@@ -1223,43 +1225,25 @@ static struct platform_device s3c_device_i2c13 = {
 
 static struct gpio_event_direct_entry wave_keypad_key_map[] = {
 	{
-		.gpio	= S5PV210_GPH2(6),
+		.gpio	= GPIO_nPOWER,
 		.code	= KEY_POWER,
 	},
-#if defined (CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB)
 	{
-		.gpio	= S5PV210_GPH3(5),
+		.gpio	= GPIO_KBR0,
 		.code	= KEY_HOME,
 	},
-#endif
-#ifdef CONFIG_SAMSUNG_VIBRANT
 	{
-		.gpio	= S5PV210_GPH3(2),
+		.gpio	= GPIO_KBR1,
 		.code	= KEY_VOLUMEDOWN,
 	},
 	{
-		.gpio	= S5PV210_GPH3(1),
+		.gpio	= GPIO_KBR2,
 		.code	= KEY_VOLUMEUP,
-	}
-#elif defined(CONFIG_SAMSUNG_FASCINATE)
-	{
-		.gpio	= S5PV210_GPH3(1),
-		.code	= KEY_VOLUMEDOWN,
 	},
 	{
-		.gpio	= S5PV210_GPH3(3),
-		.code	= KEY_VOLUMEUP,
+		.gpio	= GPIO_KBR3,
+		.code	= KEY_END,
 	}
-#else
-	{
-		.gpio	= S5PV210_GPH3(1),
-		.code	= KEY_VOLUMEDOWN,
-	},
-	{
-		.gpio	= S5PV210_GPH3(2),
-		.code	= KEY_VOLUMEUP,
-	}
-#endif
 };
 
 static struct gpio_event_input_info wave_keypad_key_info = {
@@ -5237,10 +5221,6 @@ static void __init wave_machine_init(void)
 	
 	/* yamaha magnetic sensor */
 	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
-
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-  	i2c_register_board_info(13, i2c_devs13, ARRAY_SIZE(i2c_devs13)); /* audience A1026 */
-#endif
 
 	/* panel */
 	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));

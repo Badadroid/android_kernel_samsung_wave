@@ -1094,6 +1094,7 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_FB_S3C_LCD_INIT
+	printk("CONFIG_FB_S3C_LCD_INIT enabled\n");
 #if defined(CONFIG_FB_S3C_TL2796)
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
@@ -1110,6 +1111,9 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	fbdev->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
 	register_early_suspend(&fbdev->early_suspend);
 #endif
+	s3cfb_early_suspend(&fbdev->early_suspend);
+	msleep(200);
+	s3cfb_late_resume(&fbdev->early_suspend);
 
 	fbdev->vsync_thread = kthread_run(s3cfb_wait_for_vsync_thread,
 			fbdev, "s3cfb-vsync");
