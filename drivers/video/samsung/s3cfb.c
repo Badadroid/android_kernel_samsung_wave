@@ -40,11 +40,17 @@
 #endif
 #include "s3cfb.h"
 
-#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
+#if defined(CONFIG_MACH_ARIES)
 #include "logo_rgb24_wvga_portrait.h"
-#include <mach/regs-clock.h>
 #endif
 
+#include <mach/regs-clock.h>
+#if defined(CONFIG_WAVE_S8500)
+#include "s8500-logo.h"
+#endif
+#if defined(CONFIG_WAVE_S8530)
+#include "s8530-logo.h"
+#endif
 #ifdef CONFIG_FB_S3C_MDNIE
 #include "s3cfb_mdnie.h"
 #include <linux/delay.h>
@@ -116,11 +122,13 @@ static int s3cfb_draw_logo(struct fb_info *fb)
 				fb->var.yres * fb->fix.line_length);
 		iounmap(logo_virt_buf);
 	}
-#else /*CONFIG_SAMSUNG_GALAXYS*/
+#elif defined(CONFIG_MACH_ARIES)
 	if (readl(S5P_INFORM5)) //LPM_CHARGING mode
 		memcpy(fb->screen_base, charging, fb->var.yres * fb->fix.line_length);
 	else
 		memcpy(fb->screen_base, LOGO_RGB24, fb->var.yres * fb->fix.line_length);
+#elif defined(CONFIG_MACH_WAVE)
+	memcpy(fb->screen_base, LOGO_RGB24, fb->var.yres * fb->fix.line_length);
 #endif
 	return 0;
 }
