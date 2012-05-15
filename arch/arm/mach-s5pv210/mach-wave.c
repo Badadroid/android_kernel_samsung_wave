@@ -437,7 +437,7 @@ static struct regulator_consumer_supply ldo13_consumer[] = {
 };
 
 static struct regulator_consumer_supply ldo14_consumer[] = {
-	{	.supply	= "vga_dvdd", },
+	{	.supply	= "vga_avdd", },
 };
 
 static struct regulator_consumer_supply ldo15_consumer[] = {
@@ -445,7 +445,7 @@ static struct regulator_consumer_supply ldo15_consumer[] = {
 };
 
 static struct regulator_consumer_supply ldo16_consumer[] = {
-	{	.supply	= "vga_avdd", },
+	{	.supply	= "vga_dvdd", },
 };
 
 static struct regulator_consumer_supply ldo17_consumer[] = {
@@ -611,9 +611,9 @@ static struct regulator_init_data wave_ldo13_data = {
 
 static struct regulator_init_data wave_ldo14_data = {
 	.constraints	= {
-		.name		= "VGA_DVDD_1.8V",
-		.min_uV		= 1800000,
-		.max_uV		= 1800000,
+		.name		= "VGA_AVDD_2.8V",
+		.min_uV		= 2800000,
+		.max_uV		= 2800000,
 		.apply_uV	= 1,
 		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
 		.state_mem	= {
@@ -641,9 +641,9 @@ static struct regulator_init_data wave_ldo15_data = {
 
 static struct regulator_init_data wave_ldo16_data = {
 	.constraints	= {
-		.name		= "VGA_AVDD_2.8V",
-		.min_uV		= 2800000,
-		.max_uV		= 2800000,
+		.name		= "VGA_DVDD_1.8V",
+		.min_uV		= 1800000,
+		.max_uV		= 1800000,
 		.apply_uV	= 1,
 		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
 		.state_mem	= {
@@ -1351,8 +1351,8 @@ static struct regulator *cam_isp_host_regulator;/*15*/
 static struct regulator *cam_af_regulator;/*11*/
 static struct regulator *cam_sensor_core_regulator;/*12*/
 static struct regulator *cam_vga_vddio_regulator;/*13*/
-static struct regulator *cam_vga_dvdd_regulator;/*14*/
-static struct regulator *cam_vga_avdd_regulator;/*16*/
+static struct regulator *cam_vga_dvdd_regulator;/*16*/
+static struct regulator *cam_vga_avdd_regulator;/*14*/
 static bool ce147_powered_on;
 
 static int ce147_regulator_init(void)
@@ -1389,7 +1389,7 @@ static int ce147_regulator_init(void)
 			return -EINVAL;
 		}
 	}
-/*ldo 14*/
+/*ldo 16*/
 	if (IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
 		cam_vga_dvdd_regulator = regulator_get(NULL, "vga_dvdd");
 		if (IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
@@ -1405,7 +1405,7 @@ static int ce147_regulator_init(void)
 			return -EINVAL;
 		}
 	}
-/*ldo 16*/
+/*ldo 14*/
 	if (IS_ERR_OR_NULL(cam_vga_avdd_regulator)) {
 		cam_vga_avdd_regulator = regulator_get(NULL, "vga_avdd");
 		if (IS_ERR_OR_NULL(cam_vga_avdd_regulator)) {
@@ -1425,15 +1425,15 @@ static int ce147_regulator_init(void)
 
 static void ce147_init(void)
 {
-	/* CAM_IO_EN - GPB(7) */
-	if (gpio_request(GPIO_GPB7, "GPB7") < 0)
-		pr_err("failed gpio_request(GPB7) for camera control\n");
+	/* GPIO_CAM_ANALOG_EN - GPJ1(0) */
+	if (gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN") < 0)
+		pr_err("failed gpio_request(GPIO_CAM_ANALOG_EN) for camera control\n");
 	/* CAM_MEGA_nRST - GPJ1(5) */
-	if (gpio_request(GPIO_CAM_MEGA_nRST, "GPJ1") < 0)
-		pr_err("failed gpio_request(GPJ1) for camera control\n");
+	if (gpio_request(GPIO_CAM_MEGA_nRST, "GPIO_CAM_MEGA_nRST") < 0)
+		pr_err("failed gpio_request(GPIO_CAM_MEGA_nRST) for camera control\n");
 	/* CAM_MEGA_EN - GPJ0(6) */
-	if (gpio_request(GPIO_CAM_MEGA_EN, "GPJ0") < 0)
-		pr_err("failed gpio_request(GPJ0) for camera control\n");
+	if (gpio_request(GPIO_CAM_MEGA_EN, "GPIO_CAM_MEGA_EN") < 0)
+		pr_err("failed gpio_request(GPIO_CAM_MEGA_EN) for camera control\n");
 }
 
 static int ce147_ldo_en(bool en)
@@ -1487,7 +1487,7 @@ static int ce147_ldo_en(bool en)
 	}
 	udelay(50);
 
-	/*ldo 14*/
+	/*ldo 16*/
 	err = regulator_enable(cam_vga_dvdd_regulator);
 	if (err) {
 		pr_err("Failed to enable regulator cam_vga_dvdd\n");
@@ -1503,7 +1503,7 @@ static int ce147_ldo_en(bool en)
 	}
 	udelay(50);
 
-	/*ldo 16*/
+	/*ldo 14*/
 	err = regulator_enable(cam_vga_avdd_regulator);
 	if (err) {
 		pr_err("Failed to enable regulator cam_vga_avdd\n");
@@ -1511,8 +1511,8 @@ static int ce147_ldo_en(bool en)
 	}
 	udelay(50);
 	
-	/* Turn CAM_SENSOR_A_2.8V(VDDA) on */
-	gpio_set_value(GPIO_GPB7, 1);
+	/* Turn CAM_ANALOG_OUT */
+	gpio_set_value(GPIO_CAM_ANALOG_EN, 1);
 	mdelay(1);
 
 	return 0;
@@ -1520,8 +1520,8 @@ static int ce147_ldo_en(bool en)
 off:
 	result = err;
 
-	gpio_direction_output(GPIO_GPB7, 1);
-	gpio_set_value(GPIO_GPB7, 0);
+	gpio_direction_output(GPIO_CAM_ANALOG_EN, 1);
+	gpio_set_value(GPIO_CAM_ANALOG_EN, 0);
 
 	/* ldo 11 */
 	err = regulator_disable(cam_af_regulator);
@@ -1541,7 +1541,7 @@ off:
 		pr_err("Failed to disable regulator cam_vga_vddio\n");
 		result = err;
 	}
-	/* ldo 14 */
+	/* ldo 16 */
 	err = regulator_disable(cam_vga_dvdd_regulator);
 	if (err) {
 		pr_err("Failed to disable regulator cam_vga_dvdd\n");
@@ -1553,7 +1553,7 @@ off:
 		pr_err("Failed to disable regulator cam_isp_core\n");
 		result = err;
 	}
-	/* ldo 16 */
+	/* ldo 14 */
 	err = regulator_disable(cam_vga_avdd_regulator);
 	if (err) {
 		pr_err("Failed to disable regulator cam_vga_avdd\n");
@@ -1644,7 +1644,7 @@ static int ce147_power_on(void)
 	gpio_free(GPIO_CAM_MEGA_nRST);
 	gpio_free(GPIO_CAM_VGA_nSTBY);
 	gpio_free(GPIO_CAM_VGA_nRST);
-	gpio_free(GPIO_GPB7);
+	gpio_free(GPIO_CAM_ANALOG_EN);
 
 	mdelay(5);
 
@@ -1657,46 +1657,46 @@ static int ce147_power_off(void)
 	int err;
 	bool FALSE = false;
 
-	/* CAM_IO_EN - GPB(7) */
-	err = gpio_request(GPIO_GPB7, "GPB7");
+	/* GPIO_CAM_ANALOG_EN - GPJ1(0) */
+	err = gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN");
 	
 	if(err) {
-		printk(KERN_ERR "failed to request GPB7 for camera control\n");
+		printk(KERN_ERR "failed to request GPIO_CAM_ANALOG_EN for camera control\n");
 	
 		return err;
 	}
 
 	/* CAM_MEGA_EN - GPJ0(6) */
-	err = gpio_request(GPIO_CAM_MEGA_EN, "GPJ0");
+	err = gpio_request(GPIO_CAM_MEGA_EN, "GPIO_CAM_MEGA_EN");
 
 	if(err) {
-		printk(KERN_ERR "failed to request GPJ0 for camera control\n");
+		printk(KERN_ERR "failed to request GPIO_CAM_MEGA_EN for camera control\n");
 	
 		return err;
 	}
 
 	/* CAM_MEGA_nRST - GPJ1(5) */
-	err = gpio_request(GPIO_CAM_MEGA_nRST, "GPJ1");
+	err = gpio_request(GPIO_CAM_MEGA_nRST, "GPIO_CAM_MEGA_nRST");
 	
 	if(err) {
-		printk(KERN_ERR "failed to request GPJ1 for camera control\n");
+		printk(KERN_ERR "failed to request GPIO_CAM_MEGA_nRST for camera control\n");
 	
 		return err;
 	}
 
 	/* CAM_VGA_nRST - GPB(2) */
-	err = gpio_request(GPIO_CAM_VGA_nRST, "GPB2");
+	err = gpio_request(GPIO_CAM_VGA_nRST, "GPIO_CAM_VGA_nRST");
 
 	if (err) {
-		printk(KERN_ERR "failed to request GPB2 for camera control\n");
+		printk(KERN_ERR "failed to request GPIO_CAM_VGA_nRST for camera control\n");
 
 		return err;
 	}
 	/* CAM_VGA_nSTBY - GPB(0)  */
-	err = gpio_request(GPIO_CAM_VGA_nSTBY, "GPB0");
+	err = gpio_request(GPIO_CAM_VGA_nSTBY, "GPIO_CAM_VGA_nSTBY");
 
 	if (err) {
-		printk(KERN_ERR "failed to request GPB0 for camera control\n");
+		printk(KERN_ERR "failed to request GPIO_CAM_VGA_nSTBY for camera control\n");
 
 		return err;
 	}
@@ -1742,7 +1742,7 @@ static int ce147_power_off(void)
 	gpio_free(GPIO_CAM_MEGA_nRST);
 	gpio_free(GPIO_CAM_VGA_nRST);
 	gpio_free(GPIO_CAM_VGA_nSTBY);
-	gpio_free(GPIO_GPB7);
+	gpio_free(GPIO_CAM_ANALOG_EN);
 
 	return 0;
 }
@@ -1916,7 +1916,7 @@ static int s5ka3dfx_request_gpio(void)
 		return -EINVAL;
 	}
 	/* CAM_IO_EN - GPB(7) */
-	err = gpio_request(GPIO_GPB7, "GPB7");
+	err = gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN");
 
 	if(err) {
 		pr_err("Failed to request GPB2 for camera control\n");
@@ -1984,8 +1984,8 @@ static int s5ka3dfx_power_on(void)
 	}
 	msleep(3);*/
 	// Turn CAM_ISP_SYS_2.8V on
-	gpio_direction_output(GPIO_GPB7, 0);
-	gpio_set_value(GPIO_GPB7, 1);
+	gpio_direction_output(GPIO_CAM_ANALOG_EN, 0);
+	gpio_set_value(GPIO_CAM_ANALOG_EN, 1);
 
 	mdelay(1);
 
@@ -2110,7 +2110,7 @@ static int s5ka3dfx_power_off(void)
 		return -EINVAL;
 	}*/
 
-	gpio_free(GPIO_GPB7);
+	gpio_free(GPIO_CAM_ANALOG_EN);
 	gpio_free(GPIO_CAM_VGA_nRST);
 	gpio_free(GPIO_CAM_VGA_nSTBY);
 
@@ -2237,14 +2237,14 @@ static void mxt224_power_off(void)
 	gpio_direction_output(GPIO_TOUCH_EN, 0);
 }
 
-#define MXT224_MAX_MT_FINGERS 10
+#define MXT224_MAX_MT_FINGERS 5
 
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
 				64, 255, 50};
 static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 				7, 0, 5, 0, 0, 0, 9, 35};
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				139, 0, 0, 19, 11, 0, 33, 30, 2, 1, 0, 3, 1,
+				139, 0, 0, 19, 11, 0, 33, 30, 2, 0, 0, 3, 1,
 				46, MXT224_MAX_MT_FINGERS, 5, 40, 10, 0, 0,
 				0, 0, 0, 0, 0, 0, 143, 40, 143, 80, 18};
 static u8 t18_config[] = {SPT_COMCONFIG_T18,
@@ -2276,7 +2276,7 @@ static struct mxt224_platform_data mxt224_data = {
 	.min_x = 0,
 	.max_x = 1023,
 	.min_y = 0,
-	.max_y = 1023,
+	.max_y = 950,
 	.min_z = 0,
 	.max_z = 255,
 	.min_w = 0,
