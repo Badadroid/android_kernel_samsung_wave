@@ -68,7 +68,7 @@
 
 #include <media/ce147_platform.h>
 #include <media/s5ka3dfx_platform.h>
-#include <media/s5k4ecgx.h>
+//#include <media/s5k4ecgx.h>
 
 #include <plat/regs-serial.h>
 #include <plat/s5pv210.h>
@@ -80,6 +80,7 @@
 #include <plat/pm.h>
 #include <plat/s5p-time.h>
 
+#include <plat/keypad.h>
 #include <plat/sdhci.h>
 #include <plat/fimc.h>
 #include <plat/jpeg.h>
@@ -92,7 +93,6 @@
 #include <../../../drivers/video/samsung/s3cfb.h>
 #include <linux/sec_jack.h>
 #include <linux/input/mxt224.h>
-#include <linux/max17040_battery.h>
 #include <linux/mfd/max8998.h>
 #include <linux/switch.h>
 
@@ -433,11 +433,11 @@ static struct regulator_consumer_supply ldo12_consumer[] = {
 };
 
 static struct regulator_consumer_supply ldo13_consumer[] = {
-	{	.supply	= "vga_vddio", },
+	{	.supply	= "vga_avdd", },
 };
 
 static struct regulator_consumer_supply ldo14_consumer[] = {
-	{	.supply	= "vga_avdd", },
+	{	.supply	= "cam_isp", },
 };
 
 static struct regulator_consumer_supply ldo15_consumer[] = {
@@ -566,9 +566,9 @@ static struct regulator_init_data wave_ldo9_data = {
 
 static struct regulator_init_data wave_ldo11_data = {
 	.constraints	= {
-		.name		= "CAM_AF_3.0V",
-		.min_uV		= 3000000,
-		.max_uV		= 3000000,
+		.name		= "CAM_AF_2.8V",
+		.min_uV		= 2800000,
+		.max_uV		= 2800000,
 		.apply_uV	= 1,
 		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
 		.state_mem	= {
@@ -581,7 +581,7 @@ static struct regulator_init_data wave_ldo11_data = {
 
 static struct regulator_init_data wave_ldo12_data = {
 	.constraints	= {
-		.name		= "CAM_SENSOR_CORE_1.2V",
+		.name		= "CAM_SENSOR_1.2V",
 		.min_uV		= 1200000,
 		.max_uV		= 1200000,
 		.apply_uV	= 1,
@@ -596,7 +596,7 @@ static struct regulator_init_data wave_ldo12_data = {
 
 static struct regulator_init_data wave_ldo13_data = {
 	.constraints	= {
-		.name		= "VGA_VDDIO_2.8V",
+		.name		= "CAM_SENSOR_A2.8V",
 		.min_uV		= 2800000,
 		.max_uV		= 2800000,
 		.apply_uV	= 1,
@@ -611,9 +611,9 @@ static struct regulator_init_data wave_ldo13_data = {
 
 static struct regulator_init_data wave_ldo14_data = {
 	.constraints	= {
-		.name		= "VGA_AVDD_2.8V",
-		.min_uV		= 2800000,
-		.max_uV		= 2800000,
+		.name		= "CAM_ISP_1.8V",
+		.min_uV		= 1800000,
+		.max_uV		= 1800000,
 		.apply_uV	= 1,
 		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
 		.state_mem	= {
@@ -1160,7 +1160,7 @@ static struct platform_device wave_s3c_device_i2c7 = {
 	.dev.platform_data	= &i2c7_platdata,
 };
 // For FM radio
-#if defined (CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB)
+#if defined (CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB) || defined (CONFIG_MACH_WAVE)
 static  struct  i2c_gpio_platform_data  i2c8_platdata = {
         .sda_pin                = GPIO_FM_SDA_28V,
         .scl_pin                = GPIO_FM_SCL_28V,
@@ -1222,28 +1222,12 @@ static struct platform_device s3c_device_i2c13 = {
   	.dev.platform_data	= &i2c13_platdata,
   };
 #endif
-
+/*
 static struct gpio_event_direct_entry wave_keypad_key_map[] = {
 	{
 		.gpio	= GPIO_nPOWER,
-		.code	= KEY_POWER,
-	},
-	{
-		.gpio	= GPIO_KBR0,
-		.code	= KEY_HOME,
-	},
-	{
-		.gpio	= GPIO_KBR1,
-		.code	= KEY_VOLUMEDOWN,
-	},
-	{
-		.gpio	= GPIO_KBR2,
-		.code	= KEY_VOLUMEUP,
-	},
-	{
-		.gpio	= GPIO_KBR3,
 		.code	= KEY_END,
-	}
+	},
 };
 
 static struct gpio_event_input_info wave_keypad_key_info = {
@@ -1276,7 +1260,7 @@ static struct platform_device wave_input_device = {
 		.platform_data = &wave_input_data,
 	},
 };
-
+*/
 #ifdef CONFIG_S5P_ADC
 static struct s3c_adc_mach_info s3c_adc_platform __initdata = {
 	/* s5pc110 support 12-bit resolution */
@@ -1340,22 +1324,17 @@ static struct wm8994_platform_data wm8994_pdata = {
 	.set_mic_bias = wm8994_set_mic_bias,
 };
 
-#ifdef CONFIG_VIDEO_CE147
-/*
- * Guide for Camera Configuration for Jupiter board
- * ITU CAM CH A: CE147
-*/
+#if defined(CONFIG_VIDEO_S5KA3DFX) || defined(CONFIG_VIDEO_CE147)
 
 static struct regulator *cam_isp_core_regulator;/*buck4*/
-static struct regulator *cam_isp_host_regulator;/*15*/
 static struct regulator *cam_af_regulator;/*11*/
 static struct regulator *cam_sensor_core_regulator;/*12*/
 static struct regulator *cam_vga_vddio_regulator;/*13*/
+static struct regulator *cam_isp_regulator;/*14*/
+static struct regulator *cam_isp_host_regulator;/*15*/
 static struct regulator *cam_vga_dvdd_regulator;/*16*/
-static struct regulator *cam_vga_avdd_regulator;/*14*/
-static bool ce147_powered_on;
 
-static int ce147_regulator_init(void)
+static int camera_regulator_init(void)
 {
 /*BUCK 4*/
 	if (IS_ERR_OR_NULL(cam_isp_core_regulator)) {
@@ -1383,20 +1362,22 @@ static int ce147_regulator_init(void)
 	}
 /*ldo 13*/
 	if (IS_ERR_OR_NULL(cam_vga_vddio_regulator)) {
-		cam_vga_vddio_regulator = regulator_get(NULL, "vga_vddio");
+		cam_vga_vddio_regulator = regulator_get(NULL, "vga_avdd");
 		if (IS_ERR_OR_NULL(cam_vga_vddio_regulator)) {
 			pr_err("failed to get vga_vddio regulator");
 			return -EINVAL;
 		}
 	}
-/*ldo 16*/
-	if (IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
-		cam_vga_dvdd_regulator = regulator_get(NULL, "vga_dvdd");
-		if (IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
-			pr_err("failed to get vga_dvdd regulator");
+
+/*ldo 14*/
+	if (IS_ERR_OR_NULL(cam_isp_regulator)) {
+		cam_isp_regulator = regulator_get(NULL, "cam_isp");
+		if (IS_ERR_OR_NULL(cam_isp_regulator)) {
+			pr_err("failed to get vga_avdd regulator");
 			return -EINVAL;
 		}
 	}
+
 /*ldo 15*/
 	if (IS_ERR_OR_NULL(cam_isp_host_regulator)) {
 		cam_isp_host_regulator = regulator_get(NULL, "cam_isp_host");
@@ -1405,11 +1386,13 @@ static int ce147_regulator_init(void)
 			return -EINVAL;
 		}
 	}
-/*ldo 14*/
-	if (IS_ERR_OR_NULL(cam_vga_avdd_regulator)) {
-		cam_vga_avdd_regulator = regulator_get(NULL, "vga_avdd");
-		if (IS_ERR_OR_NULL(cam_vga_avdd_regulator)) {
-			pr_err("failed to get vga_avdd regulator");
+
+
+/*ldo 16*/
+	if (IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
+		cam_vga_dvdd_regulator = regulator_get(NULL, "vga_dvdd");
+		if (IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
+			pr_err("failed to get vga_dvdd regulator");
 			return -EINVAL;
 		}
 	}
@@ -1418,25 +1401,12 @@ static int ce147_regulator_init(void)
 	pr_debug("cam_af_regulator = %p\n", cam_af_regulator);
 	pr_debug("cam_sensor_core_regulator = %p\n", cam_sensor_core_regulator);
 	pr_debug("cam_vga_vddio_regulator = %p\n", cam_vga_vddio_regulator);
+	pr_debug("cam_isp_regulator = %p\n", cam_isp_regulator);
 	pr_debug("cam_vga_dvdd_regulator = %p\n", cam_vga_dvdd_regulator);
-	pr_debug("cam_vga_avdd_regulator = %p\n", cam_vga_avdd_regulator);
 	return 0;
 }
 
-static void ce147_init(void)
-{
-	/* GPIO_CAM_ANALOG_EN - GPJ1(0) */
-	if (gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN") < 0)
-		pr_err("failed gpio_request(GPIO_CAM_ANALOG_EN) for camera control\n");
-	/* CAM_MEGA_nRST - GPJ1(5) */
-	if (gpio_request(GPIO_CAM_MEGA_nRST, "GPIO_CAM_MEGA_nRST") < 0)
-		pr_err("failed gpio_request(GPIO_CAM_MEGA_nRST) for camera control\n");
-	/* CAM_MEGA_EN - GPJ0(6) */
-	if (gpio_request(GPIO_CAM_MEGA_EN, "GPIO_CAM_MEGA_EN") < 0)
-		pr_err("failed gpio_request(GPIO_CAM_MEGA_EN) for camera control\n");
-}
-
-static int ce147_ldo_en(bool en)
+static int camera_ldo_en(bool en)
 {
 	int err = 0;
 	int result;
@@ -1446,8 +1416,8 @@ static int ce147_ldo_en(bool en)
 		IS_ERR_OR_NULL(cam_af_regulator) || //) {// ||
 		IS_ERR_OR_NULL(cam_sensor_core_regulator) ||
 		IS_ERR_OR_NULL(cam_vga_vddio_regulator) ||
-		IS_ERR_OR_NULL(cam_vga_dvdd_regulator) ||
-		IS_ERR_OR_NULL(cam_vga_avdd_regulator)) {
+		IS_ERR_OR_NULL(cam_isp_regulator) ||
+		IS_ERR_OR_NULL(cam_vga_dvdd_regulator)) {
 		pr_err("Camera regulators not initialized\n");
 		return -EINVAL;
 	}
@@ -1455,7 +1425,6 @@ static int ce147_ldo_en(bool en)
 	if (!en)
 		goto off;
 
-	/* Turn CAM_ISP_CORE_1.2V(VDD_REG) on BUCK 4*/
 	err = regulator_enable(cam_isp_core_regulator);
 	if (err) {
 		pr_err("Failed to enable regulator cam_isp_core\n");
@@ -1463,7 +1432,6 @@ static int ce147_ldo_en(bool en)
 	}
 	mdelay(1);
 
-	/* Turn CAM_AF_2.8V or 3.0V on ldo 11*/
 	err = regulator_enable(cam_af_regulator);
 	if (err) {
 		pr_err("Failed to enable regulator cam_af\n");
@@ -1471,7 +1439,6 @@ static int ce147_ldo_en(bool en)
 	}
 	udelay(50);
 
-	/*ldo 12*/
 	err = regulator_enable(cam_sensor_core_regulator);
 	if (err) {
 		pr_err("Failed to enable regulator cam_sensor\n");
@@ -1479,15 +1446,6 @@ static int ce147_ldo_en(bool en)
 	}
 	udelay(50);
 
-	/*ldo 13*/
-	err = regulator_enable(cam_vga_vddio_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_vga_vddio\n");
-		goto off;
-	}
-	udelay(50);
-
-	/*ldo 16*/
 	err = regulator_enable(cam_vga_dvdd_regulator);
 	if (err) {
 		pr_err("Failed to enable regulator cam_vga_dvdd\n");
@@ -1495,38 +1453,40 @@ static int ce147_ldo_en(bool en)
 	}
 	udelay(50);
 
-	/* Turn CAM_ISP_HOST_2.8V(VDDIO) on ldo 15*/
-	err = regulator_enable(cam_isp_host_regulator);
+	err = regulator_enable(cam_vga_vddio_regulator);
 	if (err) {
-		pr_err("Failed to enable regulator cam_isp_core\n");
+		pr_err("Failed to enable regulator cam_vga_vddio\n");
 		goto off;
 	}
 	udelay(50);
 
-	/*ldo 14*/
-	err = regulator_enable(cam_vga_avdd_regulator);
+	err = regulator_enable(cam_isp_regulator);
 	if (err) {
-		pr_err("Failed to enable regulator cam_vga_avdd\n");
+		pr_err("Failed to enable regulator cam_isp_regulator\n");
 		goto off;
 	}
 	udelay(50);
-	
-	/* Turn CAM_ANALOG_OUT */
-	gpio_set_value(GPIO_CAM_ANALOG_EN, 1);
-	mdelay(1);
+
+	err = regulator_enable(cam_isp_host_regulator);
+	if (err) {
+		pr_err("Failed to enable regulator cam_isp_host\n");
+		goto off;
+	}
+	udelay(50);
+
+
 
 	return 0;
 
 off:
 	result = err;
 
-	gpio_direction_output(GPIO_CAM_ANALOG_EN, 1);
 	gpio_set_value(GPIO_CAM_ANALOG_EN, 0);
 
 	/* ldo 11 */
 	err = regulator_disable(cam_af_regulator);
 	if (err) {
-		pr_err("Failed to disable regulator cam_isp_core\n");
+		pr_err("Failed to disable regulator cam_af\n");
 		result = err;
 	}
 	/* ldo 12 */
@@ -1550,13 +1510,13 @@ off:
 	/* ldo 15 */
 	err = regulator_disable(cam_isp_host_regulator);
 	if (err) {
-		pr_err("Failed to disable regulator cam_isp_core\n");
+		pr_err("Failed to disable regulator cam_isp_host\n");
 		result = err;
 	}
-	/* ldo 14 */
-	err = regulator_disable(cam_vga_avdd_regulator);
+
+	err = regulator_disable(cam_isp_regulator);
 	if (err) {
-		pr_err("Failed to disable regulator cam_vga_avdd\n");
+		pr_err("Failed to disable regulator cam_isp_regulator\n");
 		result = err;
 	}
 	/* BUCK 4 */
@@ -1567,13 +1527,36 @@ off:
 	}
 	return result;
 }
+#endif
+
+#ifdef CONFIG_VIDEO_CE147
+/*
+ * Guide for Camera Configuration for Jupiter board
+ * ITU CAM CH A: CE147
+*/
+
+static bool ce147_powered_on;
+
+
+static void ce147_init(void)
+{
+	/* GPIO_CAM_ANALOG_EN - GPJ1(0) */
+	if (gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN") < 0)
+		pr_err("failed gpio_request(GPIO_CAM_ANALOG_EN) for camera control\n");
+	/* CAM_MEGA_nRST - GPJ1(5) */
+	if (gpio_request(GPIO_CAM_MEGA_nRST, "GPIO_CAM_MEGA_nRST") < 0)
+		pr_err("failed gpio_request(GPIO_CAM_MEGA_nRST) for camera control\n");
+	/* CAM_MEGA_EN - GPJ0(6) */
+	if (gpio_request(GPIO_CAM_MEGA_EN, "GPIO_CAM_MEGA_EN") < 0)
+		pr_err("failed gpio_request(GPIO_CAM_MEGA_EN) for camera control\n");
+}
+
 
 static int ce147_power_on(void)
 {	
 	int err;
-	bool TRUE = true;
 
-	if (ce147_regulator_init()) {
+	if (camera_regulator_init()) {
 			pr_err("Failed to initialize camera regulators\n");
 			return -EINVAL;
 	}
@@ -1597,10 +1580,17 @@ static int ce147_power_on(void)
 
 		return err;
 	}
-	
-	ce147_ldo_en(TRUE);
+	err = camera_ldo_en(true);
+	if(err)
+	{	printk(KERN_ERR "failed to camera_ldo_en\n");
 
-	mdelay(1);
+		return err;
+	}
+	
+	/* Turn GPIO_CAM_ANALOG_EN */
+	gpio_direction_output(GPIO_CAM_ANALOG_EN, 0);
+	gpio_set_value(GPIO_CAM_ANALOG_EN, 1);
+	mdelay(2);
 
 	// CAM_VGA_nSTBY  HIGH		
 	gpio_direction_output(GPIO_CAM_VGA_nSTBY, 0);
@@ -1655,7 +1645,6 @@ static int ce147_power_on(void)
 static int ce147_power_off(void)
 {
 	int err;
-	bool FALSE = false;
 
 	/* GPIO_CAM_ANALOG_EN - GPJ1(0) */
 	err = gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN");
@@ -1734,7 +1723,7 @@ static int ce147_power_off(void)
 
 	mdelay(1);
 
-	ce147_ldo_en(FALSE);
+	camera_ldo_en(false);
 
 	mdelay(1);
 	
@@ -1752,21 +1741,6 @@ static int ce147_power_en(int onoff)
 {
 /*	int bd_level; // unused variable */
 	int err = 0;
-#if 0
-	if(onoff){
-		ce147_ldo_en(true);
-		s3c_gpio_cfgpin(S5PV210_GPE1(3), S5PV210_GPE1_3_CAM_A_CLKOUT);
-		ce147_cam_en(true);
-		ce147_cam_nrst(true);
-	} else {
-		ce147_cam_en(false);
-		ce147_cam_nrst(false);
-		s3c_gpio_cfgpin(S5PV210_GPE1(3), 0);
-		ce147_ldo_en(false);
-	}
-
-	return 0;
-#endif
 
 	if (onoff != ce147_powered_on) {
 		if (onoff)
@@ -1778,60 +1752,6 @@ static int ce147_power_en(int onoff)
 		if (!err)
 			ce147_powered_on = onoff;
 	}
-
-	return 0;
-}
-
-static int smdkc110_cam1_power(int onoff)
-{
-	int err;
-	/* Implement on/off operations */
-
-	/* CAM_VGA_nSTBY - GPB(0) */
-	err = gpio_request(S5PV210_GPB(0), "GPB");
-
-	if (err) {
-		printk(KERN_ERR "failed to request GPB for camera control\n");
-		return err;
-	}
-
-	gpio_direction_output(S5PV210_GPB(0), 0);
-	
-	mdelay(1);
-
-	gpio_direction_output(S5PV210_GPB(0), 1);
-
-	mdelay(1);
-
-	gpio_set_value(S5PV210_GPB(0), 1);
-
-	mdelay(1);
-
-	gpio_free(S5PV210_GPB(0));
-	
-	mdelay(1);
-
-	/* CAM_VGA_nRST - GPB(2) */
-	err = gpio_request(S5PV210_GPB(2), "GPB");
-
-	if (err) {
-		printk(KERN_ERR "failed to request GPB for camera control\n");
-		return err;
-	}
-
-	gpio_direction_output(S5PV210_GPB(2), 0);
-
-	mdelay(1);
-
-	gpio_direction_output(S5PV210_GPB(2), 1);
-
-	mdelay(1);
-
-	gpio_set_value(S5PV210_GPB(2), 1);
-
-	mdelay(1);
-
-	gpio_free(S5PV210_GPB(2));
 
 	return 0;
 }
@@ -1891,10 +1811,6 @@ static struct s3c_platform_camera ce147 = {
 #ifdef CONFIG_VIDEO_S5KA3DFX
 /* External camera module setting */
 static DEFINE_MUTEX(s5ka3dfx_lock);
-static struct regulator *s5ka3dfx_vga_avdd;
-static struct regulator *s5ka3dfx_vga_vddio;
-static struct regulator *s5ka3dfx_cam_isp_host;
-static struct regulator *s5ka3dfx_vga_dvdd;
 static bool s5ka3dfx_powered_on;
 
 static int s5ka3dfx_request_gpio(void)
@@ -1902,174 +1818,92 @@ static int s5ka3dfx_request_gpio(void)
 	int err;
 
 	/* CAM_VGA_nSTBY - GPB(0) */
-	err = gpio_request(GPIO_CAM_VGA_nSTBY, "GPB0");
+	err = gpio_request(GPIO_CAM_VGA_nSTBY, "GPIO_CAM_VGA_nSTBY");
 	if (err) {
-		pr_err("Failed to request GPB0 for camera control\n");
+		pr_err("Failed to request GPIO_CAM_VGA_nSTBY for camera control\n");
 		return -EINVAL;
 	}
 
 	/* CAM_VGA_nRST - GPB(2) */
-	err = gpio_request(GPIO_CAM_VGA_nRST, "GPB2");
+	err = gpio_request(GPIO_CAM_VGA_nRST, "GPIO_CAM_VGA_nRST");
 	if (err) {
-		pr_err("Failed to request GPB2 for camera control\n");
+		pr_err("Failed to request GPIO_CAM_VGA_nRST for camera control\n");
 		gpio_free(GPIO_CAM_VGA_nSTBY);
 		return -EINVAL;
 	}
-	/* CAM_IO_EN - GPB(7) */
+
 	err = gpio_request(GPIO_CAM_ANALOG_EN, "GPIO_CAM_ANALOG_EN");
 
 	if(err) {
-		pr_err("Failed to request GPB2 for camera control\n");
+		pr_err("Failed to request GPIO_CAM_ANALOG_EN for camera control\n");
 		gpio_free(GPIO_CAM_VGA_nSTBY);
 		gpio_free(GPIO_CAM_VGA_nRST);
 		return -EINVAL;
 	}
+	/*
+	err = gpio_request(GPIO_CAM_MEGA_EN, "GPIO_CAM_MEGA_EN");
 
-	return 0;
-}
-
-static int s5ka3dfx_power_init(void)
-{
-	/*if (IS_ERR_OR_NULL(s5ka3dfx_vga_avdd))
-		s5ka3dfx_vga_avdd = regulator_get(NULL, "vga_avdd");
-
-	if (IS_ERR_OR_NULL(s5ka3dfx_vga_avdd)) {
-		pr_err("Failed to get regulator vga_avdd\n");
+	if(err) {
+		pr_err("Failed to request GPIO_CAM_MEGA_EN for camera control\n");
+		gpio_free(GPIO_CAM_ANALOG_EN);
+		gpio_free(GPIO_CAM_VGA_nRST);
+		gpio_free(GPIO_CAM_VGA_nSTBY);
 		return -EINVAL;
 	}*/
 
-	if (IS_ERR_OR_NULL(s5ka3dfx_vga_vddio))
-		s5ka3dfx_vga_vddio = regulator_get(NULL, "vga_vddio");
-
-	if (IS_ERR_OR_NULL(s5ka3dfx_vga_vddio)) {
-		pr_err("Failed to get regulator vga_vddio\n");
-		return -EINVAL;
-	}
-
-	if (IS_ERR_OR_NULL(s5ka3dfx_cam_isp_host))
-		s5ka3dfx_cam_isp_host = regulator_get(NULL, "cam_isp_host");
-
-	if (IS_ERR_OR_NULL(s5ka3dfx_cam_isp_host)) {
-		pr_err("Failed to get regulator cam_isp_host\n");
-		return -EINVAL;
-	}
-
-	if (IS_ERR_OR_NULL(s5ka3dfx_vga_dvdd))
-		s5ka3dfx_vga_dvdd = regulator_get(NULL, "vga_dvdd");
-
-	if (IS_ERR_OR_NULL(s5ka3dfx_vga_dvdd)) {
-		pr_err("Failed to get regulator vga_dvdd\n");
-		return -EINVAL;
-	}
-
 	return 0;
 }
+
 
 static int s5ka3dfx_power_on(void)
 {
 	int err = 0;
-	int result;
 
-	if (s5ka3dfx_power_init()) {
+	if (camera_regulator_init()) {
 		pr_err("Failed to get all regulator\n");
 		return -EINVAL;
 	}
 
 	s5ka3dfx_request_gpio();
-	/* Turn VGA_AVDD_2.8V on */
-	/*err = regulator_enable(s5ka3dfx_vga_avdd);
-	if (err) {
-		pr_err("Failed to enable regulator vga_avdd\n");
-		return -EINVAL;
-	}
-	msleep(3);*/
-	// Turn CAM_ISP_SYS_2.8V on
+
 	gpio_direction_output(GPIO_CAM_ANALOG_EN, 0);
 	gpio_set_value(GPIO_CAM_ANALOG_EN, 1);
 
+	err = camera_ldo_en(true);
+	if(err){
+		pr_err("Failed camera_ldo_en\n");
+		return -EINVAL;
+	}
 	mdelay(1);
-
-	/* Turn VGA_VDDIO_2.8V on */
-	err = regulator_enable(s5ka3dfx_vga_vddio);
-	if (err) {
-		pr_err("Failed to enable regulator vga_vddio\n");
-		return -EINVAL;//goto off_vga_vddio;
-	}
-	udelay(20);
-
-	/* Turn VGA_DVDD_1.8V on */
-	err = regulator_enable(s5ka3dfx_vga_dvdd);
-	if (err) {
-		pr_err("Failed to enable regulator vga_dvdd\n");
-		goto off_vga_dvdd;
-	}
-	udelay(100);
 
 	/* CAM_VGA_nSTBY HIGH */
 	gpio_direction_output(GPIO_CAM_VGA_nSTBY, 0);
 	gpio_set_value(GPIO_CAM_VGA_nSTBY, 1);
 
-	udelay(10);
+	mdelay(1);
 
+//bada enable clocks here
 	/* Mclk enable */
 	s3c_gpio_cfgpin(GPIO_CAM_MCLK, S3C_GPIO_SFN(0x02));
-	udelay(430);
+	udelay(500);
 
-	/* Turn CAM_ISP_HOST_2.8V on */
-	err = regulator_enable(s5ka3dfx_cam_isp_host);
-	if (err) {
-		pr_err("Failed to enable regulator cam_isp_host\n");
-		goto off_cam_isp_host;
-	}
-	udelay(150);
 
 	/* CAM_VGA_nRST HIGH */
 	gpio_direction_output(GPIO_CAM_VGA_nRST, 0);
 	gpio_set_value(GPIO_CAM_VGA_nRST, 1);
-	mdelay(5);
+	mdelay(10);
 
 	return 0;
-off_cam_isp_host:
-	s3c_gpio_cfgpin(GPIO_CAM_MCLK, 0);
-	udelay(1);
-	gpio_direction_output(GPIO_CAM_VGA_nSTBY, 1);
-	gpio_set_value(GPIO_CAM_VGA_nSTBY, 0);
-	udelay(1);
-	err = regulator_disable(s5ka3dfx_vga_dvdd);
-	if (err) {
-		pr_err("Failed to disable regulator vga_dvdd\n");
-		result = err;
-	}
-off_vga_dvdd:
-	err = regulator_disable(s5ka3dfx_vga_vddio);
-	if (err) {
-		pr_err("Failed to disable regulator vga_vddio\n");
-		result = err;
-	}
-/*off_vga_vddio:
-	err = regulator_disable(s5ka3dfx_vga_avdd);
-	if (err) {
-		pr_err("Failed to disable regulator vga_avdd\n");
-		result = err;
-	}*/
-
-	return result;
 }
 
 static int s5ka3dfx_power_off(void)
 {
 	int err;
 
-	if (/*!s5ka3dfx_vga_avdd ||*/ !s5ka3dfx_vga_vddio ||
-		!s5ka3dfx_cam_isp_host || !s5ka3dfx_vga_dvdd) {
-		pr_err("Faild to get all regulator\n");
-		return -EINVAL;
-	}
 
-	/* Turn CAM_ISP_HOST_2.8V off */
-	err = regulator_disable(s5ka3dfx_cam_isp_host);
+	err = camera_ldo_en(false);
 	if (err) {
-		pr_err("Failed to disable regulator cam_isp_host\n");
+		pr_err("Failed camera_ldo_en\n");
 		return -EINVAL;
 	}
 
@@ -2083,32 +1917,7 @@ static int s5ka3dfx_power_off(void)
 
 	udelay(1);
 
-	/* Turn VGA_VDDIO_2.8V off */
-	err = regulator_disable(s5ka3dfx_vga_vddio);
-	if (err) {
-		pr_err("Failed to disable regulator vga_vddio\n");
-		return -EINVAL;
-	}
-
-	/* Turn VGA_DVDD_1.8V off */
-	err = regulator_disable(s5ka3dfx_vga_dvdd);
-	if (err) {
-		pr_err("Failed to disable regulator vga_dvdd\n");
-		return -EINVAL;
-	}
-
-	/* CAM_VGA_nSTBY LOW */
-	gpio_direction_output(GPIO_CAM_VGA_nSTBY, 1);
-	gpio_set_value(GPIO_CAM_VGA_nSTBY, 0);
-
-	udelay(1);
-
-	/* Turn VGA_AVDD_2.8V off */
-	/*err = regulator_disable(s5ka3dfx_vga_avdd);
-	if (err) {
-		pr_err("Failed to disable regulator vga_avdd\n");
-		return -EINVAL;
-	}*/
+	gpio_set_value(GPIO_CAM_ANALOG_EN, 0);
 
 	gpio_free(GPIO_CAM_ANALOG_EN);
 	gpio_free(GPIO_CAM_VGA_nRST);
@@ -2428,38 +2237,6 @@ static struct i2c_board_info i2c_devs6[] __initdata = {
 #endif
 };
 
-static int max17040_power_supply_register(struct device *parent,
-	struct power_supply *psy)
-{
-	wave_charger.psy_fuelgauge = psy;
-	return 0;
-}
-
-static void max17040_power_supply_unregister(struct power_supply *psy)
-{
-	wave_charger.psy_fuelgauge = NULL;
-}
-
-static struct max17040_platform_data max17040_pdata = {
-	.power_supply_register = max17040_power_supply_register,
-	.power_supply_unregister = max17040_power_supply_unregister,
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-	.rcomp_value = 0xD000,
-#else
-	.rcomp_value = 0xB000,
-#endif
-};
-
-static struct i2c_board_info i2c_devs9[] __initdata = {
-	{
-		I2C_BOARD_INFO("max17040", (0x6D >> 1)),
-		.platform_data = &max17040_pdata,
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-		.irq = IRQ_EINT(27),
-#endif
-	},
-};
-
 static int gp2a_power(bool on)
 {
 	/* this controls the power supply rail to the gp2a IC */
@@ -2477,6 +2254,21 @@ static struct gp2a_platform_data gp2a_pdata = {
 	.p_out = GPIO_PS_VOUT,
 	.light_adc_value = gp2a_light_adc_value
 };
+
+static void gp2a_gpio_init(void)
+{
+	int ret = gpio_request(GPIO_PS_ON, "gp2a_power_supply_on");
+	if (ret)
+		printk(KERN_ERR "Failed to request gpio gp2a power supply.\n");
+
+#ifdef CONFIG_SAMSUNG_FASCINATE
+        s3c_gpio_cfgpin(GPIO_PS_VOUT, S3C_GPIO_SFN(GPIO_PS_VOUT_AF));
+        s3c_gpio_setpull(GPIO_PS_VOUT, S3C_GPIO_PULL_NONE);
+        irq_set_irq_type(IRQ_EINT1, IRQ_TYPE_EDGE_BOTH);
+        gp2a_pdata.p_irq = gpio_to_irq(GPIO_PS_VOUT);
+        gp2a_pdata.p_out = GPIO_PS_VOUT;
+#endif
+}
 
 static struct i2c_board_info i2c_devs11[] __initdata = {
 	{
@@ -4817,7 +4609,8 @@ static struct platform_device *wave_devices[] __initdata = {
 #ifdef CONFIG_RTC_DRV_S3C
 	&s5p_device_rtc,
 #endif
-	&wave_input_device,
+	//&wave_input_device,
+	&samsung_device_keypad,
 
 	&s5pv210_device_iis0,
 	&s3c_device_wdt,
@@ -4862,11 +4655,10 @@ static struct platform_device *wave_devices[] __initdata = {
 	&wave_s3c_device_i2c5,  /* accel sensor */
 	&wave_s3c_device_i2c6,
 	&wave_s3c_device_i2c7,
-#if defined(CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB)
+#if defined(CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB) || defined (CONFIG_MACH_WAVE)
 	&s3c_device_i2c8,  /* si470x: fm radio */
 #endif
-	//&s3c_device_i2c9,  /* max1704x:fuel_guage */
-	//&s3c_device_i2c11, /* optical sensor */
+	&s3c_device_i2c11, /* optical sensor */
 	&s3c_device_i2c12, /* magnetic sensor */
 #if defined (CONFIG_SAMSUNG_CAPTIVATE)
 	&s3c_device_i2c13,
@@ -5131,6 +4923,25 @@ static void __init wave_inject_cmdline(void) {
 	saved_command_line = new_command_line;
 }
 
+static uint32_t wave_keymap[] __initdata = {
+	/* KEY(row, col, keycode) */
+	KEY(0, 3, KEY_1), KEY(0, 4, KEY_2), KEY(0, 5, KEY_3),
+	KEY(0, 6, KEY_4), KEY(0, 7, KEY_5),
+	KEY(1, 3, KEY_A), KEY(1, 4, KEY_B), KEY(1, 5, KEY_C),
+	KEY(1, 6, KEY_D), KEY(1, 7, KEY_E)
+};
+
+static struct matrix_keymap_data wave_keymap_data __initdata = {
+	.keymap		= wave_keymap,
+	.keymap_size	= ARRAY_SIZE(wave_keymap),
+};
+
+static struct samsung_keypad_platdata wave_keypad_data __initdata = {
+	.keymap_data	= &wave_keymap_data,
+	.rows		= 8,
+	.cols		= 8,
+};
+
 static void __init wave_machine_init(void)
 {
 	arm_pm_restart = wave_pm_restart;
@@ -5168,6 +4979,9 @@ static void __init wave_machine_init(void)
 #ifdef CONFIG_ANDROID_PMEM
 	android_pmem_set_platdata();
 #endif
+
+
+	samsung_keypad_set_platdata(&wave_keypad_data);
 
 	/* headset/earjack detection */
 #if defined(CONFIG_SAMSUNG_CAPTIVATE)
@@ -5208,13 +5022,9 @@ static void __init wave_machine_init(void)
 	/* fm radio */
 	i2c_register_board_info(8, i2c_devs8, ARRAY_SIZE(i2c_devs8));
 
-
-	/* max17040 */
-	//i2c_register_board_info(9, i2c_devs9, ARRAY_SIZE(i2c_devs9));
-
 	/* optical sensor */
-	//gp2a_gpio_init();
-	//i2c_register_board_info(11, i2c_devs11, ARRAY_SIZE(i2c_devs11));
+	gp2a_gpio_init();
+	i2c_register_board_info(11, i2c_devs11, ARRAY_SIZE(i2c_devs11));
 	
 	/* yamaha magnetic sensor */
 	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
