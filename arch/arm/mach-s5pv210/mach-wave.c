@@ -3,6 +3,8 @@
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
+ * Copyright (c) 2012 Dominik Marszk
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -69,7 +71,6 @@
 
 #include <media/ce147_platform.h>
 #include <media/s5ka3dfx_platform.h>
-//#include <media/s5k4ecgx.h>
 
 #include <plat/regs-serial.h>
 #include <plat/s5pv210.h>
@@ -410,11 +411,9 @@ static struct regulator_consumer_supply ldo3_consumer[] = {
 	REGULATOR_SUPPLY("pd_io", "s3c-usbgadget")
 };
 
-#ifndef CONFIG_SAMSUNG_FASCINATE
 static struct regulator_consumer_supply ldo5_consumer[] = {
 	REGULATOR_SUPPLY("vmmc", NULL),
 };
-#endif
 
 static struct regulator_consumer_supply ldo7_consumer[] = {
 	{	.supply	= "vlcd", },
@@ -756,89 +755,7 @@ static struct max8998_regulator_data wave_regulators[] = {
 };
 
 static struct max8998_adc_table_data temper_table[] =  {
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-	{  206,  700 },
-	{  220,  690 },
-	{  234,  680 },
-	{  248,  670 },
-	{  262,  660 },
-	{  276,  650 },
-	{  290,  640 },
-	{  304,  630 },
-	{  314,  620 },
-	{  323,  610 },
-	{  337,  600 },
-	{  351,  590 },
-	{  364,  580 },
-	{  379,  570 },
-	{  395,  560 },
-	{  408,  550 },
-	{  423,  540 },
-	{  438,  530 },
-	{  453,  520 },
-	{  465,  510 },
-	{  478,  500 },
-	{  495,  490 },
-	{  513,  480 },
-	{  528,  470 },
-	{  544,  460 },
-	{  564,  450 },
-	{  584,  440 },
-	{  602,  430 },
-	{  621,  420 },
-	{  643,  410 },
-	{  665,  400 },
-	{  682,  390 },
-	{  702,  380 },
-	{  729,  370 },
-	{  752,  360 },
-	{  775,  350 },
-	{  798,  340 },
-	{  821,  330 },
-	{  844,  320 },
-	{  867,  310 },
-	{  890,  300 },
-	{  913,  290 },
-	{  936,  280 },
-	{  959,  270 },
-	{  982,  260 },
-	{  1005,  250 },
-	{  1028,  240 },
-	{  1051,  230 },
-	{  1074,  220 },
-	{  1097,  210 },
-	{  1120,  200 },
-	{  1143,  190 },
-	{  1166,  180 },
-	{  1189,  170 },
-	{  1212,  160 },
-	{  1235,  150 },
-	{  1258,  140 },
-	{  1281,  130 },
-	{  1304,  120 },
-	{  1327,  110 },
-	{  1350,  100 },
-	{  1373,  90 },
-	{  1396,  80 },
-	{  1419,  70 },
-	{  1442,  60 },
-	{  1465,  50 },
-	{  1484,  40 },
-	{  1504,  30 },
-	{  1526,  20 },
-	{  1543,  10 }, // +10
-	{  1567,  0 }, // 10
-	{  1569,  -10 },
-	{  1592,  -20 },
-	{  1613,  -30 },
-	{  1633,  -40 },
-	{  1653,  -50 },
-	{  1654,  -60 },
-	{  1671,  -70 },
-	{  1691,  -80 },
-	{  1711,  -90 },
-	{  1731,  -100}, // 0
-#else
+//TODO: Compare with bada.
 	{  264,  650 },
 	{  275,  640 },
 	{  286,  630 },
@@ -912,7 +829,6 @@ static struct max8998_adc_table_data temper_table[] =  {
 	{ 1632,  -50 },
 	{ 1658,  -60 },
 	{ 1667,  -70 }, 
-#endif
 };
 struct max8998_charger_callbacks *charger_callbacks;
 static enum cable_type_t set_cable_status;
@@ -1054,7 +970,7 @@ static int tl2796_reset_lcd(struct platform_device *pdev)
 
 static int tl2796_backlight_on(struct platform_device *pdev)
 {
-	printk("tl2796_backlight_on <IMPLEMENT_ME>\n");
+	printk("tl2796_backlight_on (empty stub)\n");
 	return 0;
 }
 
@@ -2032,30 +1948,31 @@ static void mxt224_power_off(void)
 	gpio_direction_output(GPIO_TOUCH_EN, 0);
 }
 
-#define MXT224_MAX_MT_FINGERS 5
+#define MXT224_MAX_MT_FINGERS 6
 
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
 				64, 255, 50};
 static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
-				7, 0, 5, 0, 0, 0, 9, 35};
+				8, 0, 5, 0x14, 0, 0, 9, 0x19};
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				139,
+				0x8F, //139,
 				0, 	0, //xorigin, yorigin
-				15,	11, //xsize, ysize
-				0, 33, 30, 2, 7, 0, 3, 1,
-				46, MXT224_MAX_MT_FINGERS,
-				5, 40,
-				10, //amphyst
-				0, 0, //xrange, yrange
-				0, 0, 0, 0, 0, 0,
-				143, 40, //xedgectrl, dist
-				143, 80, //yedgectrl, dist
-				18//jumplimit
+				0x13,	0x0B, //xsize, ysize
+				0, 0x10, 0x28, 0x03, 0x06, 0, 3, 1,
+				0x00, MXT224_MAX_MT_FINGERS,
+				0x20, 0x20,
+				0x0A, //amphyst
+				0x20, 0x03, //xrange
+				0xE0, 0x01, //yrange
+				0, 0, 0, 0,
+				0, 0, //xedgectrl, dist
+				0, 0, //yedgectrl, dist
+				0//jumplimit
 				};
 static u8 t18_config[] = {SPT_COMCONFIG_T18,
 				0, 1};
 static u8 t20_config[] = {PROCI_GRIPFACESUPPRESSION_T20,
-				7, 0, 0, 0, 0, 0, 0, 80, 40, 4, 35, 10};
+				7, 0, 0, 0, 0, MXT224_MAX_MT_FINGERS, 0, 80, 40, 4, 35, 10};
 static u8 t22_config[] = {PROCG_NOISESUPPRESSION_T22,
 				5, 0, 0, 0, 0, 0, 0, 3, 30, 0, 0, 29, 34, 39,
 				49, 58, 3};
@@ -4913,12 +4830,13 @@ static void __init wave_inject_cmdline(void) {
 
 static uint32_t wave_keymap[] __initdata = {
 	/* KEY(row, col, keycode) */
-		KEY(0, 1, KEY_MENU),		/* Send */
-		KEY(0, 2, KEY_BACK),		/* End */
-		KEY(1, 1, KEY_CONFIG),		/* Half shot */
-		KEY(1, 2, KEY_VOLUMEUP),
-		KEY(2, 1, KEY_CAMERA),		/* Full shot */
-		KEY(2, 2, KEY_VOLUMEDOWN),
+		KEY(0, 0, KEY_MENU),		/* Middle key */
+		KEY(0, 2, KEY_SETUP),		/* Call key */
+		KEY(1, 0, KEY_CONFIG),		/* Cam Half shot */
+		KEY(1, 1, KEY_VOLUMEDOWN),
+		KEY(2, 1, KEY_VOLUMEUP),
+		KEY(2, 0, KEY_CAMERA),		/* Cam Full shot */
+		//END key is handled separately
 };
 
 static struct matrix_keymap_data wave_keymap_data __initdata = {

@@ -10,6 +10,7 @@
  * Free Software Foundation;  either version 2 of the  License, or (at your
  * option) any later version.
  */
+//#define DEBUG
 
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -343,6 +344,7 @@ static int __devinit samsung_keypad_probe(struct platform_device *pdev)
 
 	device_init_wakeup(&pdev->dev, pdata->wakeup);
 	platform_set_drvdata(pdev, keypad);
+	dev_dbg(&keypad->input_dev->dev, "DEV_DBG = ON, probing done!\n", 0);
 	return 0;
 
 err_free_irq:
