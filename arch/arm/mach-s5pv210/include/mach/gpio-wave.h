@@ -389,8 +389,8 @@
 #define GPIO_KBR2				S5PV210_GPH3(2)
 #define GPIO_KBR2_AF			3
 
-#define GPIO_KBR3				S5PV210_GPH3(3)
-#define GPIO_KBR3_AF			3
+#define GPIO_GPH33				S5PV210_GPH3(3) //NC in S8530
+
 #if defined (CONFIG_SAMSUNG_CAPTIVATE)
 #define S5PV210_GPH3_3_EXT_INT33_3	(0xf << 12)
 #endif

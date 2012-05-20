@@ -30,6 +30,7 @@
 #include <linux/irq.h>
 #include <linux/skbuff.h>
 #include <linux/console.h>
+#include <linux/gpio_keys.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -1222,45 +1223,30 @@ static struct platform_device s3c_device_i2c13 = {
   	.dev.platform_data	= &i2c13_platdata,
   };
 #endif
-/*
-static struct gpio_event_direct_entry wave_keypad_key_map[] = {
+
+static struct gpio_keys_button wave_gpio_keys_table[] = {
 	{
-		.gpio	= GPIO_nPOWER,
-		.code	= KEY_END,
+		.code 		= KEY_POWER,
+		.gpio		= GPIO_nPOWER,
+		.desc		= "gpio-keys: KEY_POWER",
+		.type		= EV_KEY,
+		.active_low	= 1,
+		.wakeup		= 1,
+		.debounce_interval = 1,
 	},
 };
 
-static struct gpio_event_input_info wave_keypad_key_info = {
-	.info.func = gpio_event_input_func,
-	.info.no_suspend = true,
-	.debounce_time.tv64 = 5 * NSEC_PER_MSEC,
-	.type = EV_KEY,
-	.keymap = wave_keypad_key_map,
-	.keymap_size = ARRAY_SIZE(wave_keypad_key_map)
+static struct gpio_keys_platform_data wave_gpio_keys_data = {
+	.buttons	= wave_gpio_keys_table,
+	.nbuttons	= ARRAY_SIZE(wave_gpio_keys_table),
 };
 
-static struct gpio_event_info *wave_input_info[] = {
-	&wave_keypad_key_info.info,
-};
-
-
-static struct gpio_event_platform_data wave_input_data = {
-	.names = {
-		"wave-keypad",
-		NULL,
-	},
-	.info = wave_input_info,
-	.info_count = ARRAY_SIZE(wave_input_info),
-};
-
-static struct platform_device wave_input_device = {
-	.name = GPIO_EVENT_DEV_NAME,
-	.id = 0,
+static struct platform_device wave_device_gpiokeys = {
+	.name = "gpio-keys",
 	.dev = {
-		.platform_data = &wave_input_data,
+		.platform_data = &wave_gpio_keys_data,
 	},
 };
-*/
 #ifdef CONFIG_S5P_ADC
 static struct s3c_adc_mach_info s3c_adc_platform __initdata = {
 	/* s5pc110 support 12-bit resolution */
@@ -4610,6 +4596,8 @@ static struct platform_device *wave_devices[] __initdata = {
 	&s5p_device_rtc,
 #endif
 	//&wave_input_device,
+
+	&wave_device_gpiokeys,
 	&samsung_device_keypad,
 
 	&s5pv210_device_iis0,
@@ -4925,10 +4913,12 @@ static void __init wave_inject_cmdline(void) {
 
 static uint32_t wave_keymap[] __initdata = {
 	/* KEY(row, col, keycode) */
-	KEY(0, 3, KEY_1), KEY(0, 4, KEY_2), KEY(0, 5, KEY_3),
-	KEY(0, 6, KEY_4), KEY(0, 7, KEY_5),
-	KEY(1, 3, KEY_A), KEY(1, 4, KEY_B), KEY(1, 5, KEY_C),
-	KEY(1, 6, KEY_D), KEY(1, 7, KEY_E)
+		KEY(0, 1, KEY_MENU),		/* Send */
+		KEY(0, 2, KEY_BACK),		/* End */
+		KEY(1, 1, KEY_CONFIG),		/* Half shot */
+		KEY(1, 2, KEY_VOLUMEUP),
+		KEY(2, 1, KEY_CAMERA),		/* Full shot */
+		KEY(2, 2, KEY_VOLUMEDOWN),
 };
 
 static struct matrix_keymap_data wave_keymap_data __initdata = {
@@ -4938,8 +4928,8 @@ static struct matrix_keymap_data wave_keymap_data __initdata = {
 
 static struct samsung_keypad_platdata wave_keypad_data __initdata = {
 	.keymap_data	= &wave_keymap_data,
-	.rows		= 8,
-	.cols		= 8,
+	.rows		= 3,
+	.cols		= 3,
 };
 
 static void __init wave_machine_init(void)
