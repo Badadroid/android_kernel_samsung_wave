@@ -4550,15 +4550,17 @@ static struct platform_device *wave_devices[] __initdata = {
 	&s5pv210_device_iis0,
 	&s3c_device_wdt,
 
-#ifdef CONFIG_FB_S3C
-	&s3c_device_fb,
-#endif
+
 
 #ifdef CONFIG_VIDEO_MFC50
 	&s3c_device_mfc,
 #endif
 #ifdef	CONFIG_S5P_ADC
 	&s3c_device_adc,
+#endif
+
+#ifdef CONFIG_FB_S3C
+	&s3c_device_fb,
 #endif
 #ifdef CONFIG_VIDEO_FIMC
 	&s3c_device_fimc0,
