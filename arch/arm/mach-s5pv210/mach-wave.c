@@ -4834,8 +4834,9 @@ static uint32_t wave_keymap[] __initdata = {
 		KEY(0, 2, KEY_SETUP),		/* Call key */
 		KEY(1, 0, KEY_CONFIG),		/* Cam Half shot */
 		KEY(1, 1, KEY_VOLUMEDOWN),
-		KEY(2, 1, KEY_VOLUMEUP),
 		KEY(2, 0, KEY_CAMERA),		/* Cam Full shot */
+		KEY(2, 1, KEY_VOLUMEUP),
+		KEY(2, 2, KEY_SLEEP),	/* Screen on/off */
 		//END key is handled separately
 };
 
