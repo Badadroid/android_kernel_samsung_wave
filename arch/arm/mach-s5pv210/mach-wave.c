@@ -4879,7 +4879,10 @@ static struct samsung_keypad_platdata wave_keypad_data __initdata = {
 	.keymap_data	= &wave_keymap_data,
 	.rows		= 3,
 	.cols		= 3,
+	.wakeup		= 1,
+
 };
+
 
 static void __init wave_machine_init(void)
 {
@@ -4888,7 +4891,7 @@ static void __init wave_machine_init(void)
 	setup_ram_console_mem();
 	wave_inject_cmdline();
 	platform_add_devices(wave_devices, ARRAY_SIZE(wave_devices));
-
+	console_suspend_enabled = 0;
 	/* smb380 */
 	/* platform_device_register(&wave_s3c_device_i2c5); */
 
@@ -5110,19 +5113,6 @@ void usb_host_phy_off(void)
 EXPORT_SYMBOL(usb_host_phy_off);
 #endif
 
-MACHINE_START(WAVE, "wave")
-	.boot_params	= S5P_PA_SDRAM + 0x100,
-	.fixup		= wave_fixup,
-	.init_irq	= s5pv210_init_irq,
-	.map_io		= wave_map_io,
-	.init_machine	= wave_machine_init,
-#if	defined(CONFIG_S5P_HIGH_RES_TIMERS)
-	.timer		= &s5p_systimer,
-#else
-	.timer		= &s3c24xx_timer,
-#endif
-MACHINE_END
-
 void s3c_setup_uart_cfg_gpio(unsigned char port)
 {
 	switch (port) {
@@ -5171,3 +5161,16 @@ void s3c_setup_uart_cfg_gpio(unsigned char port)
 	}
 }
 EXPORT_SYMBOL(s3c_setup_uart_cfg_gpio);
+
+MACHINE_START(WAVE, "wave")
+	.boot_params	= S5P_PA_SDRAM + 0x100,
+	.fixup		= wave_fixup,
+	.init_irq	= s5pv210_init_irq,
+	.map_io		= wave_map_io,
+	.init_machine	= wave_machine_init,
+#if	defined(CONFIG_S5P_HIGH_RES_TIMERS)
+	.timer		= &s5p_systimer,
+#else
+	.timer		= &s3c24xx_timer,
+#endif
+MACHINE_END
