@@ -1142,9 +1142,9 @@ static struct platform_device s3c_device_i2c13 = {
 
 static struct gpio_keys_button wave_gpio_keys_table[] = {
 	{
-		.code 		= KEY_POWER,
+		.code 		= KEY_BACK,
 		.gpio		= GPIO_nPOWER,
-		.desc		= "gpio-keys: KEY_POWER",
+		.desc		= "gpio-keys: KEY_BACK",
 		.type		= EV_KEY,
 		.active_low	= 1,
 		.wakeup		= 1,
@@ -1947,7 +1947,7 @@ static void mxt224_power_off(void)
 {
 	gpio_direction_output(GPIO_TOUCH_EN, 0);
 }
-
+/*
 #define MXT224_MAX_MT_FINGERS 6
 
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
@@ -1979,7 +1979,37 @@ static u8 t22_config[] = {PROCG_NOISESUPPRESSION_T22,
 static u8 t28_config[] = {SPT_CTECONFIG_T28,
 				1, 0, 3, 16, 63, 60};
 static u8 end_config[] = {RESERVED_T255};
+*/
+#define MXT224_MAX_MT_FINGERS 5
 
+static u8 t7_config[] = {GEN_POWERCONFIG_T7,
+64, 255, 50};
+static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
+7, 0, 5, 0, 0, 0, 9, 35};
+static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
+139,
+0, 0, //xorigin, yorigin
+15, 11, //xsize, ysize
+0, 33, 30, 2, 7, 0, 3, 1,
+46, MXT224_MAX_MT_FINGERS,
+5, 40,
+10, //amphyst
+0, 0, //xrange, yrange
+0, 0, 0, 0, 0, 0,
+143, 40, //xedgectrl, dist
+143, 80, //yedgectrl, dist
+18//jumplimit
+};
+static u8 t18_config[] = {SPT_COMCONFIG_T18,
+0, 1};
+static u8 t20_config[] = {PROCI_GRIPFACESUPPRESSION_T20,
+7, 0, 0, 0, 0, 0, 0, 80, 40, 4, 35, 10};
+static u8 t22_config[] = {PROCG_NOISESUPPRESSION_T22,
+5, 0, 0, 0, 0, 0, 0, 3, 30, 0, 0, 29, 34, 39,
+49, 58, 3};
+static u8 t28_config[] = {SPT_CTECONFIG_T28,
+1, 0, 3, 16, 63, 60};
+static u8 end_config[] = {RESERVED_T255};
 static const u8 *mxt224_config[] = {
 	t7_config,
 	t8_config,
