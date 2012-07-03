@@ -1947,39 +1947,7 @@ static void mxt224_power_off(void)
 {
 	gpio_direction_output(GPIO_TOUCH_EN, 0);
 }
-/*
-#define MXT224_MAX_MT_FINGERS 6
 
-static u8 t7_config[] = {GEN_POWERCONFIG_T7,
-				64, 255, 50};
-static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
-				8, 0, 5, 0x14, 0, 0, 9, 0x19};
-static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-				0x8F, //139,
-				0, 	0, //xorigin, yorigin
-				0x13,	0x0B, //xsize, ysize
-				0, 0x10, 0x28, 0x03, 0x06, 0, 3, 1,
-				0x00, MXT224_MAX_MT_FINGERS,
-				0x20, 0x20,
-				0x0A, //amphyst
-				0x20, 0x03, //xrange
-				0xE0, 0x01, //yrange
-				0, 0, 0, 0,
-				0, 0, //xedgectrl, dist
-				0, 0, //yedgectrl, dist
-				0//jumplimit
-				};
-static u8 t18_config[] = {SPT_COMCONFIG_T18,
-				0, 1};
-static u8 t20_config[] = {PROCI_GRIPFACESUPPRESSION_T20,
-				7, 0, 0, 0, 0, MXT224_MAX_MT_FINGERS, 0, 80, 40, 4, 35, 10};
-static u8 t22_config[] = {PROCG_NOISESUPPRESSION_T22,
-				5, 0, 0, 0, 0, 0, 0, 3, 30, 0, 0, 29, 34, 39,
-				49, 58, 3};
-static u8 t28_config[] = {SPT_CTECONFIG_T28,
-				1, 0, 3, 16, 63, 60};
-static u8 end_config[] = {RESERVED_T255};
-*/
 #define MXT224_MAX_MT_FINGERS 5
 
 static u8 t7_config[] = {GEN_POWERCONFIG_T7,
@@ -1989,7 +1957,7 @@ static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
 139,
 0, 0, //xorigin, yorigin
-15, 11, //xsize, ysize
+16,10, //xsize, ysize
 0, 33, 30, 2, 7, 0, 3, 1,
 46, MXT224_MAX_MT_FINGERS,
 5, 40,
