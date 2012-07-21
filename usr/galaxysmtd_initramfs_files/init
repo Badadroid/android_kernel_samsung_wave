@@ -9,30 +9,24 @@ busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-bml_over_mtd dump boot 72 reservoir 2004 /stage1/boot.bin
-
-eval $(busybox grep -m 1 -A 1 BOOT_IMAGE_OFFSETS /stage1/boot.bin | busybox tail -n 1)
-
-load_offset=$boot_offset
-load_len=$boot_len
-
 busybox mount -t yaffs2 /dev/block/mtdblock2 /system
 busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
+
+image=/stage1/ramdisk.img
 
 if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox rm -fr /cache/.startrecovery
-	load_offset=$recovery_offset
-	load_len=$recovery_len
+	image=/stage1/ramdisk-recovery.img
 
 	# disable lpm
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
 elif ! busybox test -e /system/build.prop ; then
 	# emergency boot
-        busybox umount /cache
-        erase_image cache
-        busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
-        busybox mkdir /cache/recovery
+	busybox umount /cache
+	erase_image cache
+	busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
+	busybox mkdir /cache/recovery
 
 	busybox mount -t vfat /dev/block/mmcblk0p1 /sdcard	
 
@@ -40,10 +34,9 @@ elif ! busybox test -e /system/build.prop ; then
 
 	if busybox test -e $UPDATE ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
-  	fi
+	fi
 
-	load_offset=$recovery_offset
-	load_len=$recovery_len
+	image=/stage1/ramdisk-recovery.img
 
 	# disable lpm
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
@@ -54,7 +47,7 @@ busybox umount /system
 busybox umount /sdcard
 busybox rmdir /sdcard
 
-busybox dd bs=512 if=/stage1/boot.bin skip=$load_offset count=$load_len | busybox zcat | busybox cpio -i
+busybox zcat $image | busybox cpio -i
 
 if busybox grep -q 1 /sys/class/power_supply/battery/charging_mode_booting ; then
 	# low power mode
