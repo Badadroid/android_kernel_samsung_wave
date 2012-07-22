@@ -73,6 +73,7 @@ enum s5pv210_dmc_port {
 };
 
 static struct cpufreq_frequency_table s5pv210_freq_table[] = {
+	{OC0, 1200*1000},
 	{L0, 1000*1000},
 	{L1, 800*1000},
 	{L2, 400*1000},
@@ -100,6 +101,10 @@ const unsigned long arm_volt_max = 1350000;
 const unsigned long int_volt_max = 1250000;
 
 static struct s5pv210_dvs_conf dvs_conf[] = {
+	[OC0] = {
+		.arm_volt   = 1275000,
+		.int_volt   = 1100000,
+	},
 	[L0] = {
 		.arm_volt   = 1275000,
 		.int_volt   = 1100000,
@@ -122,13 +127,16 @@ static struct s5pv210_dvs_conf dvs_conf[] = {
 	},
 };
 
-static u32 clkdiv_val[5][11] = {
+static u32 clkdiv_val[6][11] = {
 	/*
 	 * Clock divider value for following
 	 * { APLL, A2M, HCLK_MSYS, PCLK_MSYS,
 	 *   HCLK_DSYS, PCLK_DSYS, HCLK_PSYS, PCLK_PSYS,
 	 *   ONEDRAM, MFC, G3D }
 	 */
+
+	/* OC0 : [1000/200/100][166/83][133/66][200/200] */
+	{0, 5, 5, 1, 3, 1, 4, 1, 3, 0, 0},
 
 	/* L0 : [1000/200/100][166/83][133/66][200/200] */
 	{0, 4, 4, 1, 3, 1, 4, 1, 3, 0, 0},
@@ -449,7 +457,7 @@ static int s5pv210_target(struct cpufreq_policy *policy,
 		 * 6-1. Set PMS values
 		 * 6-2. Wait untile the PLL is locked
 		 */
-		if (index == L0)
+		if (index <= L0)
 			__raw_writel(APLL_VAL_1000, S5P_APLL_CON);
 		else
 			__raw_writel(APLL_VAL_800, S5P_APLL_CON);
@@ -634,7 +642,16 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
 		g_dvfslockval[i] = MAX_PERF_LEVEL;
 #endif
 
-	return cpufreq_frequency_table_cpuinfo(policy, s5pv210_freq_table);
+	int val = cpufreq_frequency_table_cpuinfo(policy, s5pv210_freq_table);
+#ifdef CONFIG_S5PV210_CPUFREQ_SET_MINMAX
+	if (val) {
+		policy->cpuinfo.min_freq = CONFIG_S5PV210_CPUFREQ_MIN;
+		policy->cpuinfo.max_freq = CONFIG_S5PV210_CPUFREQ_MAX;
+	}
+	policy->min = CONFIG_S5PV210_CPUFREQ_MIN;
+	policy->max = CONFIG_S5PV210_CPUFREQ_MAX;
+#endif
+	return val;
 }
 
 static int s5pv210_cpufreq_notifier_event(struct notifier_block *this,
