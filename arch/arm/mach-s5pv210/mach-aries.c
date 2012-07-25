@@ -2520,6 +2520,10 @@ static void fsa9480_cardock_cb(bool attached)
 		switch_set_state(&switch_dock, 2);
 	else
 		switch_set_state(&switch_dock, 0);
+
+	set_cable_status = attached ? CABLE_TYPE_AC : CABLE_TYPE_NONE;
+	if (charger_callbacks && charger_callbacks->set_cable)
+		charger_callbacks->set_cable(charger_callbacks, set_cable_status);
 }
 
 static void fsa9480_reset_cb(void)

@@ -301,7 +301,8 @@ static int s3c_ac_get_property(struct power_supply *ps,
 		return -EINVAL;
 
 	/* Set enable=1 only if the AC charger is connected */
-	val->intval = (chg->cable_status == CABLE_TYPE_AC);
+	val->intval = ((chg->cable_status == CABLE_TYPE_AC) &&
+			max8998_check_vdcin(chg));
 
 	return 0;
 }
