@@ -46,6 +46,9 @@
 #include <mach/param.h>
 #include <mach/system.h>
 #include <mach/sec_switch.h>
+#ifdef CONFIG_SAMSUNG_FASCINATE
+#include <mach/regs-gpio.h>
+#endif
 
 #include <linux/usb/gadget.h>
 #include <linux/fsa9480.h>
@@ -1287,6 +1290,18 @@ static struct platform_device s3c_device_i2c13 = {
   };
 #endif
 
+#ifdef CONFIG_SAMSUNG_FASCINATE
+void touch_key_set_int_flt(unsigned long width)
+{
+	writel(readl(S5PV210_GPJ4_INT_FLTCON0) |
+		(1 << 15) |     // enable bit
+		(width << 8),   // max width = 0x2f
+		S5PV210_GPJ4_INT_FLTCON0);
+}
+
+const unsigned long touch_int_flt_width = 0x2f;   // arbitrary value - max is 0x2f
+#endif
+
 static void touch_keypad_gpio_init(void)
 {
 	int ret = 0;
@@ -1294,6 +1309,10 @@ static void touch_keypad_gpio_init(void)
 	ret = gpio_request(_3_GPIO_TOUCH_EN, "TOUCH_EN");
 	if (ret)
 		printk(KERN_ERR "Failed to request gpio touch_en.\n");
+
+#ifdef CONFIG_SAMSUNG_FASCINATE
+	touch_key_set_int_flt(touch_int_flt_width);
+#endif
 }
 
 static void touch_keypad_onoff(int onoff)
