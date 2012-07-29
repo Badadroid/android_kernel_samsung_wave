@@ -363,21 +363,4 @@ config WIFI_CONTROL_FUNC
        bool "Enable WiFi control function abstraction"
        help
          Enables Power/Reset/Carddetect function abstraction
-
-config S5PV210_CPUFREQ_SET_MINMAX
-    bool "Set min and max cpu frequencies"
-    default n
-
-if S5PV210_CPUFREQ_SET_MINMAX
-
-config S5PV210_CPUFREQ_MIN
-    int "Min CPU freq in kHz"
-    default 100000
-
-config S5PV210_CPUFREQ_MAX
-    int "Max CPU freq in kHz"
-    default 1000000
-
-endif # S5PV210_CPUFREQ_SET_MINMAX
-
 endif
