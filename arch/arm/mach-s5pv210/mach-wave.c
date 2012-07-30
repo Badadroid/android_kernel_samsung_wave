@@ -4630,7 +4630,7 @@ static struct platform_device *wave_devices[] __initdata = {
 	&s3c_device_lcd,
 
 #if defined(CONFIG_FB_S3C_TL2796) || defined(CONFIG_FB_S3C_LG4573)
-	&wave_display_spi_gpio_data,
+	&s3c_display_spi_gpio,
 #endif
 	&sec_device_jack,
 
@@ -4751,12 +4751,12 @@ static void __init wave_fixup(struct machine_desc *desc,
 	mi->bank[0].size = 80 * SZ_1M;
 
 	mi->bank[1].start = 0x40000000;
-	/* 1M for ram_console buffer */
+	/* 1M-4K for ram_console buffer */
 	mi->bank[1].size = 255 * SZ_1M;
 	mi->nr_banks = 2;
 
 	ram_console_start = mi->bank[1].start + mi->bank[1].size;
-	ram_console_size = SZ_1M - SZ_4K;
+	ram_console_size = SZ_1M - SZ_4K; /* 4K for PM debug scratchpad */
 
 	pm_debug_scratchpad = ram_console_start + ram_console_size;
 }
