@@ -635,12 +635,14 @@ static int __devinit fsa9480_probe(struct i2c_client *client,
 	/* device detection */
 	fsa9480_detect_dev(usbsw);
 
+#if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
 	if (misc_register(&dockaudio_device))
 		printk("%s misc_register(%s) failed\n", __FUNCTION__, dockaudio_device.name);
 	else {
 		if (sysfs_create_group(&dockaudio_device.this_device->kobj, &dockaudio_group) < 0)
 			dev_err("failed to create sysfs group for device %s\n", dockaudio_device.name);
 	}
+#endif
 
 	return 0;
 
@@ -657,7 +659,9 @@ static int __devexit fsa9480_remove(struct i2c_client *client)
 {
 	struct fsa9480_usbsw *usbsw = i2c_get_clientdata(client);
 
+#if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
 	misc_deregister(&dockaudio_device);
+#endif
 
 	if (client->irq) {
 		disable_irq_wake(client->irq);
