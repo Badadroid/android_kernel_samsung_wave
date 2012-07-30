@@ -5034,8 +5034,8 @@ static void __init wave_machine_init(void)
 #endif
 
 #ifdef CONFIG_FB_S3C_LG4573
-        spi_register_board_info(lg4573_spi_board_info, ARRAY_SIZE(lg4573_spi_board_info));
-        s3cfb_set_platdata(&lg4573_data);
+	spi_register_board_info(lg4573_spi_board_info, ARRAY_SIZE(lg4573_spi_board_info));
+	s3cfb_set_platdata(&lg4573_data);
 #endif
 
 	
