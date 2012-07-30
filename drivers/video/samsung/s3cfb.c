@@ -33,6 +33,7 @@
 #include <plat/clock.h>
 #include <plat/cpu-freq.h>
 #include <plat/media.h>
+#include <linux/delay.h>
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 #include <linux/earlysuspend.h>
@@ -53,7 +54,6 @@
 #endif
 #ifdef CONFIG_FB_S3C_MDNIE
 #include "s3cfb_mdnie.h"
-#include <linux/delay.h>
 #endif
 
 #if (CONFIG_FB_S3C_NUM_OVLY_WIN >= CONFIG_FB_S3C_DEFAULT_WINDOW)

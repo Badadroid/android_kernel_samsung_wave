@@ -249,6 +249,36 @@ static struct s3c2410_uartcfg wave_uartcfgs[] __initdata = {
 #define S5PV210_LCD_WIDTH 480
 #define S5PV210_LCD_HEIGHT 800
 
+#ifdef CONFIG_FB_S3C_LG4573
+//LG4573(LCD type 0 & 3) S8530
+static struct s3cfb_lcd lg4573 = {
+	.width 		= S5PV210_LCD_WIDTH,
+	.height 	= S5PV210_LCD_HEIGHT,
+	.p_width 	= 52,	//  height of lcd in mm
+	.p_height 	= 86,	//  width of lcd in mm
+	.bpp 		= 24,   //
+	.freq 		= 60,	//
+	.timing = {
+
+		.h_fp 	= 17,
+		.h_bp 	= 17,   // HBP
+		.h_sw 	= 3,
+		.v_fp 	= 29,
+		.v_fpe 	= 29,
+		.v_bp 	= 2,    // VBP
+		.v_bpe 	= 2,
+		.v_sw 	= 1,
+	},
+	.polarity = {
+		.rise_vclk 	= 1, // video data fetch at DOTCLK rising edge
+		.inv_hsync 	= 1,	// High active
+		.inv_vsync 	= 1,	// High active
+		.inv_vden 	= 1,	// data is vaild when DE-pin is high
+	},
+};
+#endif
+
+#ifdef CONFIG_FB_S3C_TL2796
 static struct s3cfb_lcd s6e63m0 = {
 	.width = S5PV210_LCD_WIDTH,
 	.height = S5PV210_LCD_HEIGHT,
@@ -274,6 +304,7 @@ static struct s3cfb_lcd s6e63m0 = {
 		.inv_vden = 1,
 	},
 };
+#endif
 
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (12288 * SZ_1K)
 // Disabled to save memory (we can't find where it's used)
@@ -657,8 +688,9 @@ static struct regulator_init_data wave_ldo16_data = {
 static struct regulator_init_data wave_ldo17_data = {
 	.constraints	= {
 		.name		= "VCC_3.0V_LCD",
-		.min_uV		= 3000000,
-		.max_uV		= 3000000,
+		.min_uV		= 2800000,
+		.max_uV		= 3200000,
+		/* service manuals of S8500 & S8530 mark it as 3.2V but there are known configs of 3.0 and 2.8 */
 		.apply_uV	= 1,
 		.always_on	= 0,
 		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
@@ -872,7 +904,7 @@ struct platform_device sec_device_dpram = {
 	.id	= -1,
 };
 
-static void tl2796_cfg_gpio(struct platform_device *pdev)
+static void panel_cfg_gpio(struct platform_device *pdev)
 {
 	int i;
 
@@ -893,6 +925,12 @@ static void tl2796_cfg_gpio(struct platform_device *pdev)
 	writel(0x1, S5P_MDNIE_SEL);
 #else
 	writel(0x2, S5P_MDNIE_SEL);
+#endif
+
+#ifdef CONFIG_WAVE_S8530 //WaveII S8530
+	/* S8530 LCD Backlight */
+	s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, GPIO_LCD_BL_PWM_AF);
+	s3c_gpio_setpull(GPIO_LCD_BL_PWM, S3C_GPIO_PULL_NONE);
 #endif
 
 	s3c_gpio_setpull(GPIO_OLED_DET, S3C_GPIO_PULL_NONE);
@@ -942,14 +980,13 @@ void lcd_cfg_gpio_late_resume(void)
 }
 EXPORT_SYMBOL(lcd_cfg_gpio_late_resume);
 
-static int tl2796_reset_lcd(struct platform_device *pdev)
+static int panel_reset_lcd(struct platform_device *pdev)
 {
 	int err;
 
-	printk("tl2796_reset_lcd called\n");
 	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
 	if (err) {
-		printk(KERN_ERR "failed to request MP05(5) for "
+		printk(KERN_ERR "failed to request MP0(5) for "
 				"lcd reset control\n");
 		return err;
 	}
@@ -968,11 +1005,61 @@ static int tl2796_reset_lcd(struct platform_device *pdev)
 	return 0;
 }
 
-static int tl2796_backlight_on(struct platform_device *pdev)
+static int panel_backlight_on(struct platform_device *pdev)
 {
-	printk("tl2796_backlight_on (empty stub)\n");
+	printk("%s (empty stub)\n", __FUNCTION__);
 	return 0;
 }
+
+
+#define LCD_BUS_NUM     3
+
+#ifdef CONFIG_FB_S3C_LG4573
+
+int get_lcdtype(void)
+{
+	int panel_id;
+
+	panel_id = (gpio_get_value(GPIO_DIC_ID) < 1) | gpio_get_value(GPIO_OLED_ID);
+
+    printk("LCD_ID1=0x%x, LCD_ID2=0x%x, LCDTYPE=%d\n", gpio_get_value(GPIO_OLED_ID), gpio_get_value(GPIO_DIC_ID),panel_id );
+
+	return panel_id;
+}
+EXPORT_SYMBOL(get_lcdtype);
+
+
+//SLCD for S8530
+static struct s3c_platform_fb lg4573_data __initdata = {
+	.hw_ver		= 0x62,
+	.clk_name	= "sclk_fimd",
+	.nr_wins	= 5,
+	.default_win	= CONFIG_FB_S3C_DEFAULT_WINDOW,
+	.swap		= FB_SWAP_HWORD | FB_SWAP_WORD,
+
+	.lcd = &lg4573,
+	.cfg_gpio	= panel_cfg_gpio,
+	.backlight_on	= panel_backlight_on,
+	.reset_lcd	= panel_reset_lcd,
+};
+
+
+
+//for S8530 - LG4573
+static struct spi_board_info lg4573_spi_board_info[] __initdata = {
+	{
+		.modalias	= "lg4573",
+//		.platform_data	= &wave_panel_data,
+		.max_speed_hz	= 1200000,
+		.bus_num	= LCD_BUS_NUM,
+		.chip_select	= 0,
+		.mode		= SPI_MODE_3,
+		.controller_data = (void *)GPIO_DISPLAY_CS,
+	},
+};
+#endif
+
+#ifdef CONFIG_FB_S3C_TL2796
 
 static struct s3c_platform_fb tl2796_data __initdata = {
 	.hw_ver		= 0x62,
@@ -982,14 +1069,12 @@ static struct s3c_platform_fb tl2796_data __initdata = {
 	.swap		= FB_SWAP_HWORD | FB_SWAP_WORD,
 
 	.lcd = &s6e63m0,
-	.cfg_gpio	= tl2796_cfg_gpio,
-	.backlight_on	= tl2796_backlight_on,
-	.reset_lcd	= tl2796_reset_lcd,
+	.cfg_gpio	= panel_cfg_gpio,
+	.backlight_on	= panel_backlight_on,
+	.reset_lcd	= panel_reset_lcd,
 };
 
-#define LCD_BUS_NUM     3
-
-static struct spi_board_info spi_board_info[] __initdata = {
+static struct spi_board_info tl2796_spi_board_info[] __initdata = {
 	{
 		.modalias	= "tl2796",
 		.platform_data	= &wave_panel_data,
@@ -1000,20 +1085,21 @@ static struct spi_board_info spi_board_info[] __initdata = {
 		.controller_data = (void *)GPIO_DISPLAY_CS,
 	},
 };
-
-static struct spi_gpio_platform_data tl2796_spi_gpio_data = {
+#endif
+//common spi bus description for all LCD ICs
+static struct spi_gpio_platform_data wave_display_spi_gpio_data = {
 	.sck	= GPIO_DISPLAY_CLK,
 	.mosi	= GPIO_DISPLAY_SI,
 	.miso	= -1,
 	.num_chipselect = 2,
 };
 
-static struct platform_device s3c_device_spi_gpio = {
+static struct platform_device s3c_display_spi_gpio = {
 	.name	= "spi_gpio",
 	.id	= LCD_BUS_NUM,
 	.dev	= {
 		.parent		= &s3c_device_fb.dev,
-		.platform_data	= &tl2796_spi_gpio_data,
+		.platform_data	= &wave_display_spi_gpio_data,
 	},
 };
 
@@ -4543,8 +4629,8 @@ static struct platform_device *wave_devices[] __initdata = {
 	&s3c_device_g3d,
 	&s3c_device_lcd,
 
-#ifdef CONFIG_FB_S3C_TL2796
-	&s3c_device_spi_gpio,
+#if defined(CONFIG_FB_S3C_TL2796) || defined(CONFIG_FB_S3C_LG4573)
+	&wave_display_spi_gpio_data,
 #endif
 	&sec_device_jack,
 
@@ -4942,8 +5028,16 @@ static void __init wave_machine_init(void)
 	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
 
 	/* panel */
-	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+#ifdef CONFIG_FB_S3C_TL2796
+	spi_register_board_info(tl2796_spi_board_info, ARRAY_SIZE(tl2796_spi_board_info));
 	s3cfb_set_platdata(&tl2796_data);
+#endif
+
+#ifdef CONFIG_FB_S3C_LG4573
+        spi_register_board_info(lg4573_spi_board_info, ARRAY_SIZE(lg4573_spi_board_info));
+        s3cfb_set_platdata(&lg4573_data);
+#endif
+
 	
 #if defined(CONFIG_S5P_ADC)
 	s3c_adc_set_platdata(&s3c_adc_platform);

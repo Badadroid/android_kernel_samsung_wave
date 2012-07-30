@@ -485,7 +485,7 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 	lcd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;
 	register_early_suspend(&lcd->early_suspend);
 #endif
-	gprintk("tl2796_probe successfully probed\n", __func__);
+	gprintk("%s successfully probed\n", __func__);
 
 	return 0;
 

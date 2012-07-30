@@ -622,7 +622,7 @@ int s3cfb_set_alpha_value_width(struct s3cfb_global *ctrl, int id)
                writel(1, ctrl->regs + S3C_BLENDCON);
        else
                writel(0, ctrl->regs + S3C_BLENDCON);
-
+       return 0;
 }
 
 int s3cfb_set_alpha_blending(struct s3cfb_global *ctrl, int id)
