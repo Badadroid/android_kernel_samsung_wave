@@ -21,9 +21,19 @@ fi
 # older versions of depmod require the version string to start with three
 # numbers, so we cheat with a symlink here
 depmod_hack_needed=true
+# arch decided to move everything to usr/lib instead of lib
+# we can test for this and handle things with symlinks, if needed
+depmod_arch_hack_needed=false
 tmp_dir=$(mktemp -d ${TMPDIR:-/tmp}/depmod.XXXXXX)
 mkdir -p "$tmp_dir/lib/modules/$KERNELRELEASE"
+mkdir -p "$tmp_dir/usr/lib/modules/$KERNELRELEASE"
 if "$DEPMOD" -b "$tmp_dir" $KERNELRELEASE 2>/dev/null; then
+	if test -e "$tmp_dir/usr/lib/modules/$KERNELRELEASE/modules.dep" -o \
+		-e "$tmp_dir/usr/lib/modules/$KERNELRELEASE/modules.dep.bin"; then
+		depmod_arch_hack_needed=true
+		rm -rf "$tmp_dir/lib"
+		mv "$tmp_dir/usr/lib" "$tmp_dir/lib"
+	fi
 	if test -e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep" -o \
 		-e "$tmp_dir/lib/modules/$KERNELRELEASE/modules.dep.bin"; then
 		depmod_hack_needed=false
@@ -35,6 +45,11 @@ if $depmod_hack_needed; then
 	ln -s "$KERNELRELEASE" "$symlink"
 	KERNELRELEASE=99.98.$KERNELRELEASE
 fi
+if $depmod_arch_hack_needed; then
+	mkdir -p "$INSTALL_MOD_PATH/usr/lib/modules"
+	ln -s ../../../lib/modules/$KERNELRELEASE \
+		"$INSTALL_MOD_PATH/usr/lib/modules/$KERNELRELEASE"
+fi
 
 set -- -ae -F System.map
 if test -n "$INSTALL_MOD_PATH"; then
@@ -45,6 +60,19 @@ ret=$?
 
 if $depmod_hack_needed; then
 	rm -f "$symlink"
+fi
+
+if $depmod_arch_hack_needed; then
+	rm -f "$INSTALL_MOD_PATH/usr/lib/modules/$KERNELRELEASE"
+	if [ -z "$(ls "$INSTALL_MOD_PATH/usr/lib/modules")" ]; then
+		rm -rf "$INSTALL_MOD_PATH/usr/lib/modules"
+	fi
+	if [ -z "$(ls "$INSTALL_MOD_PATH/usr/lib")" ]; then
+		rm -rf "$INSTALL_MOD_PATH/usr/lib"
+	fi
+	if [ -z "$(ls "$INSTALL_MOD_PATH/usr")" ]; then
+		rm -rf "$INSTALL_MOD_PATH/usr"
+	fi
 fi
 
 exit $ret
