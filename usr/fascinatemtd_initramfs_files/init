@@ -11,13 +11,16 @@ busybox mount -t sysfs sysfs /sys
 
 busybox mount -t yaffs2 /dev/block/mtdblock2 /system
 busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
+busybox mount -t ext4 /dev/block/mmcblk0p1 /data
 
 image=/stage1/ramdisk.img
 
 if busybox test -e /cache/.startrecovery || \
+	busybox test -e /data/.startrecovery || \
 	busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox rm -fr /cache/.startrecovery
+	busybox rm -fr /data/.startrecovery
 	image=/stage1/ramdisk-recovery.img
 
 	# disable lpm
@@ -44,6 +47,7 @@ elif ! busybox test -e /system/build.prop ; then
 fi
 
 busybox umount /cache
+busybox umount /data
 busybox umount /system
 busybox umount /sdcard
 busybox rmdir /sdcard
