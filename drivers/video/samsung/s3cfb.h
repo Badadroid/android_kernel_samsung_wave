@@ -363,10 +363,7 @@ extern void s3cfb_late_resume(struct early_suspend *h);
 #endif
 #endif
 
-#if defined(CONFIG_FB_S3C_TL2796)
-extern void tl2796_ldi_init(void);
-extern void tl2796_ldi_enable(void);
-extern void tl2796_ldi_disable(void);
+#if defined(CONFIG_FB_S3C_TL2796) || defined(CONFIG_FB_S3C_LG4573)
 extern void lcd_cfg_gpio_early_suspend(void);
 extern void lcd_cfg_gpio_late_resume(void);
 #endif

@@ -1103,14 +1103,16 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_FB_S3C_LCD_INIT
 	printk("CONFIG_FB_S3C_LCD_INIT enabled\n");
-#if defined(CONFIG_FB_S3C_TL2796)
+#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573) 
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
 #endif
+/*
 #if !defined(CONFIG_MACH_ARIES)// && !defined(CONFIG_MACH_WAVE)
 	if (!bootloaderfb && pdata->reset_lcd)
 		pdata->reset_lcd(pdev);
 #endif
+*/
 #endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -1249,7 +1251,7 @@ void s3cfb_early_suspend(struct early_suspend *h)
 	s3c_mdnie_off();
 #endif
 	clk_disable(fbdev->clock);
-#if defined(CONFIG_FB_S3C_TL2796)
+#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573)
 	lcd_cfg_gpio_early_suspend();
 #endif
 	regulator_disable(fbdev->vlcd);
@@ -1283,7 +1285,7 @@ void s3cfb_late_resume(struct early_suspend *h)
 	if (ret < 0)
 		dev_err(fbdev->dev, "failed to enable vlcd\n");
 
-#if defined(CONFIG_FB_S3C_TL2796)
+#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573)
 	lcd_cfg_gpio_late_resume();
 #endif
 	dev_dbg(fbdev->dev, "wake up from suspend\n");
