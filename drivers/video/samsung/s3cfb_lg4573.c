@@ -233,15 +233,13 @@ static void update_brightness(struct s5p_lcd *lcd)
 }
 
 
-
-
-
-static void tl2796_ldi_enable(struct s5p_lcd *lcd)
+static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 {
 //	struct s5p_panel_data *pdata = lcd->data;
 
 	mutex_lock(&lcd->lock);
-
+	if(lcd->ldi_enable)
+		goto finito;
 	switch (lcd->lcd_type) 
 	{
 		case 1:
@@ -261,16 +259,18 @@ static void tl2796_ldi_enable(struct s5p_lcd *lcd)
 
 	update_brightness(lcd);
 	lcd->ldi_enable = 1;
+finito:
 	mutex_unlock(&lcd->lock);
 }
 
 
-static void tl2796_ldi_disable(struct s5p_lcd *lcd)
+static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 {
 //	struct s5p_panel_data *pdata = lcd->data;
 
 	mutex_lock(&lcd->lock);
-
+	if(!lcd->ldi_enable)
+		goto finito;
 	s6e63m0_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_ON);
 #if 1 /* nat : need to check */
 	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * 0)/255, bl_freq_count);
@@ -278,7 +278,7 @@ static void tl2796_ldi_disable(struct s5p_lcd *lcd)
 #endif
 
 	lcd->ldi_enable = 0;
-
+finito:
 	mutex_unlock(&lcd->lock);
 }
 
@@ -288,6 +288,10 @@ static int s5p_lcd_set_power(struct lcd_device *ld, int power)
 //	struct s5p_panel_data *pdata = lcd->data;
 
 	printk(KERN_DEBUG "s5p_lcd_set_power is called: %d", power);
+	if(power)
+		lg4573_ldi_disable(lcd);
+	else		
+		lg4573_ldi_enable(lcd);
 
 /*
 	if (power)
@@ -354,32 +358,32 @@ const struct backlight_ops s5p_bl_ops = {
 
 
 
-void tl2796_early_suspend(struct early_suspend *h)
+void lg4573_early_suspend(struct early_suspend *h)
 {
 	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd,	early_suspend);
 
-	tl2796_ldi_disable(lcd);
+	lg4573_ldi_disable(lcd);
 
 	return;
 }
 
-void tl2796_late_resume(struct early_suspend *h)
+void lg4573_late_resume(struct early_suspend *h)
 {
 	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd,	early_suspend);
 
-	tl2796_ldi_enable(lcd);
+	lg4573_ldi_enable(lcd);
 
 	return;
 }
 
 
 
-static int __devinit tl2796_probe(struct spi_device *spi)
+static int __devinit lg4573_probe(struct spi_device *spi)
 {
 	struct s5p_lcd *lcd;
 	int ret;
 
-	lcd = kzalloc(sizeof(*lcd), GFP_KERNEL);
+	lcd = kzalloc(sizeof(struct s5p_lcd), GFP_KERNEL);
 	if (!lcd) {
 		pr_err("failed to allocate for lcd\n");
 		ret = -ENOMEM;
@@ -403,9 +407,10 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 		ret = -EINVAL;
 		goto err_setup;
 	}
+//TODO: grab it from platform
 //	lcd->data = (struct s5p_panel_data *)spi->dev.platform_data;
 
-        //determinate of LCD type 
+        //determine the LCD type 
         lcd->lcd_type = get_lcdtype();
 
 	ret = gpio_request(GPIO_LCD_BL_PWM, "lcd_bl_pwm");
@@ -438,7 +443,7 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 	lcd->bl_dev->props.max_brightness = 255;
 
 
-	lcd->lcd_dev = lcd_device_register("s5p_lcd",	&spi->dev, lcd, &s5p_lcd_ops);
+	lcd->lcd_dev = lcd_device_register("s5p_lcd", &spi->dev, lcd, &s5p_lcd_ops);
 	if (!lcd->lcd_dev) 
 	{
 		dev_err(lcd->dev, "failed to register lcd\n");
@@ -472,7 +477,7 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 
 	spi_set_drvdata(spi, lcd);
 
-	tl2796_ldi_enable(lcd);
+	lg4573_ldi_enable(lcd);
 
 #ifdef CONFIG_FB_S3C_MDNIE
 	init_mdnie_class();  //set mDNIe UI mode, Outdoormode
@@ -480,8 +485,8 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	lcd->early_suspend.suspend = tl2796_early_suspend;
-	lcd->early_suspend.resume = tl2796_late_resume;
+	lcd->early_suspend.suspend = lg4573_early_suspend;
+	lcd->early_suspend.resume = lg4573_late_resume;
 	lcd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;
 	register_early_suspend(&lcd->early_suspend);
 #endif
@@ -504,38 +509,38 @@ err_alloc:
 }
 
 
-static int __devexit tl2796_remove(struct spi_device *spi)
+static int __devexit lg4573_remove(struct spi_device *spi)
 {
 	struct s5p_lcd *lcd = spi_get_drvdata(spi);
 
 	unregister_early_suspend(&lcd->early_suspend);
 	backlight_device_unregister(lcd->bl_dev);
-	tl2796_ldi_disable(lcd);
+	lg4573_ldi_disable(lcd);
 	kfree(lcd);
 
 	return 0;
 }
 
-static struct spi_driver tl2796_driver = {
+static struct spi_driver lg4573_driver = {
 	.driver = {
-		.name	= "tl2796",
+		.name	= "lg4573",
 		.owner	= THIS_MODULE,
 	},
-	.probe		= tl2796_probe,
-	.remove		= __devexit_p(tl2796_remove),
+	.probe		= lg4573_probe,
+	.remove		= __devexit_p(lg4573_remove),
 };
 
-static int __init tl2796_init(void)
+static int __init lg4573_init(void)
 {
-	return spi_register_driver(&tl2796_driver);
+	return spi_register_driver(&lg4573_driver);
 }
-static void __exit tl2796_exit(void)
+static void __exit lg4573_exit(void)
 {
-	spi_unregister_driver(&tl2796_driver);
+	spi_unregister_driver(&lg4573_driver);
 }
 
-module_init(tl2796_init);
-module_exit(tl2796_exit);
+module_init(lg4573_init);
+module_exit(lg4573_exit);
 
 
 MODULE_AUTHOR("Oleg Kiya");
