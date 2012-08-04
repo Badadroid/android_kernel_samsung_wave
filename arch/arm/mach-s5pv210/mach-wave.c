@@ -927,15 +927,24 @@ static void panel_cfg_gpio(struct platform_device *pdev)
 	writel(0x2, S5P_MDNIE_SEL);
 #endif
 
-#ifdef CONFIG_WAVE_S8530 //WaveII S8530
+#ifdef CONFIG_WAVE_S8530
 	/* S8530 LCD Backlight */
 	s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, GPIO_LCD_BL_PWM_AF);
 	s3c_gpio_setpull(GPIO_LCD_BL_PWM, S3C_GPIO_PULL_NONE);
-#endif
 
-	s3c_gpio_setpull(GPIO_OLED_DET, S3C_GPIO_PULL_NONE);
+	/* S8530 LCD_ID pins */
+	s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
+	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
+
+	s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
+	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
+#else
 	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_NONE);
 	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_NONE);
+#endif
+
+
+	s3c_gpio_setpull(GPIO_OLED_DET, S3C_GPIO_PULL_NONE);
 }
 
 void lcd_cfg_gpio_early_suspend(void)
@@ -967,16 +976,30 @@ void lcd_cfg_gpio_early_suspend(void)
 	gpio_set_value(GPIO_DISPLAY_CS, 0);
 	gpio_set_value(GPIO_DISPLAY_CLK, 0);
 	gpio_set_value(GPIO_DISPLAY_SI, 0);
+#ifdef CONFIG_WAVE_S8530
+	s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
+	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
 
+	s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
+	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
+#else
 	s3c_gpio_setpull(GPIO_OLED_DET, S3C_GPIO_PULL_DOWN);
 	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
 	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
+#endif
 }
 EXPORT_SYMBOL(lcd_cfg_gpio_early_suspend);
 
 void lcd_cfg_gpio_late_resume(void)
 {
+#ifdef CONFIG_WAVE_S8530
+	/* S8530 LCD_ID pins */
+	s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
+	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
 
+	s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
+	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
+#endif
 }
 EXPORT_SYMBOL(lcd_cfg_gpio_late_resume);
 
@@ -1020,9 +1043,9 @@ int get_lcdtype(void)
 {
 	int panel_id;
 
-	panel_id = (gpio_get_value(GPIO_DIC_ID) < 1) | gpio_get_value(GPIO_OLED_ID);
+	panel_id = (gpio_get_value(GPIO_DIC_ID) << 1) | gpio_get_value(GPIO_OLED_ID);
 
-    printk("LCD_ID1=0x%x, LCD_ID2=0x%x, LCDTYPE=%d\n", gpio_get_value(GPIO_OLED_ID), gpio_get_value(GPIO_DIC_ID),panel_id );
+    printk("LCD_ID1=0x%x, LCD_ID2=0x%x, LCDTYPE=%d\n", gpio_get_value(GPIO_OLED_ID), gpio_get_value(GPIO_DIC_ID), panel_id);
 
 	return panel_id;
 }
@@ -5024,8 +5047,8 @@ static void __init wave_machine_init(void)
 	gp2a_gpio_init();
 	i2c_register_board_info(11, i2c_devs11, ARRAY_SIZE(i2c_devs11));
 	
-	/* yamaha magnetic sensor */
-	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
+	/* yamaha magnetic sensor - disabled for now, TODO: debug*/
+//	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
 
 	/* panel */
 #ifdef CONFIG_FB_S3C_TL2796

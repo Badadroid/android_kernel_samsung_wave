@@ -98,15 +98,10 @@ struct s5p_lcd {
 	struct early_suspend    early_suspend;
 };
 
-/*
-struct s5p_panel_data aries_panel_data = {
-	.standby_on = LG4573_SEQ_SETTING,
-};
-*/
 
 static void update_brightness(struct s5p_lcd *lcd);
 
-static int s6e63m0_spi_write_byte(struct s5p_lcd *lcd, u8 addr, u8 data)
+static int lg4573_spi_write_byte(struct s5p_lcd *lcd, u8 addr, u8 data)
 {
 	u16 buf;
 	int ret;
@@ -130,7 +125,7 @@ static int s6e63m0_spi_write_byte(struct s5p_lcd *lcd, u8 addr, u8 data)
 	return ret;
 }
 
-static void s6e63m0_panel_send_sequence(struct s5p_lcd *lcd, const u16 *wbuf)
+static void lg4573_panel_send_sequence(struct s5p_lcd *lcd, const u16 *wbuf)
 {
 	u8 i = 0;
 	u8 addr;
@@ -146,7 +141,7 @@ static void s6e63m0_panel_send_sequence(struct s5p_lcd *lcd, const u16 *wbuf)
 			{
 				addr = 0x76;                    //WRITE DATA
 			}
-			s6e63m0_spi_write_byte(lcd, addr, (u8)wbuf[i]);
+			lg4573_spi_write_byte(lcd, addr, (u8)wbuf[i]);
 			i += 1;
                 } 
 		else 
@@ -239,7 +234,10 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 
 	mutex_lock(&lcd->lock);
 	if(lcd->ldi_enable)
+	{
+		printk("%s already enabled!\n", __func__);
 		goto finito;
+	}
 	switch (lcd->lcd_type) 
 	{
 		case 1:
@@ -247,15 +245,15 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 		case 2:
 			break;
 		case 3:
-			s6e63m0_panel_send_sequence(lcd,LG4573_SEQ_SETTING_TYPE_3);
+			lg4573_panel_send_sequence(lcd,LG4573_SEQ_SETTING_TYPE_3);
 			break;
 		case 0:
 		default:
-			s6e63m0_panel_send_sequence(lcd,LG4573_SEQ_SETTING_TYPE_0);			
+			lg4573_panel_send_sequence(lcd,LG4573_SEQ_SETTING_TYPE_0);
 			break;
 	}
 
-	s6e63m0_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_OFF);
+	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_OFF);
 
 	update_brightness(lcd);
 	lcd->ldi_enable = 1;
@@ -270,8 +268,11 @@ static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 
 	mutex_lock(&lcd->lock);
 	if(!lcd->ldi_enable)
+	{
+		printk("%s already disabled!\n", __func__);
 		goto finito;
-	s6e63m0_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_ON);
+	}
+	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_ON);
 #if 1 /* nat : need to check */
 	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * 0)/255, bl_freq_count);
 	pwm_disable(lcd->backlight_pwm_dev);
@@ -400,18 +401,18 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 
 	lcd->g_spi = spi;
 	lcd->dev = &spi->dev;
-	lcd->bl = 255;
-
+	lcd->bl = 128; //half of max brightness
+/*
 	if (!spi->dev.platform_data) {
 		dev_err(lcd->dev, "failed to get platform data\n");
 		ret = -EINVAL;
 		goto err_setup;
-	}
+	}*/
 //TODO: grab it from platform
 //	lcd->data = (struct s5p_panel_data *)spi->dev.platform_data;
 
-        //determine the LCD type 
-        lcd->lcd_type = get_lcdtype();
+	//determine the LCD type
+	lcd->lcd_type = get_lcdtype();
 
 	ret = gpio_request(GPIO_LCD_BL_PWM, "lcd_bl_pwm");
 	if (ret < 0) {

@@ -323,4 +323,3 @@ const unsigned short LG4573_SEQ_SLEEP_ON[] = {
 	SLEEPMSEC, 200,
         ENDDEF, 0x0000
 };
-

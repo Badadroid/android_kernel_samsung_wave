@@ -23,6 +23,8 @@
 
 #ifdef CONFIG_FB_S3C_LG4573
 //TODO: relocate all LG4573 sequences here
+struct s5p_panel_data wave_panel_data = {
+};
 #else
 
 static const u16 s6e63m0_SEQ_STANDBY_ON[] = {
