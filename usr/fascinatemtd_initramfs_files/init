@@ -9,18 +9,15 @@ busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-busybox mount -t yaffs2 /dev/block/mtdblock2 /system
-busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
-busybox mount -t ext4 /dev/block/mmcblk0p1 /data
+busybox mount -t ext4 /dev/block/mmcblk0p1 /system
+busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
 
 image=/stage1/ramdisk.img
 
 if busybox test -e /cache/.startrecovery || \
-	busybox test -e /data/.startrecovery || \
 	busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox rm -fr /cache/.startrecovery
-	busybox rm -fr /data/.startrecovery
 	image=/stage1/ramdisk-recovery.img
 
 	# disable lpm
@@ -28,8 +25,8 @@ if busybox test -e /cache/.startrecovery || \
 elif ! busybox test -e /system/build.prop ; then
 	# emergency boot
 	busybox umount /cache
-	erase_image cache
-	busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
+	make_ext4fs -b 4096 -g 32768 -i 8192 -I 256 -a /cache /dev/block/mmcblk0p2
+	busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
 	busybox mkdir /cache/recovery
 
 	busybox mount -t vfat /dev/block/mmcblk1p1 /sdcard
@@ -47,7 +44,6 @@ elif ! busybox test -e /system/build.prop ; then
 fi
 
 busybox umount /cache
-busybox umount /data
 busybox umount /system
 busybox umount /sdcard
 busybox rmdir /sdcard
