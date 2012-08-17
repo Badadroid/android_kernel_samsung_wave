@@ -79,7 +79,7 @@
 /* Device node name for application interface */
 #define APP_DEVNAME				"multipdp"
 /* number of PDP context */
-#define NUM_PDP_CONTEXT			4
+#define NUM_PDP_CONTEXT			3
 
 /* Device types */
 #define DEV_TYPE_NET			0 /* network device for IP data */
@@ -250,6 +250,7 @@ static dpram_device_t dpram_table[MAX_INDEX] = {
 static struct tty_struct *dpram_tty[MAX_INDEX];
 static struct ktermios *dpram_termios[MAX_INDEX];
 static struct ktermios *dpram_termios_locked[MAX_INDEX];
+struct delayed_work phone_active_delayed_work;
 
 static void res_ack_tasklet_handler(unsigned long data);
 static void fmt_rcv_tasklet_handler(unsigned long data);
@@ -729,6 +730,9 @@ static int dpram_read_raw(dpram_device_t *device, const u16 non_cmd)
 #ifdef _ENABLE_ERROR_DEVICE
 void request_phone_reset()
 {
+
+	return;
+/*
 	char buf[DPRAM_ERR_MSG_LEN];
 	unsigned long flags;
 
@@ -746,6 +750,7 @@ void request_phone_reset()
     
 	wake_up_interruptible(&dpram_err_wait_q);
 	kill_fasync(&dpram_err_async_q, SIGIO, POLL_IN);
+*/
 }
 #endif
 
@@ -1308,8 +1313,6 @@ static long dpram_tty_ioctl(struct file *file,
 	unsigned int val;
 	int ret = 0;
 
-	mutex_lock(&pdp_lock);
-
 	switch (cmd) {
 		case DPRAM_PHONE_ON:
 			phone_sync = 0;
@@ -1369,7 +1372,6 @@ static long dpram_tty_ioctl(struct file *file,
 			break;
 	}
 
-	mutex_unlock(&pdp_lock);
 	return ret;
 }
 
@@ -1760,8 +1762,6 @@ static irqreturn_t dpram_irq_handler(int irq, void *dev_id)
 #ifdef DPRAM_USES_DELAYED_PHONE_ACTIVE_IRQ
 static void phone_active_delayed_work_handler(struct work_struct *ignored);
 
-static DECLARE_DELAYED_WORK(phone_active_delayed_work, phone_active_delayed_work_handler);
-
 static void phone_active_delayed_work_handler(struct work_struct *ignored)
 {
 	/* ignore momentary drop in the phone_active gpio */
@@ -1786,7 +1786,7 @@ static irqreturn_t phone_active_irq_handler(int irq, void *dev_id)
 
 #ifdef DPRAM_USES_DELAYED_PHONE_ACTIVE_IRQ
 		if(gpio_get_value(GPIO_PHONE_ACTIVE) == 0) {
-			schedule_delayed_work(&phone_active_delayed_work, 100);
+			schedule_delayed_work(&phone_active_delayed_work, msecs_to_jiffies(1));
 		}
 #endif
 
@@ -2212,7 +2212,7 @@ static int pdp_activate(pdp_arg_t *pdp_arg, unsigned type, unsigned flags)
 	dev->tx_buf = (u8 *)(dev + 1);
 
 	if (type == DEV_TYPE_SERIAL) {
-		init_MUTEX(&dev->vs_dev.write_lock);
+		sema_init(&dev->vs_dev.write_lock, 1);
 		strcpy(dev->vs_dev.tty_name, pdp_arg->ifname);
 
 		ret = vs_add_dev(dev);
@@ -2270,7 +2270,7 @@ static void init_devices(void)
 	int i;
 
 	for (i = 0; i < MAX_INDEX; i++) {
-		init_MUTEX(&dpram_table[i].serial.sem);
+		sema_init(&dpram_table[i].serial.sem, 1);
 
 		dpram_table[i].serial.open_count = 0;
 		dpram_table[i].serial.tty = NULL;
@@ -2342,15 +2342,15 @@ static int register_interrupt_handler(void)
 	/* @LDK@ phone active interrupt */
 	retval = request_irq(phone_active_irq, phone_active_irq_handler, IRQF_DISABLED, "Phone Active", NULL);
 
+	enable_irq_wake(dpram_irq);
+	enable_irq_wake(phone_active_irq);
+
 	if (retval) {
 		dprintk(KERN_ERR "Phone active interrupt handler failed.\n");
 		free_irq(phone_active_irq, NULL);
 		unregister_dpram_driver();
 		return -1;
 	}
-
-	enable_irq_wake(dpram_irq);
-	enable_irq_wake(phone_active_irq);
 
 	return 0;
 }
@@ -2377,6 +2377,7 @@ static void check_miss_interrupt(void)
 static int dpram_suspend(struct platform_device *dev, pm_message_t state)
 {
 	gpio_set_value(GPIO_PDA_ACTIVE, GPIO_LEVEL_LOW);
+	flush_work(&phone_active_delayed_work.work);
 	if(requested_semaphore)
 		printk(KERN_ERR "=====> %s requested semaphore: %d\n", __func__, requested_semaphore);
 	return 0;
@@ -2449,6 +2450,8 @@ static int __devinit dpram_probe(struct platform_device *dev)
 	/* @LDK@ initialize device table */
 	init_devices();
 
+	INIT_DELAYED_WORK(&phone_active_delayed_work, phone_active_delayed_work_handler);
+
 	/* @LDK@ register interrupt handler */
 	if ((retval = register_interrupt_handler()) < 0) {
 		return -1;
@@ -2476,6 +2479,8 @@ static int __devexit dpram_remove(struct platform_device *dev)
 	/* @LDK@ unregister irq handler */
 	free_irq(IRQ_ONEDRAM_INT_N, NULL);
 	free_irq(IRQ_PHONE_ACTIVE, NULL);
+
+	flush_work(&phone_active_delayed_work.work);
 
 	kill_tasklets();
 
