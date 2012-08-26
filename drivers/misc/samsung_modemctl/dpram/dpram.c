@@ -756,7 +756,7 @@ void request_phone_reset()
 
 static int onedram_get_semaphore(const char *func)
 {
-	int i, req_try = 100;
+	int i, req_try = 300;
 
 	const u16 cmd = INT_COMMAND(INT_MASK_CMD_SMP_REQ);
 	
@@ -787,7 +787,7 @@ static int onedram_get_semaphore(const char *func)
 
 static int onedram_get_semaphore_for_init(const char *func)
 {
-	int i, chk_try = 10;
+	int i, chk_try = 100;
 	int j, req_try = 3;
 
 	const u16 cmd = INT_COMMAND(INT_MASK_CMD_SMP_REQ);
