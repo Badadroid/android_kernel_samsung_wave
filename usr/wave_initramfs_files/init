@@ -25,7 +25,7 @@ if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmd
 
 	# disable lpm
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
-elif ! busybox test -e /system/build.prop ; then
+elif ! busybox test -e /system/build.prop && 0 ; then
 	# emergency boot
 	busybox umount /cache
 
