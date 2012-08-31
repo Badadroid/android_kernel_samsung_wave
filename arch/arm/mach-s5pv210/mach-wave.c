@@ -228,7 +228,7 @@ static struct s3c2410_uartcfg wave_uartcfgs[] __initdata = {
 		.ulcon		= S5PV210_ULCON_DEFAULT,
 		.ufcon		= S5PV210_UFCON_DEFAULT,
 	},
-#ifndef CONFIG_FIQ_DEBUGGER
+#if !defined(CONFIG_FIQ_DEBUGGER) && 0
 	{
 		.hwport		= 2,
 		.flags		= 0,
