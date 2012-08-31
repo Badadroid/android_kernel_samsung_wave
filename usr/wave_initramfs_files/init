@@ -9,8 +9,12 @@ busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-busybox mount -t ext4 /dev/block/mmcblk0p2 /system
-busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
+busybox mkdir /bada_usr
+busybox chmod 0777 /bada_usr
+busybox mount -t vfat /dev/block/platform/s3c-sdhci.0/by-num/p2 /bada_usr noatime
+
+busybox mount -t ext4 loop@/bada_usr/system.img /system
+busybox mount -t ext4 loop@/bada_usr/cache.img /cache
 
 image=/stage1/ramdisk.img
 
@@ -24,8 +28,12 @@ if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmd
 elif ! busybox test -e /system/build.prop ; then
 	# emergency boot
 	busybox umount /cache
-	erase_image cache
-	busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
+
+#TODO: validate this below
+	erase_image /bada_usr/cache.img
+
+	busybox mount -t ext4 loop@/bada_usr/cache.img /cache
+
 	busybox mkdir /cache/recovery
 
 	busybox mount -t vfat /dev/block/mmcblk0p1 /sdcard	
@@ -45,6 +53,8 @@ fi
 busybox umount /cache
 busybox umount /system
 busybox umount /sdcard
+busybox umount /bada_usr
+busybox rmdir /bada_usr
 busybox rmdir /sdcard
 
 busybox zcat $image | busybox cpio -i
