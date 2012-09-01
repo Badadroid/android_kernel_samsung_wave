@@ -13,8 +13,8 @@ busybox mkdir /bada_usr
 busybox chmod 0777 /bada_usr
 busybox mount -t vfat /dev/block/platform/s3c-sdhci.0/by-num/p2 /bada_usr noatime
 
-busybox mount -t ext4 loop@/bada_usr/system.img /system
-busybox mount -t ext4 loop@/bada_usr/cache.img /cache
+busybox mount -t ext4 /bada_usr/system.img /system loop
+busybox mount -t ext4 /bada_usr/cache.img /cache loop
 
 image=/stage1/ramdisk.img
 
@@ -29,16 +29,16 @@ elif ! busybox test -e /system/build.prop && 0 ; then
 	# emergency boot
 	busybox umount /cache
 
-#TODO: validate this below
-	erase_image /bada_usr/cache.img
+	busybox losetup /dev/block/loop5 /bada_usr/cache.img
+	erase_image /dev/block/loop5
 
-	busybox mount -t ext4 loop@/bada_usr/cache.img /cache
+	busybox mount -t ext4 /bada_usr/cache.img /cache loop
 
 	busybox mkdir /cache/recovery
 
-	busybox mount -t vfat /dev/block/mmcblk0p1 /sdcard	
+#	busybox mount -t vfat /dev/block/mmcblk0p2 /sdcard	
 
-	UPDATE=$(busybox cat /sdcard/cyanogenmod.cfg)
+	UPDATE=$(busybox cat /bada_usr/cyanogenmod.cfg)
 
 	if busybox test -e $UPDATE ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
