@@ -217,7 +217,6 @@ int max8998_irq_init(struct max8998_dev *max8998)
 		max8998->irq_masks_cache[i] = 0xff;
 		max8998_write_reg(max8998->i2c, MAX8998_REG_IRQM1 + i, 0xff);
 	}
-
 	max8998_write_reg(max8998->i2c, MAX8998_REG_STATUSM1, 0xff);
 	max8998_write_reg(max8998->i2c, MAX8998_REG_STATUSM2, 0xff);
 

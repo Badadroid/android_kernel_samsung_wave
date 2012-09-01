@@ -26,7 +26,7 @@
 #include <linux/regulator/consumer.h>
 #include <mach/gpio.h>
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 #include <linux/mfd/max8998.h>
 #include <mach/gpio-aries.h>
 #else
@@ -65,7 +65,8 @@ __module_param_call("", switchsel, &param_ops_switchsel, &switchsel, 0, 0444);
 MODULE_PARM_DESC(switchsel, "Switch select parameter value.");
 
 
-static void usb_switch_mode(struct sec_switch_struct *secsw, int mode)
+static void usb_switch_mode(struct sec_switch_struct *secsw, int mode
+)
 {
 	if (mode == SWITCH_PDA) {
 		if (secsw->pdata && secsw->pdata->set_regulator)

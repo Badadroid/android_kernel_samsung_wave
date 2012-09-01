@@ -90,6 +90,14 @@ snd-soc-wm8994-samsung-objs := wm8994_samsung.o wm8994_herring.o
 endif
 endif
 
+ifdef CONFIG_MACH_WAVE
+ifeq ($(CONFIG_SND_WM8994_EXTENSIONS),y)
+snd-soc-wm8994-samsung-objs := wm8994_samsung.o wm8994_herring.o wm8994_extensions.o
+else
+snd-soc-wm8994-samsung-objs := wm8994_samsung.o wm8994_herring.o
+endif
+endif
+
 snd-soc-wm8995-objs := wm8995.o
 snd-soc-wm9081-objs := wm9081.o
 snd-soc-wm9705-objs := wm9705.o

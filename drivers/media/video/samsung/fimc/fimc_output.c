@@ -101,7 +101,7 @@ int fimc_outdev_stop_streaming(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 		break;
 	case FIMC_OVLY_NONE_SINGLE_BUF:		/* fall through */
 	case FIMC_OVLY_NONE_MULTI_BUF:
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if (ctx->status == FIMC_STREAMON_IDLE)
 #else // CONFIG_MACH_P1
 		if (ctx->status <= FIMC_READY_ON || ctx->status == FIMC_STREAMON_IDLE)
@@ -153,7 +153,7 @@ int fimc_outdev_resume_dma(struct fimc_control *ctrl, struct fimc_ctx *ctx)
 	win->other_mem_addr = ctx->dst[1].base[FIMC_ADDR_Y];
 	win->other_mem_size = ctx->dst[1].length[FIMC_ADDR_Y];
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	/* Update WIN size */
 	var.xres_virtual = fimd_rect.width;
 	var.yres_virtual = fimd_rect.height;
@@ -936,7 +936,7 @@ static int fimc_outdev_set_dst_dma_size(struct fimc_control *ctrl,
 		break;
 
 	case FIMC_OVLY_DMA_MANUAL:	/* fall through */
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	case FIMC_OVLY_DMA_AUTO:
 #endif
 		real.width = ctx->win.w.width;
@@ -1337,7 +1337,7 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 			if (ret)
 				return ret;
 		} else if (b->memory == V4L2_MEMORY_USERPTR) {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			if (mode == FIMC_OVLY_DMA_AUTO)
 #else // CONFIG_MACH_P1
 			if (mode == FIMC_OVLY_DMA_AUTO ||
@@ -1751,7 +1751,7 @@ int fimc_streamon_output(void *fh)
 	if (ctx->overlay.mode == FIMC_OVLY_NOT_FIXED)
 		ctx->overlay.mode = FIMC_OVLY_MODE;
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	/* initialize destination buffers */
 	if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO) {
 		ret = fimc_outdev_set_dst_buf(ctrl, ctx);
@@ -1821,7 +1821,7 @@ int fimc_streamoff_output(void *fh)
 
 	if (ctrl->out->last_ctx == ctx->ctx_num)
 		ctrl->out->last_ctx = -1;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO) {
 		ctrl->mem.curr = ctx->dst[0].base[FIMC_ADDR_Y];
 
@@ -2042,7 +2042,7 @@ static int fimc_qbuf_output_dma_auto(struct fimc_control *ctrl,
 		win->other_mem_addr = ctx->dst[1].base[FIMC_ADDR_Y];
 		win->other_mem_size = ctx->dst[1].length[FIMC_ADDR_Y];
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		/* Update WIN size */
 		var.xres_virtual = fimd_rect.width;
 		var.yres_virtual = fimd_rect.height;
@@ -2217,7 +2217,7 @@ int fimc_qbuf_output(void *fh, struct v4l2_buffer *b)
 		fimc_clk_en(ctrl, true);
 
 		ctx = &ctrl->out->ctx[ctx_num];
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if (ctx_num != ctrl->out->last_ctx) {
 #else // CONFIG_MACH_P1
 		if ((ctx->overlay.mode == FIMC_OVLY_NONE_SINGLE_BUF) ||
@@ -2268,7 +2268,7 @@ int fimc_dqbuf_output(void *fh, struct v4l2_buffer *b)
 		if (ret == 0) {
 			fimc_dump_context(ctrl, ctx);
 			fimc_err("[0] out_queue is empty\n");
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			ctx->status = FIMC_STREAMON_IDLE;
 #endif
 			return -EAGAIN;
@@ -2317,7 +2317,7 @@ int fimc_g_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 
 	fimc_info1("%s: called\n", __func__);
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	if (ctrl->cap) {
 		fimc_err("%s: fimc is already used for capture mode\n",
 			 __func__);

@@ -548,6 +548,13 @@ config OPTICAL_GP2A
 	help
 	  This option enables proximity & light sensors using gp2a driver.
 
+config GP2A_PROX_ONLY
+	depends on I2C && GENERIC_GPIO
+	tristate "GP2A ambient proximity input device"
+	default n
+	help
+	  This option enables proximity sensor using gp2a driver.
+
 config INPUT_BMA020
 	depends on I2C
 	tristate "BMA020 driver for s5pc110"

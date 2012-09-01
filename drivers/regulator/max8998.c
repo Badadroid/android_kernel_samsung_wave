@@ -39,6 +39,9 @@ struct max8998_data {
 	struct max8998_dev	*iodev;
 	int			num_regulators;
 	struct regulator_dev	**rdev;
+#ifdef CONFIG_MACH_WAVE
+	struct max8998_power_callbacks callbacks;
+#endif
 };
 
 struct voltage_map_desc {
@@ -609,6 +612,28 @@ static struct regulator_desc regulators[] = {
 	}
 };
 
+#ifdef CONFIG_MACH_WAVE
+static void max8998_power_off(struct max8998_power_callbacks *ptr)
+{
+	uint8_t status1;
+	uint8_t max_irqs[4];
+
+	struct max8998_data *max_data = container_of(ptr, struct max8998_data, callbacks);
+	struct i2c_client *i2c = max_data->iodev->i2c;
+
+	printk("%s enter\n.", __func__);
+
+	do
+	{
+		max8998_read_reg(i2c, MAX8998_REG_STATUS1, &status1);
+	} while((status1 & 0x80) != 0); /* POWERON_status */
+
+	max8998_bulk_read(i2c, MAX8998_REG_IRQ1, 4, max_irqs);
+
+	printk("%s exit\n.", __func__);
+}
+#endif
+
 static __devinit int max8998_pmic_probe(struct platform_device *pdev)
 {
 	struct max8998_dev *iodev = dev_get_drvdata(pdev->dev.parent);
@@ -660,6 +685,11 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
 		}
 	}
 
+#ifdef CONFIG_MACH_WAVE
+	max8998->callbacks.power_off = max8998_power_off;
+	if(pdata->power_callbacks)
+		(*pdata->power_callbacks) = &max8998->callbacks;
+#endif
 
 	return 0;
 err:

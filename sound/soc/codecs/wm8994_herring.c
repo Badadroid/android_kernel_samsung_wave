@@ -120,7 +120,7 @@ struct gain_info_t cdma_playback_gain_table[PLAYBACK_GAIN_CDMA_NUM] = {
 		.mode = PLAYBACK_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E     /* +5dB */
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -175,7 +175,7 @@ struct gain_info_t cdma_playback_gain_table[PLAYBACK_GAIN_CDMA_NUM] = {
 		.mode = PLAYBACK_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -210,7 +210,7 @@ struct gain_info_t cdma_playback_gain_table[PLAYBACK_GAIN_CDMA_NUM] = {
 		.mode = PLAYBACK_RING_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_RING_SPK,
 		.reg  = WM8994_CLASSD,			/* 25h */
@@ -240,7 +240,7 @@ struct gain_info_t cdma_playback_gain_table[PLAYBACK_GAIN_CDMA_NUM] = {
 		.mode = PLAYBACK_RING_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_RING_SPK_HP,
 		.reg  = WM8994_CLASSD,			/* 25h */
@@ -402,7 +402,7 @@ struct gain_info_t cdma_voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3F    /* Left Speaker +3dB */
+		.gain = WM8994_SPKOUT_VU | 0x3F    /* Left Speaker +6dB */
 	}, {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -570,7 +570,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E     /* +5dB */
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -595,12 +595,21 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_HP,
 		.reg  = WM8994_LEFT_OUTPUT_VOLUME,	/* 1Ch */
 		.mask = WM8994_HPOUT1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x3A
+#else
 		.gain = WM8994_HPOUT1_VU | 0x31 /* -8dB */
+#endif
+
 	}, {
 		.mode = PLAYBACK_HP,
 		.reg  = WM8994_RIGHT_OUTPUT_VOLUME,	/* 1Dh */
 		.mask = WM8994_HPOUT1R_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x3A
+#else
 		.gain = WM8994_HPOUT1_VU | 0x31 /* -8dB */
+#endif
 	}, {
 		.mode = PLAYBACK_HP,
 		.reg  = WM8994_LEFT_OPGA_VOLUME,	/* 20h */
@@ -625,7 +634,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -660,7 +669,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_RING_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_RING_SPK,
 		.reg  = WM8994_CLASSD,			/* 25h */
@@ -670,12 +679,20 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_RING_HP,
 		.reg  = WM8994_LEFT_OUTPUT_VOLUME,	/* 1Ch */
 		.mask = WM8994_HPOUT1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x21
+#else
 		.gain = WM8994_HPOUT1_VU | 0x34
+#endif
 	}, {
 		.mode = PLAYBACK_RING_HP,
 		.reg  = WM8994_RIGHT_OUTPUT_VOLUME,	/* 1Dh */
 		.mask = WM8994_HPOUT1R_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x21
+#else
 		.gain = WM8994_HPOUT1_VU | 0x34
+#endif
 	}, {
 		.mode = PLAYBACK_RING_HP,
 		.reg  = WM8994_LEFT_OPGA_VOLUME,	/* 20h */
@@ -690,7 +707,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_RING_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3E
+		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
 	}, {
 		.mode = PLAYBACK_RING_SPK_HP,
 		.reg  = WM8994_CLASSD,			/* 25h */
@@ -710,12 +727,20 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_HP_NO_MIC,
 		.reg  = WM8994_LEFT_OUTPUT_VOLUME,  /* 1Ch */
 		.mask = WM8994_HPOUT1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x3A
+#else
 		.gain = WM8994_HPOUT1_VU | 0x36   /* -3dB */
+#endif
 	}, {
 		.mode = PLAYBACK_HP_NO_MIC,
 		.reg  = WM8994_RIGHT_OUTPUT_VOLUME, /* 1Dh */
 		.mask = WM8994_HPOUT1R_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x3A
+#else
 		.gain = WM8994_HPOUT1_VU | 0x36   /* -3dB */
+#endif
 	}, {
 		.mode = PLAYBACK_HP_NO_MIC,
 		.reg  = WM8994_LEFT_OPGA_VOLUME,	/* 20h */
@@ -764,7 +789,11 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_RCV,
 		.reg  = WM8994_LEFT_LINE_INPUT_1_2_VOLUME,	/* 18h */
 		.mask = WM8994_IN1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1L_VU | 0x0A   /* -1.5dB */
+#else
 		.gain = WM8994_IN1L_VU | 0x15   /* +15dB */
+#endif
 	}, {
 		.mode = VOICECALL_RCV,
 		.reg  = WM8994_INPUT_MIXER_3,		/* 29h */
@@ -784,12 +813,21 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_RCV,
 		.reg  = WM8994_LEFT_OPGA_VOLUME,	/* 20h */
 		.mask = WM8994_MIXOUTL_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_MIXOUT_VU | 0x3C
+#else
 		.gain = WM8994_MIXOUT_VU | 0x3F
+#endif
 	}, {
 		.mode = VOICECALL_RCV,
 		.reg  = WM8994_RIGHT_OPGA_VOLUME,	/* 21h */
 		.mask = WM8994_MIXOUTR_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_MIXOUT_VU | 0x3C
+#else
 		.gain = WM8994_MIXOUT_VU | 0x3F
+#endif
+
 	}, {
 		.mode = VOICECALL_RCV,
 		.reg  = WM8994_HPOUT2_VOLUME,		/* 1Fh */
@@ -804,7 +842,11 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_LEFT_LINE_INPUT_1_2_VOLUME,	/* 18h */
 		.mask = WM8994_IN1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1L_VU | 0x0E   /* +4.5dB */
+#else
 		.gain = WM8994_IN1L_VU | 0x12   /* Mic +30dB */
+#endif
 	}, {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_SPKMIXL_ATTENUATION,	/* 22h */
@@ -829,12 +871,16 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_CLASSD,			/* 25h */
 		.mask = WM8994_SPKOUTL_BOOST_MASK,
-		.gain = 0x7 << WM8994_SPKOUTL_BOOST_SHIFT /* Left spaker +12dB */
+		.gain = 0x7 << WM8994_SPKOUTL_BOOST_SHIFT /* Left speaker +12dB */
 	}, { /* HP */
 		.mode = VOICECALL_HP,
 		.reg  = WM8994_RIGHT_LINE_INPUT_1_2_VOLUME,	/* 1Ah */
 		.mask = WM8994_IN1R_VOL_MASK,
-		.gain = WM8994_IN1R_VU | 0x1D
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1R_VU | 0x10   /* +7.5dB */
+#else
+		.gain = WM8994_IN1R_VU | 0x1D	/* +27dB */
+#endif
 	}, {
 		.mode = VOICECALL_HP,
 		.reg  = WM8994_INPUT_MIXER_4,		/* 2Ah */
@@ -854,17 +900,29 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_HP,
 		.reg  = WM8994_LEFT_OUTPUT_VOLUME,	/* 1Ch */
 		.mask = WM8994_HPOUT1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x2E
+#else
 		.gain = WM8994_HPOUT1_VU | 0x30
+#endif
 	}, {
 		.mode = VOICECALL_HP,
 		.reg  = WM8994_RIGHT_OUTPUT_VOLUME,	/* 1Dh */
 		.mask = WM8994_HPOUT1R_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x2E
+#else
 		.gain = WM8994_HPOUT1_VU | 0x30
+#endif
 	}, { /* HP_NO_MIC */
 		.mode = VOICECALL_HP_NO_MIC,
 		.reg  = WM8994_LEFT_LINE_INPUT_1_2_VOLUME,	/* 18h */
 		.mask = WM8994_IN1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1L_VU | 0x0B   /* 0dB */
+#else
 		.gain = WM8994_IN1L_VU | 0x12	/* +10.5dB */
+#endif
 	}, {
 		.mode = VOICECALL_HP_NO_MIC,
 		.reg  = WM8994_INPUT_MIXER_3,		/* 29h */
@@ -884,12 +942,20 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_HP_NO_MIC,
 		.reg  = WM8994_LEFT_OUTPUT_VOLUME,	/* 1Ch */
 		.mask = WM8994_HPOUT1L_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x2E
+#else
 		.gain = WM8994_HPOUT1_VU | 0x30
+#endif
 	}, {
 		.mode = VOICECALL_HP_NO_MIC,
 		.reg  = WM8994_RIGHT_OUTPUT_VOLUME, /* 1Dh */
 		.mask = WM8994_HPOUT1R_VOL_MASK,
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_HPOUT1_VU | 0x2E
+#else
 		.gain = WM8994_HPOUT1_VU | 0x30
+#endif
 	}, { /* TTY_VCO */
 		.mode = VOICECALL_TTY_VCO,
 		.reg  = WM8994_LEFT_LINE_INPUT_1_2_VOLUME,	/* 18h */
@@ -928,7 +994,11 @@ struct gain_info_t recording_gain_table[RECORDING_GAIN_NUM] = {
 		.mode = RECORDING_MAIN,
 		.reg  = WM8994_LEFT_LINE_INPUT_1_2_VOLUME,	/* 18h */
 		.mask = WM8994_IN1L_VOL_MASK,
-		.gain = WM8994_IN1L_VU | 0x12    /* +10.5dB */
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1L_VU | 0x0B   /* +15dB */
+#else
+		.gain = WM8994_IN1L_VU | 0x12    /* 0dB */
+#endif
 	}, {
 		.mode = RECORDING_MAIN,
 		.reg  = WM8994_INPUT_MIXER_3,		/* 29h */
@@ -948,7 +1018,11 @@ struct gain_info_t recording_gain_table[RECORDING_GAIN_NUM] = {
 		.mode = RECORDING_HP,
 		.reg  = WM8994_RIGHT_LINE_INPUT_1_2_VOLUME,	/* 1Ah */
 		.mask = WM8994_IN1R_VOL_MASK,
-		.gain = WM8994_IN1R_VU | 0x15
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1R_VU | 0x0B   /* 0dB */
+#else
+		.gain = WM8994_IN1R_VU | 0x15	/* +15dB */
+#endif
 	}, {
 		.mode = RECORDING_HP,
 		.reg  = WM8994_INPUT_MIXER_4,		/* 2Ah */
@@ -1008,7 +1082,11 @@ struct gain_info_t recording_gain_table[RECORDING_GAIN_NUM] = {
 		.mode = RECORDING_CAM_MAIN,
 		.reg  = WM8994_LEFT_LINE_INPUT_1_2_VOLUME,	/* 18h */
 		.mask = WM8994_IN1L_VOL_MASK,
-		.gain = WM8994_IN1L_VU | 0x17    /* +18dB */
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1L_VU | 0x0B	/* 0dB */
+#else
+		.gain = WM8994_IN1L_VU | 0x17	/* +18dB */
+#endif
 	}, {
 		.mode = RECORDING_CAM_MAIN,
 		.reg  = WM8994_INPUT_MIXER_3,		/* 29h */
@@ -1028,7 +1106,11 @@ struct gain_info_t recording_gain_table[RECORDING_GAIN_NUM] = {
 		.mode = RECORDING_CAM_HP,
 		.reg  = WM8994_RIGHT_LINE_INPUT_1_2_VOLUME,	/* 1Ah */
 		.mask = WM8994_IN1R_VOL_MASK,
-		.gain = WM8994_IN1R_VU | 0x15    /* +15dB */
+#ifdef CONFIG_MACH_WAVE
+		.gain = WM8994_IN1L_VU | 0x0B	/* 0dB */
+#else
+		.gain = WM8994_IN1R_VU | 0x15	/* +15dB */
+#endif
 	}, {
 		.mode = RECORDING_CAM_HP,
 		.reg  = WM8994_INPUT_MIXER_4,		/* 2Ah */
@@ -1123,7 +1205,7 @@ struct gain_info_t gain_code_table[GAIN_CODE_NUM] = {
 		.mode = VOICECALL_SPK | VOICECALL_MODE | GAIN_DIVISION_BIT_1,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-		.gain = WM8994_SPKOUT_VU | 0x3A		/* +1dB */
+		.gain = WM8994_SPKOUT_VU | 0x3A    /* Left Speaker +1dB */
 	}, {/* HP */
 		.mode = VOICECALL_HP | VOICECALL_MODE | GAIN_DIVISION_BIT_1,
 		.reg  = WM8994_RIGHT_LINE_INPUT_1_2_VOLUME,	/* 1Ah */
@@ -2642,8 +2724,13 @@ static void wm8994_set_gsm_voicecall_common_setting(struct snd_soc_codec *codec)
 
 	wm8994_write(codec, WM8994_AIF2_BCLK, 0x70);
 	wm8994_write(codec, WM8994_AIF2_CONTROL_2, 0x0000);
+
+#ifdef CONFIG_MACH_WAVE
+	wm8994_write(codec, WM8994_AIF2_MASTER_SLAVE, 0x0000); /* AIF2 a slave, clocks operating in normal mode (CP is the master) */
+#else
 	wm8994_write(codec, WM8994_AIF2_MASTER_SLAVE, WM8994_AIF2_MSTR |
 		WM8994_AIF2_CLK_FRC | WM8994_AIF2_LRCLK_FRC);
+#endif
 
 	val = wm8994_read(codec, WM8994_POWER_MANAGEMENT_5);
 	val &= ~(WM8994_AIF2DACL_ENA_MASK | WM8994_AIF2DACR_ENA_MASK |
@@ -3453,9 +3540,16 @@ void wm8994_set_voicecall_speaker(struct snd_soc_codec *codec)
 
 void wm8994_set_voicecall_bluetooth(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_MACH_WAVE
+	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+#endif
 	int val;
 
 	DEBUG_LOG("");
+
+#ifdef CONFIG_MACH_WAVE
+	audio_ctrl_mic_bias_gpio(wm8994->pdata, 0);
+#endif
 
 	wm8994_set_voicecall_common_setting(codec);
 
@@ -5128,4 +5222,3 @@ int wm8994_set_codec_gain(struct snd_soc_codec *codec, u16 mode, u16 device)
 	return 0;
 
 }
-

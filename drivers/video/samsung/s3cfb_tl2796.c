@@ -68,7 +68,11 @@ struct s5p_lcd{
 	struct mutex	lock;
 	struct device *dev;
 	struct spi_device *g_spi;
-	struct s5p_panel_data	*data;
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data	*data;
+#else
+	struct s5p_panel_data  *data;
+#endif
 	struct backlight_device *bl_dev;
 	struct early_suspend    early_suspend;
 	struct dentry *debug_dir;
@@ -92,7 +96,11 @@ static u32 gamma_lookup(struct s5p_lcd *lcd, u8 brightness, u32 val, int c)
 	u32 b;
 	u32 ret;
 	u64 tmp;
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data *pdata = lcd->data;
+#else
 	struct s5p_panel_data *pdata = lcd->data;
+#endif
 	const struct tl2796_gamma_adj_points *bv = lcd->gamma_adj_points;
 
 	if (!val) {
@@ -269,7 +277,11 @@ static void update_brightness(struct s5p_lcd *lcd)
 
 static void tl2796_ldi_enable(struct s5p_lcd *lcd)
 {
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data *pdata = lcd->data;
+#else
 	struct s5p_panel_data *pdata = lcd->data;
+#endif
 
 	mutex_lock(&lcd->lock);
 
@@ -283,7 +295,11 @@ static void tl2796_ldi_enable(struct s5p_lcd *lcd)
 
 static void tl2796_ldi_disable(struct s5p_lcd *lcd)
 {
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data *pdata = lcd->data;
+#else
 	struct s5p_panel_data *pdata = lcd->data;
+#endif
 
 	mutex_lock(&lcd->lock);
 
@@ -417,7 +433,11 @@ static void tl2796_parallel_read(struct s5p_lcd *lcd, u8 cmd,
 				 u8 *data, size_t len)
 {
 	int i;
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data *pdata = lcd->data;
+#else
 	struct s5p_panel_data *pdata = lcd->data;
+#endif
 	int delay = 10;
 
 	gpio_set_value(pdata->gpio_dcx, 0);
@@ -454,7 +474,11 @@ static void tl2796_parallel_read(struct s5p_lcd *lcd, u8 cmd,
 static int tl2796_parallel_setup_gpios(struct s5p_lcd *lcd, bool init)
 {
 	int ret;
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data *pdata = lcd->data;
+#else
 	struct s5p_panel_data *pdata = lcd->data;
+#endif
 
 	if (!pdata->configure_mtp_gpios)
 		return -EINVAL;
@@ -481,7 +505,11 @@ static u64 tl2796_voltage_lookup(struct s5p_lcd *lcd, int c, u32 v)
 	u32 vh = ~0, vl = ~0;
 	u32 bl, bh = 0;
 	u64 ret;
+#ifdef CONFIG_MACH_WAVE
+	struct s5p_tl2796_panel_data *pdata = lcd->data;
+#else
 	struct s5p_panel_data *pdata = lcd->data;
+#endif
 
 	for (i = 0; i < pdata->gamma_table_size; i++) {
 		vh = vl;
@@ -781,7 +809,11 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 		ret = -EINVAL;
 		goto err_setup;
 	}
+#ifdef CONFIG_MACH_WAVE
+	lcd->data = (struct s5p_tl2796_panel_data *)spi->dev.platform_data;
+#else
 	lcd->data = (struct s5p_panel_data *)spi->dev.platform_data;
+#endif
 
 	if (!lcd->data->gamma_table || !lcd->data->seq_display_set ||
 		!lcd->data->seq_etc_set || !lcd->data->standby_on ||
@@ -811,7 +843,9 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 	lcd->bl_dev->props.max_brightness = 255;
 	lcd->bl_dev->props.brightness = lcd->bl;
 
+#ifndef CONFIG_MACH_WAVE
 	tl2796_ldi_enable(lcd);
+#endif
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	lcd->early_suspend.suspend = tl2796_early_suspend;
 	lcd->early_suspend.resume = tl2796_late_resume;
@@ -835,6 +869,11 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 		pr_err("Failed to create sysfs group for device (%s)!\n", color_tuning_device.name);
 	}
 
+#ifdef CONFIG_MACH_WAVE
+	tl2796_ldi_disable(lcd);
+	msleep(200);
+	tl2796_ldi_enable(lcd);
+#endif
 	// copy the pointer for use with the color tuning sysfs interface
 	lcd_ = lcd;
 

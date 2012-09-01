@@ -37,7 +37,7 @@
 #define FIMC_PHYBUFS		4
 #define FIMC_OUTBUFS		3
 #define FIMC_INQUEUES		10
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 #define FIMC_MAX_CTXS		1
 #else // CONFIG_MACH_P1
 #define FIMC_MAX_CTXS		2

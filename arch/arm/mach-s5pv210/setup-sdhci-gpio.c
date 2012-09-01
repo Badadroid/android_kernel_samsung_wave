@@ -30,7 +30,7 @@
 
 #include "herring.h"
 
-#if defined (CONFIG_SAMSUNG_GALAXYS) || defined(CONFIG_SAMSUNG_FASCINATE)
+#if defined (CONFIG_SAMSUNG_GALAXYS) || defined(CONFIG_SAMSUNG_FASCINATE) || defined(CONFIG_MACH_WAVE)
 #	define DRVSTR S3C_GPIO_DRVSTR_3X
 #else
 #	define DRVSTR S3C_GPIO_DRVSTR_2X
@@ -66,7 +66,7 @@ void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 		printk(KERN_ERR "Wrong SD/MMC bus width : %d\n", width);
 	}
 
-	if (machine_is_herring() || machine_is_aries()) {
+	if (machine_is_herring() || machine_is_aries() || machine_is_p1() || machine_is_wave() || machine_is_wave2()) {
 		s3c_gpio_cfgpin(S5PV210_GPJ2(7), S3C_GPIO_OUTPUT);
 		s3c_gpio_setpull(S5PV210_GPJ2(7), S3C_GPIO_PULL_NONE);
 		gpio_set_value(S5PV210_GPJ2(7), 1);
@@ -127,7 +127,11 @@ void s5pv210_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 				s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 				s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
 			}
+#ifdef CONFIG_MACH_WAVE
+			s3c_gpio_set_drvstrength(gpio, S3C_GPIO_DRVSTR_2X);
+#else
 			s3c_gpio_set_drvstrength(gpio, DRVSTR);
+#endif
 		}
 		break;
 	default:
@@ -157,7 +161,11 @@ void s5pv210_setup_sdhci3_cfg_gpio(struct platform_device *dev, int width)
 				s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 				s3c_gpio_setpull(gpio, S3C_GPIO_PULL_UP);
 			}
+#ifdef CONFIG_MACH_WAVE
+			s3c_gpio_set_drvstrength(gpio, S3C_GPIO_DRVSTR_2X);
+#else
 			s3c_gpio_set_drvstrength(gpio, DRVSTR);
+#endif
 		}
 		break;
 	default:

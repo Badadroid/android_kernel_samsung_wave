@@ -621,7 +621,7 @@ int s5p_tv_v_release(struct file *filp)
 #ifdef CONFIG_MACH_P1
 	Isdrv_open = 0;
 	TVout_LDO_ctrl(false);
-#else //CONFIG_MACH_ARIES
+#else //CONFIG_MACH_ARIES || CONFIG_MACH_WAVE
 	tv_phy_power(false);
 #endif
 	return 0;
@@ -957,7 +957,7 @@ void s5p_handle_cable(void)
 	int env_offset = 0;
 
 	printk(KERN_INFO "%s....start", __func__);
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	if ((s5ptv_status.tvout_param.out_mode != TVOUT_OUTPUT_HDMI) && \
 	(s5ptv_status.tvout_param.out_mode != TVOUT_OUTPUT_HDMI_RGB) && \
 		(s5ptv_status.tvout_param.out_mode != TVOUT_OUTPUT_DVI))
@@ -1391,7 +1391,7 @@ void s5p_tv_early_suspend(struct early_suspend *h)
 
 		/* clk & power off */
 		s5p_tv_clk_gate(false);
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||
 		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB))
 #else // CONFIG_MACH_P1
@@ -1438,7 +1438,7 @@ void s5p_tv_late_resume(struct early_suspend *h)
 
 		/* clk & power on */
 		s5p_tv_clk_gate(true);
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if ((s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI) ||\
 		(s5ptv_status.tvout_param.out_mode == TVOUT_OUTPUT_HDMI_RGB))
 #else // CONFIG_MACH_P1

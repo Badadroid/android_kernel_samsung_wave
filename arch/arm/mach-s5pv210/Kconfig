@@ -230,6 +230,27 @@ config MACH_HERRING
 	help
 	  Machine support for Herring
 
+config MACH_WAVE
+	bool "Wave"
+	select CPU_S5PV210
+	select S3C_DEV_WDT
+	select S3C_DEV_I2C1
+	select S3C_DEV_I2C2
+	select S5P_DEV_ONENAND
+	select HAVE_PWM
+	select SAMSUNG_DEV_PWM
+	select SAMSUNG_DEV_KEYPAD
+	select S5PV210_SETUP_KEYPAD
+	select S3C_DEV_HSMMC
+	select S3C_DEV_HSMMC1 if !S5PV210_SD_CH0_8BIT
+	select S3C_DEV_HSMMC2
+	select S5PV210_SETUP_SDHCI
+	select S5PV210_POWER_DOMAIN
+	select S5P_DEV_CSIS0
+	select S5P_SETUP_MIPIPHY
+	help
+	  Machine support for Wave I (GT-S8500) and Wave II (GT-S8530)
+
 config MACH_ARIES
 	bool "Aries"
 	select CPU_S5PV210

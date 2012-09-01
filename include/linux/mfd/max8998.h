@@ -63,7 +63,7 @@ struct max8998_regulator_data {
 	int				id;
 	struct regulator_init_data	*initdata;
 };
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 enum cable_type_t {
 	CABLE_TYPE_NONE = 0,
 	CABLE_TYPE_USB,
@@ -86,6 +86,12 @@ struct max8998_charger_callbacks {
 };
 #endif
 
+#ifdef CONFIG_MACH_WAVE
+struct max8998_power_callbacks {
+	void (*power_off)(struct max8998_power_callbacks *ptr);
+};
+#endif
+
 /**
  * max8998_charger_data - charger data
  * @id: charger id
@@ -93,7 +99,7 @@ struct max8998_charger_callbacks {
  * @adc_table: adc_table must be ascending adc value order
  */
 struct max8998_charger_data {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	struct power_supply *psy_fuelgauge;
 	void (*register_callbacks)(struct max8998_charger_callbacks *ptr);
 	struct max8998_adc_table_data *adc_table;
@@ -137,6 +143,9 @@ struct max8998_platform_data {
 	bool			wakeup;
 	bool			rtc_delay;
 	struct max8998_charger_data	*charger;
+#ifdef CONFIG_MACH_WAVE
+	struct max8998_power_callbacks **power_callbacks;
+#endif
 };
 
 #endif /*  __LINUX_MFD_MAX8998_H */

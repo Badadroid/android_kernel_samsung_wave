@@ -329,7 +329,7 @@
 #define SIG_MDNIE_VIDEO_COLD_MODE			3
 #define SIG_MDNIE_CAMERA_MODE				4
 #define SIG_MDNIE_NAVI						5
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 #define SIG_MDNIE_BYPASS_MODE				6
 #else // CONFIG_MACH_P1
 #define SIG_MDNIE_DMB_MODE					6

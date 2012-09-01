@@ -1445,7 +1445,7 @@ int fimc50_hwset_output_offset(struct fimc_control *ctrl, u32 pixelformat,
 			       struct v4l2_rect *crop)
 {
 	u32 cfg_y = 0, cfg_cb = 0, cfg_cr = 0;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	if (!crop->left && !crop->top && (bounds->width == crop->width) &&
 		(bounds->height == crop->height))
 		return -EINVAL;

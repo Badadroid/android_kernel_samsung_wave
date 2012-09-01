@@ -227,7 +227,7 @@ struct s3cfb_global {
 	struct device		*dev;
 	struct clk		*clock;
 	struct regulator	*regulator;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	struct regulator	*vcc_lcd;
 	struct regulator	*vlcd;
 #endif
@@ -371,6 +371,8 @@ extern void s3cfb_late_resume(struct early_suspend *h);
 extern void tl2796_ldi_init(void);
 extern void tl2796_ldi_enable(void);
 extern void tl2796_ldi_disable(void);
+#endif
+#if defined(CONFIG_FB_S3C_TL2796) || defined(CONFIG_FB_S3C_LG4573)
 extern void lcd_cfg_gpio_early_suspend(void);
 extern void lcd_cfg_gpio_late_resume(void);
 #endif

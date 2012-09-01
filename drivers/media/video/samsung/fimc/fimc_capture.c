@@ -40,7 +40,7 @@
 #define fimc_dbg fimc_err
 #endif
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 static int vtmode = 0;
 static int device_id = 0;
 #else // CONFIG_MACH_P1
@@ -300,7 +300,7 @@ static int fimc_camera_start(struct fimc_control *ctrl)
 			return ret;
 		}
 	} else {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if (vtmode == 1 && device_id != 0 && (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
 #else // CONFIG_MACH_P1
 		if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
@@ -313,7 +313,7 @@ static int fimc_camera_start(struct fimc_control *ctrl)
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height = cam_frmsize.discrete.height;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			dev_err(ctrl->dev, "vtmode = 1, rotate = %d, device = front, cam->width = %d, cam->height = %d\n", ctrl->cap->rotate, ctrl->cam->width, ctrl->cam->height);
 		} else if (device_id != 0 && vtmode != 1) {
 #else // CONFIG_MACH_P1
@@ -342,7 +342,7 @@ static int fimc_camera_start(struct fimc_control *ctrl)
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height = cam_frmsize.discrete.height;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			dev_err(ctrl->dev, "%s, crop(368x480), vtmode = 0, device = front, cam->width = %d, cam->height = %d\n", __func__, ctrl->cam->width, ctrl->cam->height);
 #else
 			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
@@ -820,7 +820,7 @@ int fimc_s_input(struct file *file, void *fh, unsigned int i)
 
 	mutex_unlock(&ctrl->v4l2_lock);
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 
 	return 0;
 
@@ -1435,7 +1435,7 @@ int fimc_s_ctrl_capture(void *fh, struct v4l2_control *c)
 		break;
 
 	case V4L2_CID_CAMERA_VT_MODE:
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		vtmode = c->value;
 #else
 		ctrl->vt_mode = c->value;
@@ -1761,7 +1761,7 @@ int fimc_streamon_capture(void *fh)
 	int rot;
 	int ret;
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	char *ce147 = "CE147 0-003c";
 	device_id = strcmp(ctrl->cam->sd->name, ce147);
 	fimc_dbg("%s, name(%s), device_id(%d), vtmode(%d)\n", __func__, ctrl->cam->sd->name , device_id, vtmode);
@@ -1935,7 +1935,7 @@ int fimc_streamon_capture(void *fh)
 			fimc_hwset_output_yuv(ctrl, cap->fmt.pixelformat);
 
 		fimc_hwset_output_size(ctrl, cap->fmt.width, cap->fmt.height);
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if ((device_id != 0) && (vtmode != 1)) {
 			ctrl->cap->rotate = 90;
 			dev_err(ctrl->dev, "%s, rotate 90", __func__);
@@ -2033,7 +2033,7 @@ int fimc_streamoff_capture(void *fh)
 int fimc_qbuf_capture(void *fh, struct v4l2_buffer *b)
 {
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	if (!ctrl->cap || !ctrl->cap->nr_bufs) {
 		fimc_err("%s: Invalid capture setting.\n", __func__);
 		return -EINVAL;

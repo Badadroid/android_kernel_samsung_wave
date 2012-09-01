@@ -250,6 +250,9 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_manulupdate(pwm);
 	tcon |= pwm_tcon_autoreload(pwm);
+#ifdef CONFIG_MACH_WAVE
+	tcon |= pwm_tcon_invert(pwm);
+#endif
 	__raw_writel(tcon, S3C2410_TCON);
 
 	tcon &= ~pwm_tcon_manulupdate(pwm);
@@ -318,6 +321,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 		goto err_clk_tin;
 	}
 
+#ifndef CONFIG_MACH_WAVE
 	spin_lock_irqsave(&pwm_spin_lock, flags);
 
 	tcon = __raw_readl(S3C2410_TCON);
@@ -325,6 +329,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 	__raw_writel(tcon, S3C2410_TCON);
 
 	spin_unlock_irqrestore(&pwm_spin_lock, flags);
+#endif
 
 	ret = pwm_register(pwm);
 	if (ret) {
@@ -382,6 +387,7 @@ static int s3c_pwm_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int s3c_pwm_resume(struct platform_device *pdev)
 {
+#ifndef CONFIG_MACH_WAVE
 	struct pwm_device *pwm = platform_get_drvdata(pdev);
 	unsigned long tcon;
 
@@ -389,6 +395,7 @@ static int s3c_pwm_resume(struct platform_device *pdev)
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_invert(pwm);
 	__raw_writel(tcon, S3C2410_TCON);
+#endif
 
 	return 0;
 }

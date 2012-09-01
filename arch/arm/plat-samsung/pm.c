@@ -56,7 +56,7 @@ struct pmstats {
 
 static struct pmstats *pmstats;
 static struct pmstats *pmstats_last;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 #define PMSTATS_LEN 4096
 #else // CONFIG_MACH_P1
 #define PMSTATS_LEN sizeof(struct pmstats)

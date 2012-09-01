@@ -458,7 +458,7 @@ static struct clk init_clocks_off[] = {
 	}, {
 		.name		= "i2c",
 		.id		= 1,
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		.parent		= &clk_pclk_psys.clk,
 #else
 		.parent		= &clk_pclk_dsys.clk,
@@ -562,7 +562,7 @@ static struct clk init_clocks_off[] = {
 #endif
 		.name		= "i2c-hdmiphy",
 		.id		= -1,
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		.parent		= &clk_pclk_psys.clk,
 #else
 		.parent		= &clk_pclk_dsys.clk,
