@@ -760,11 +760,10 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
 
 	local_irq_disable();
 
-	/* Do not access any ACPI IO ports in suspend path */
 	if (acpi_idle_suspend) {
 		local_irq_enable();
 		cpu_relax();
-		return 0;
+		return -EBUSY;
 	}
 
 	lapic_timer_state_broadcast(pr, cx, 1);
@@ -799,10 +798,11 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
 	if (unlikely(!pr))
 		return 0;
 
-	if (acpi_idle_suspend)
-		return(acpi_idle_enter_c1(dev, state));
-
-	local_irq_disable();
+	if (acpi_idle_suspend) {
+		local_irq_enable();
+		cpu_relax();
+		return -EBUSY;
+	}
 
 	if (cx->entry_method != ACPI_CSTATE_FFH) {
 		current_thread_info()->status &= ~TS_POLLING;
@@ -874,10 +874,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
 	pr = __this_cpu_read(processors);
 
 	if (unlikely(!pr))
-		return 0;
-
-	if (acpi_idle_suspend)
-		return(acpi_idle_enter_c1(dev, state));
+		return -EINVAL;
 
 	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
 		if (dev->safe_state) {
@@ -885,13 +882,20 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
 			return dev->safe_state->enter(dev, dev->safe_state);
 		} else {
 			local_irq_disable();
-			acpi_safe_halt();
+			if (!acpi_idle_suspend)
+				acpi_safe_halt();
 			local_irq_enable();
-			return 0;
+			return -EBUSY;
 		}
 	}
 
 	local_irq_disable();
+
+	if (acpi_idle_suspend) {
+		local_irq_enable();
+		cpu_relax();
+		return -EBUSY;
+	}
 
 	if (cx->entry_method != ACPI_CSTATE_FFH) {
 		current_thread_info()->status &= ~TS_POLLING;

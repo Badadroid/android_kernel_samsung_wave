@@ -547,13 +547,13 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	j_cpuidle_dev = per_cpu(cpuidle_devices, j);
 
-	if (j_cpuidle_dev)
-	    deepidle_state = &j_cpuidle_dev->states[j_cpuidle_dev->state_count - 1];
+//	if (j_cpuidle_dev)
+//	    deepidle_state = &j_cpuidle_dev->states[j_cpuidle_dev->state_count - 1];
 
 	if (deepidle_state) {
-	    deepidle_time = deepidle_state->time;
-	    deepidle_usage = deepidle_state->usage;
-		    
+//	    deepidle_time = deepidle_state->time;
+//	    deepidle_usage = deepidle_state->usage;
+
 	    total_idletime += (unsigned long)(deepidle_time - j_dbs_info->prev_idletime);
 	    total_usage += (unsigned long)(deepidle_usage - j_dbs_info->prev_idleusage);
 
