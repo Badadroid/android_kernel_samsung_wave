@@ -27,9 +27,11 @@
 struct gp2a_platform_data {
 	int p_out;  /* proximity-sensor-output gpio */
 	int (*power)(bool); /* power to the chip */
+#ifndef CONFIG_GP2A_PROX_ONLY
 	int (*light_adc_value)(void); /* get light level from adc */
 	int light_adc_max;
 	int light_adc_fuzz;
+#endif
 };
 #endif /* __KERNEL__ */
 

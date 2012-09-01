@@ -156,7 +156,7 @@ int fimc_s_fmt_vid_overlay(struct file *filp, void *fh, struct v4l2_format *f)
 			return ret;
 
 		ctx->win = f->fmt.win;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		fimc_change_fifo_position(ctrl, ctx);
 #endif
 

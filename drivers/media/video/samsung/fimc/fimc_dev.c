@@ -151,7 +151,7 @@ static inline u32 fimc_irq_out_single_buf(struct fimc_control *ctrl,
 		ctrl->out->idxs.active.ctx = -1;
 		ctrl->out->idxs.active.idx = -1;
 		ctx->status = FIMC_STREAMOFF;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		ctrl->status = FIMC_STREAMOFF;
 #else // CONFIG_MACH_P1
 		ctrl->status = FIMC_STREAMON_IDLE;
@@ -263,7 +263,7 @@ static inline u32 fimc_irq_out_dma(struct fimc_control *ctrl,
 		ctrl->out->idxs.active.ctx = -1;
 		ctrl->out->idxs.active.idx = -1;
 		ctx->status = FIMC_STREAMOFF;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		ctrl->status = FIMC_STREAMOFF;
 #else // CONFIG_MACH_P1
 		ctrl->status = FIMC_STREAMON_IDLE;
@@ -644,7 +644,7 @@ int fimc_mmap_out_dst(struct file *filp, struct vm_area_struct *vma, u32 idx)
 
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	vma->vm_flags |= VM_RESERVED;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	pfn = __phys_to_pfn(ctrl->out->ctx[ctx_id].dst[idx].base[0]);
 #else // CONFIG_MACH_P1
 #if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
@@ -1074,7 +1074,7 @@ static int fimc_release(struct file *filp)
 	struct mm_struct *mm = current->mm;
 	struct fimc_ctx *ctx;
 	int ret = 0, i;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	ctx = &ctrl->out->ctx[ctx_id];
 #endif
 
@@ -1138,7 +1138,7 @@ static int fimc_release(struct file *filp)
 				ctx->src[i].state = VIDEOBUF_IDLE;
 				ctx->src[i].flags = V4L2_BUF_FLAG_MAPPED;
 			}
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			if (ctx->overlay.mode == FIMC_OVLY_DMA_AUTO) {
 #else
 			if ((ctx->overlay.mode == FIMC_OVLY_DMA_AUTO ||
@@ -1172,7 +1172,7 @@ static int fimc_release(struct file *filp)
 							__func__);
 			}
 		}
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		ctrl->ctx_busy[ctx_id] = 0;
 #endif
 		memset(ctx, 0x00, sizeof(struct fimc_ctx));
@@ -1202,7 +1202,7 @@ static int fimc_release(struct file *filp)
 			filp->private_data = NULL;
 		}
 	}
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	/*
 	 * it remain afterimage when I play movie using overlay and exit
 	 */

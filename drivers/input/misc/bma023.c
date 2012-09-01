@@ -360,6 +360,10 @@ static void bma023_work_func(struct work_struct *work)
 	input_report_rel(bma023->input, REL_X, (-(accel.y)));
 	input_report_rel(bma023->input, REL_Y, accel.x);
 	input_report_rel(bma023->input, REL_Z, accel.z);
+#elif defined(CONFIG_MACH_WAVE)
+	input_report_rel(bma023->input, REL_X, (-(accel.x)));
+	input_report_rel(bma023->input, REL_Y, (-(accel.y)));
+	input_report_rel(bma023->input, REL_Z, accel.z);
 #else
 	input_report_rel(bma023->input, REL_X, accel.x);
 	input_report_rel(bma023->input, REL_Y, accel.y);

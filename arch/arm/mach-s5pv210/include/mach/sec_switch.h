@@ -21,7 +21,7 @@ struct sec_switch_platform_data {
 	void (*set_regulator) (int mode);
 	void (*set_switch_status) (int val);
 #endif
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	void (*set_vbus_status) (u8 mode);
 	void (*set_usb_gadget_vbus) (bool en);
 #endif
@@ -39,7 +39,7 @@ enum {
 };
 #endif
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 #define USB_VBUS_ALL_OFF 0
 #define USB_VBUS_CP_ON	 1
 #define USB_VBUS_AP_ON	 2

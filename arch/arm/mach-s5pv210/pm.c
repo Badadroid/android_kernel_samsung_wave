@@ -26,6 +26,9 @@
 #include <mach/regs-irq.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-mem.h>
+#ifdef CONFIG_MACH_WAVE
+#include <mach/regs-sys.h>
+#endif
 #include <mach/power-domain.h>
 
 static struct sleep_save core_save[] = {
@@ -120,8 +123,14 @@ static void s5pv210_pm_prepare(void)
 {
 	unsigned int tmp;
 
+#ifdef CONFIG_MACH_WAVE
+	S3C_PMDBG("Preparing sleep. Saving INFORM2...\n");
+	/* Bada bootloaders does use INFORM2 instead of INFORM0 as wakeup handler */
+	__raw_writel(virt_to_phys(s3c_cpu_resume), S5P_INFORM2);
+#else
 	/* ensure at least INFORM0 has the resume address */
 	__raw_writel(virt_to_phys(s3c_cpu_resume), S5P_INFORM0);
+#endif
 
 	/* WFI for SLEEP mode configuration by SYSCON */
 	tmp = __raw_readl(S5P_PWR_CFG);
@@ -160,6 +169,35 @@ static __init int s5pv210_pm_drvinit(void)
 }
 arch_initcall(s5pv210_pm_drvinit);
 
+#ifdef CONFIG_MACH_WAVE
+void setup_tzpc()
+{
+	void* tzpc_va;
+	/* Set all TZPC regions as non secure */
+	tzpc_va = ioremap(S5PV210_TZPC0, 0x1000);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
+	iounmap(tzpc_va);
+	tzpc_va = ioremap(S5PV210_TZPC1, 0x1000);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
+	iounmap(tzpc_va);
+	tzpc_va = ioremap(S5PV210_TZPC2, 0x1000);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
+	iounmap(tzpc_va);
+	tzpc_va = ioremap(S5PV210_TZPC3, 0x1000);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
+	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
+	iounmap(tzpc_va);
+}
+EXPORT_SYMBOL(setup_tzpc);
+#endif
+
 static void s5pv210_pm_resume(void)
 {
 	u32 tmp, audiodomain_on;
@@ -185,6 +223,10 @@ static void s5pv210_pm_resume(void)
 	}
 
 	s3c_pm_do_restore_core(core_save, ARRAY_SIZE(core_save));
+
+#ifdef CONFIG_MACH_WAVE
+	setup_tzpc();
+#endif
 }
 
 static struct syscore_ops s5pv210_pm_syscore_ops = {

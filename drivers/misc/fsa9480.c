@@ -32,6 +32,9 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
+#ifdef CONFIG_MACH_WAVE
+#include <linux/regulator/consumer.h>
+#endif
 
 /* FSA9480 I2C registers */
 #define FSA9480_REG_DEVID		0x01
@@ -113,6 +116,9 @@ struct fsa9480_usbsw {
 	int				dev1;
 	int				dev2;
 	int				mansw;
+#ifdef CONFIG_MACH_WAVE
+	struct regulator *usb_vbus_cp_regulator;
+#endif
 };
 
 #ifdef CONFIG_MACH_P1
@@ -221,6 +227,19 @@ static ssize_t fsa9480_set_manualsw(struct device *dev,
 	ret = i2c_smbus_write_byte_data(client, FSA9480_REG_CTRL, value);
 	if (ret < 0)
 		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
+
+#ifdef CONFIG_MACH_WAVE
+	if(path == SW_VAUDIO)
+	{
+		printk("Enabling USB_VBUS_CP\n");
+		regulator_enable(usbsw->usb_vbus_cp_regulator);
+	}
+	else
+	{
+		printk("Disabling USB_VBUS_CP\n");
+		regulator_disable(usbsw->usb_vbus_cp_regulator);
+	}
+#endif
 
 	return count;
 }
@@ -366,7 +385,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 
 	val1 = device_type & 0xff;
 	val2 = device_type >> 8;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined (CONFIG_MACH_WAVE)
 	dev_info(&client->dev, "dev1: 0x%x, dev2: 0x%x\n", val1, val2);
 #else // CONFIG_MACH_P1
 	dev_info(&client->dev, "prev_dev1: 0x%x, prev_dev2: 0x%x\n", usbsw->dev1, usbsw->dev2);
@@ -376,7 +395,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 	/* Attached */
 	if (val1 || val2) {
 		/* USB */
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined (CONFIG_MACH_WAVE)
 		if (val1 & DEV_T1_USB_MASK || val2 & DEV_T2_USB_MASK) {
 			if (pdata->usb_cb)
 				pdata->usb_cb(FSA9480_ATTACHED);
@@ -401,7 +420,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 		} else if (val1 & DEV_T1_UART_MASK || val2 & DEV_T2_UART_MASK) {
 			if (pdata->uart_cb)
 				pdata->uart_cb(FSA9480_ATTACHED);
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined (CONFIG_MACH_WAVE)
 			if (usbsw->mansw) {
 				ret = i2c_smbus_write_byte_data(client,
 					FSA9480_REG_MANSW1, SW_UART);
@@ -424,7 +443,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 				pdata->deskdock_cb(FSA9480_ATTACHED);
 			deskdock_status = 1;
 
-#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1)
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1) || defined(CONFIG_MACH_WAVE)
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
             ret = i2c_smbus_write_byte_data(client,
                             FSA9480_REG_MANSW1, SW_AUDIO);
@@ -445,7 +464,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 			if (ret < 0)
 				dev_err(&client->dev,
 					"%s: err %d\n", __func__, ret);
-#endif //CONFIG_MACH_ARIES || CONFIG_MACH_P1
+#endif //CONFIG_MACH_ARIES || CONFIG_MACH_P1 || CONFIG_MACH_WAVE
 
 			ret = i2c_smbus_read_byte_data(client,
 					FSA9480_REG_CTRL);
@@ -464,7 +483,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 				pdata->cardock_cb(FSA9480_ATTACHED);
 			cardock_status = 1;
 
-#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1)
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1) || defined(CONFIG_MACH_WAVE)
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
             ret = i2c_smbus_write_byte_data(client,
                             FSA9480_REG_MANSW1, SW_AUDIO);
@@ -490,12 +509,12 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
             if (ret < 0)
                     dev_err(&client->dev,
                             "%s: err %d\n", __func__, ret);
-#endif //CONFIG_MACH_ARIES || CONFIG_MACH_P1
+#endif //CONFIG_MACH_ARIES || CONFIG_MACH_P1 || CONFIG_MACH_WAVE
 		}
 	/* Detached */
 	} else {
 		/* USB */
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if (usbsw->dev1 & DEV_T1_USB_MASK ||
 				usbsw->dev2 & DEV_T2_USB_MASK) {
 #else // CONFIG_MACH_P1
@@ -540,7 +559,7 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 				pdata->cardock_cb(FSA9480_DETACHED);
 			cardock_status = 0;
 
-#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1)
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_P1) || defined(CONFIG_MACH_WAVE)
 
             ret = i2c_smbus_read_byte_data(client,
                             FSA9480_REG_CTRL);
@@ -721,6 +740,15 @@ static int __devinit fsa9480_probe(struct i2c_client *client,
 	if (usbsw->pdata->reset_cb)
 		usbsw->pdata->reset_cb();
 
+#ifdef CONFIG_MACH_WAVE
+	if (IS_ERR_OR_NULL(usbsw->usb_vbus_cp_regulator)) {
+		usbsw->usb_vbus_cp_regulator = regulator_get(NULL, "usb_vbus_cp");
+		if (IS_ERR_OR_NULL(usbsw->usb_vbus_cp_regulator)) {
+			pr_err("failed to get usb_vbus_cp regulator");
+			goto fail2;
+		}
+	}
+#endif
 	/* device detection */
 	fsa9480_detect_dev(usbsw);
 

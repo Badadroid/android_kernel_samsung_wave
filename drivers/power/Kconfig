@@ -204,6 +204,11 @@ config BATTERY_P1
 	help
 	  Say Y to enable support for batteries with s5pc110 chip.
 
+config CHARGER_WAVE
+	tristate "Battery driver for Samsung Wave"
+	help
+	 Say Y to create dummy fuel gauge and charger driver that can be updated from filesystem.
+
 config CHARGER_PCF50633
 	tristate "NXP PCF50633 MBC"
 	depends on MFD_PCF50633

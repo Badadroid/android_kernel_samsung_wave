@@ -432,7 +432,7 @@ static void s5p_timer_setup(void)
 {
 	unsigned long rate;
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	unsigned int tmp;
 #endif
 
@@ -445,7 +445,7 @@ static void s5p_timer_setup(void)
 
 	rate = clk_get_rate(clk_event);
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	tmp = readl(rtc_base + S3C2410_RTCCON) &
 		~(S3C_RTCCON_TICEN);
 

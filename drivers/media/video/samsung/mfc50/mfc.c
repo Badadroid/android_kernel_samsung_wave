@@ -472,7 +472,7 @@ static int mfc_mmap(struct file *filp, struct vm_area_struct *vma)
 				vir_size, phy_size);
 		return -EINVAL;
 	}
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	mfc_ctx->port0_mmap_size = mfc_port0_memsize - firmware_size;
 #else // CONFIG_MACH_P1
 	mfc_ctx->port0_mmap_size = (vir_size / 2);

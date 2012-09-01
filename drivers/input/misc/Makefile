@@ -25,6 +25,7 @@ obj-$(CONFIG_INPUT_BMA023)		+= bma023.o
 obj-$(CONFIG_INPUT_YAS529)		+= yas529.o
 obj-$(CONFIG_INPUT_KR3DH)		+= kr3dh.o
 obj-$(CONFIG_OPTICAL_GP2A)		+= gp2a.o
+obj-$(CONFIG_GP2A_PROX_ONLY)		+= gp2ap002a00f.o
 obj-$(CONFIG_INPUT_ORIENTATION)		+= orientation.o
 obj-$(CONFIG_INPUT_YAMAHA)		+= yamaha.o
 obj-$(CONFIG_INPUT_CM109)		+= cm109.o

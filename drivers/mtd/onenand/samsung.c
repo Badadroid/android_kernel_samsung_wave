@@ -33,6 +33,10 @@
 #include <asm/setup.h>
 #include <linux/string.h>
 
+#ifdef CONFIG_MACH_WAVE
+#include <asm/mach-types.h>
+#endif
+
 enum soc_type {
 	TYPE_S3C6400,
 	TYPE_S3C6410,
@@ -48,6 +52,8 @@ enum soc_type {
 #include "samsung_fascinate.h"
 #elif defined(CONFIG_MACH_P1)
 #include "samsung_p1.h"
+#elif defined(CONFIG_MACH_WAVE)
+#include "samsung_wave.h"
 #else
 #error Should not be used on aries devices (can brick!).
 #include "samsung.h"
@@ -1107,8 +1113,18 @@ static int s3c_onenand_probe(struct platform_device *pdev)
 #endif
 	if (num_partitions <= 0) {
 		/* default partition table */
-		num_partitions = ARRAY_SIZE(s3c_partition_info);	/* pdata->nr_parts */
-		partitions = s3c_partition_info;			/* pdata->parts */
+#ifdef CONFIG_MACH_WAVE
+		if(machine_is_wave2()) {
+			num_partitions = ARRAY_SIZE(wave_s8530_partition_info);	/* pdata->nr_parts */
+			partitions = wave_s8530_partition_info;			/* pdata->parts */
+		} else {
+			num_partitions = ARRAY_SIZE(wave_s8500_partition_info);	/* pdata->nr_parts */
+			partitions = wave_s8500_partition_info;			/* pdata->parts */
+		}
+#else
+		num_partitions = ARRAY_SIZE(s3c_partition_info);        /* pdata->nr_parts */
+		partitions = s3c_partition_info;                        /* pdata->parts */
+#endif
 	}
 
 	if (partitions && num_partitions > 0)

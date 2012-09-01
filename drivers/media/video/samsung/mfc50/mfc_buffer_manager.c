@@ -164,7 +164,7 @@ int mfc_init_buffer(void)
 			free_node->size = mfc_port1_memsize;
 		} else {
 			free_node->start_addr = mfc_get_port0_buff_paddr();
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			free_node->size = mfc_port0_memsize -
 #else // CONFIG_MACH_P1
 			free_node->size = mfc_port1_memsize -

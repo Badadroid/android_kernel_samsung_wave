@@ -16,7 +16,7 @@
 #include <plat/map-base.h>
 #include <plat/map-s5p.h>
 
-#if defined(CONFIG_MACH_SMDKV210)
+#if defined(CONFIG_MACH_SMDKV210) || defined(CONFIG_MACH_WAVE)
 #define S5PV210_PA_SDRAM	(0x20000000)
 #else
 #define S5PV210_PA_SDRAM	(0x30000000)

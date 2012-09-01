@@ -92,7 +92,7 @@ typedef enum
 	mDNIe_VIDEO_COLD_MODE,
 	mDNIe_CAMERA_MODE,
 	mDNIe_NAVI,
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	mDNIe_BYPASS_MODE,
 #else // CONFIG_MACH_P1
 	mDNIe_DMB_MODE,
@@ -115,7 +115,7 @@ mDNIe_data_type mDNIe_None[]=
 
 mDNIe_data_type mDNIe_Video[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0040},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -133,7 +133,7 @@ mDNIe_data_type mDNIe_Video[]=
 
 mDNIe_data_type mDNIe_Camera[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0040},
 	{0x0090, 0x0000},
 	{0x0094, 0x0FFF},
@@ -151,7 +151,7 @@ mDNIe_data_type mDNIe_Camera[]=
 
 mDNIe_data_type mDNIe_Camera_Outdoor_Mode[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0090},
 	{0x0090, 0x0000},
 	{0x0094, 0x0FFF},
@@ -166,7 +166,7 @@ mDNIe_data_type mDNIe_Camera_Outdoor_Mode[]=
 	{END_SEQ, 0x0000},
 };
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 mDNIe_data_type mDNIe_Bypass[]=
 {
 	{0x0084, 0x0000},
@@ -182,7 +182,7 @@ mDNIe_data_type mDNIe_Bypass[]=
 
 mDNIe_data_type mDNIe_UI[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0040},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -209,7 +209,7 @@ mDNIe_data_type mDNIe_UI[]=
 
 mDNIe_data_type mDNIe_Video_Warm[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0020},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -227,7 +227,7 @@ mDNIe_data_type mDNIe_Video_Warm[]=
 
 mDNIe_data_type mDNIe_Video_WO_Mode[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0090},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -244,7 +244,7 @@ mDNIe_data_type mDNIe_Video_WO_Mode[]=
 
 mDNIe_data_type mDNIe_Video_Cold[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0020},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -261,7 +261,7 @@ mDNIe_data_type mDNIe_Video_Cold[]=
 
 mDNIe_data_type mDNIe_Video_CO_Mode[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0090},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -278,7 +278,7 @@ mDNIe_data_type mDNIe_Video_CO_Mode[]=
 
 mDNIe_data_type mDNIe_Outdoor_Mode[]=
 {
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{0x0084, 0x0090},
 	{0x0090, 0x0000},
 	{0x0094, 0x0fff},
@@ -293,7 +293,7 @@ mDNIe_data_type mDNIe_Outdoor_Mode[]=
 	{END_SEQ, 0x0000},
 };
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 Lcd_mDNIe_UI current_mDNIe_UI = mDNIe_BYPASS_MODE; // mDNIe Set Status Checking Value.
 #else
 Lcd_mDNIe_UI current_mDNIe_UI = mDNIe_UI_MODE; // mDNIe Set Status Checking Value.
@@ -634,7 +634,7 @@ void mDNIe_Set_Mode(Lcd_mDNIe_UI mode, u8 mDNIe_Outdoor_OnOff)
 			case mDNIe_NAVI:
 				mDNIe_Mode_Change(mDNIe_Outdoor_Mode);
 			break;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			case mDNIe_BYPASS_MODE:
 				mDNIe_Mode_Change(mDNIe_Bypass);
 
@@ -651,7 +651,7 @@ void mDNIe_Set_Mode(Lcd_mDNIe_UI mode, u8 mDNIe_Outdoor_OnOff)
 		}
 
 		current_mDNIe_UI = mode;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		if(current_mDNIe_UI == mDNIe_UI_MODE || current_mDNIe_UI == mDNIe_BYPASS_MODE)
 			current_mDNIe_OutDoor_OnOff = FALSE;
 		else
@@ -685,7 +685,7 @@ void mDNIe_Set_Mode(Lcd_mDNIe_UI mode, u8 mDNIe_Outdoor_OnOff)
 			case mDNIe_NAVI:
 				mDNIe_Mode_Change(mDNIe_UI);
 			break;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 			case mDNIe_BYPASS_MODE:
 				mDNIe_Mode_Change(mDNIe_Bypass);
 			break;
@@ -749,7 +749,7 @@ static ssize_t mdnieset_ui_file_cmd_show(struct device *dev,
 		case mDNIe_NAVI:
 			mdnie_ui = 5;
 			break;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		case mDNIe_BYPASS_MODE:
 			mdnie_ui = 6;
 			break;
@@ -804,7 +804,7 @@ static ssize_t mdnieset_ui_file_cmd_store(struct device *dev,
 		case SIG_MDNIE_NAVI:
 			current_mDNIe_UI = mDNIe_NAVI;
 			break;
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		case SIG_MDNIE_BYPASS_MODE:
 			current_mDNIe_UI = mDNIe_BYPASS_MODE;
 			break;
@@ -1352,7 +1352,7 @@ void s5p_mdine_pwm_enable(int on)
 
 	if(on)
 		{
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 		data = s3c_mdnie_readw(0x0084);
 		data = data | 0x0010;
 		s3c_mdnie_writel(data,0x0084);		// on

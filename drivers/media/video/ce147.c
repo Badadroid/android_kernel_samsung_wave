@@ -92,7 +92,7 @@
 #define	CMD_INFO_LONGITUDE_LATITUDE	0xA3
 #define	CMD_INFO_ALTITUDE		0xA4
 #define	CMD_SET_FLASH			0xB2
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 #define	CMD_SET_FLASH_POWER             0xB3
 #endif
 #define	CMD_SET_DZOOM			0xB9
@@ -124,7 +124,7 @@ static unsigned char ce147_buf_set_dzoom[31] = {
 	0x3f
 };
 static int DZoom_State;
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 static int Flash_Mode = 0;
 #endif
 
@@ -146,7 +146,7 @@ static int ce147_set_white_balance(struct v4l2_subdev *sd,
 				struct v4l2_control *ctrl);
 static int ce147_s_ext_ctrl(struct v4l2_subdev *sd,
 				struct v4l2_ext_control *ctrl);
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 static int ce147_set_preflash(struct v4l2_subdev *sd, int flash_mode);
 #endif
 
@@ -2091,6 +2091,7 @@ static int ce147_set_capture_exif(struct v4l2_subdev *sd)
 
 	unsigned char ce147_gps_processing[130] = { 0x00, };
 	unsigned int ce147_reglen_gps_processing = 130;
+
 #if defined(CONFIG_SAMSUNG_CAPTIVATE)
 	unsigned char ce147_str_model[9] = "SGH-I897\0";
 #elif defined(CONFIG_SAMSUNG_GALAXYS)
@@ -2101,6 +2102,8 @@ static int ce147_set_capture_exif(struct v4l2_subdev *sd)
 	unsigned char ce147_str_model[9] = "SCH-I500\0";
 #elif defined(CONFIG_SAMSUNG_VIBRANT)
 	unsigned char ce147_str_model[9] = "SGH-T959\0";
+#elif defined(CONFIG_MACH_WAVE)
+	unsigned char ce147_str_model[5] = "Wave\0";
 #else /* Modify	NTTS1 */
 	unsigned char ce147_str_model[7] = "SC-02B\0";
 #endif
@@ -2501,7 +2504,7 @@ static int ce147_set_capture_config(struct v4l2_subdev *sd,
 		}
 	}
 
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
  	/*
  	 * Set Flash
  	 */
@@ -2708,7 +2711,7 @@ static int ce147_set_flash(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	unsigned char ce147_buf_set_flash_manual[2] = { 0x00, 0x00 };
 	unsigned int ce147_len_set_flash_manual = 2;
 
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 	unsigned char ce147_buf_set_flash_power_control[4] = {0x03,0x01,0x1D,0x0c};
 	unsigned int ce147_len_set_flash_power_control = 4;
 
@@ -2738,7 +2741,7 @@ static int ce147_set_flash(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		break;
 	}
 
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
         // set flash power
         err = ce147_i2c_write_multi(client, CMD_SET_FLASH_POWER, ce147_buf_set_flash_power_control, ce147_len_set_flash_power_control);
         if(err < 0){
@@ -2789,7 +2792,7 @@ static int ce147_set_flash(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	return 0;
 }
 
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 static int ce147_set_preflash(struct v4l2_subdev *sd, int flash_mode) //SecFeature.Camera aswoogi
 {
         int err;
@@ -4164,7 +4167,7 @@ static int ce147_start_auto_focus(struct v4l2_subdev *sd,
 
 	ce147_msg(&client->dev, "%s\n", __func__);
 
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 	ce147_msg(&client->dev, "%s: unlock\n", __func__);
 	err = ce147_set_awb_lock(sd, 0);
 	if (err < 0) {
@@ -5175,7 +5178,7 @@ static int ce147_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		break;
 
 	case V4L2_CID_CAMERA_SET_AUTO_FOCUS:
-#ifdef CONFIG_SAMSUNG_FASCINATE
+#if defined (CONFIG_SAMSUNG_FASCINATE) || defined (CONFIG_MACH_WAVE)
 		ce147_set_preflash(sd, 0);
 #endif
 		if (value == AUTO_FOCUS_ON)
@@ -5243,7 +5246,7 @@ static int ce147_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		break;
 
 	case V4L2_CID_CAMERA_FINISH_AUTO_FOCUS:
-#if defined(CONFIG_SAMSUNG_FASCINATE)
+#ifdef CONFIG_SAMSUNG_FASCINATE
 		state->disable_aeawb_lock = ctrl->value;
 #endif
 		err = ce147_finish_auto_focus(sd);

@@ -38,17 +38,27 @@
 #include <linux/earlysuspend.h>
 #include <linux/suspend.h>
 #endif
+
 #ifdef CONFIG_MACH_P1
 #include <linux/mfd/max8998.h>
 #include <linux/sec_battery.h>
 #include <mach/gpio.h>
 #include <mach/gpio-p1.h>
 #include "logo_rgb24_wvga_portrait_p1.h"
-#else //CONFIG_MACH_ARIES
+#endif
+
+#if defined(CONFIG_MACH_ARIES)
 #include "logo_rgb24_wvga_portrait.h"
 #endif
+
 #include <mach/regs-clock.h>
 #include "s3cfb.h"
+
+#if defined(CONFIG_MACH_WAVE)
+#include <asm/mach-types.h>
+#include "s8500-logo.h"
+#include "s8530-logo.h"
+#endif
 
 #ifdef CONFIG_FB_S3C_MDNIE
 #include "s3cfb_mdnie.h"
@@ -65,6 +75,7 @@
 static int show_progress = 1;
 extern unsigned int HWREV;
 #endif
+
 
 #if (CONFIG_FB_S3C_NUM_OVLY_WIN >= CONFIG_FB_S3C_DEFAULT_WINDOW)
 #error "FB_S3C_NUM_OVLY_WIN should be less than FB_S3C_DEFAULT_WINDOW"
@@ -141,7 +152,7 @@ MODULE_PARM_DESC(bootloaderfb, "Address of booting logo image in Bootloader");
 
 #ifndef CONFIG_FRAMEBUFFER_CONSOLE
 
-static int s3cfb_draw_logo(struct fb_info *fb)
+static int __init s3cfb_draw_logo(struct fb_info *fb)
 {
 #ifdef CONFIG_FB_S3C_SPLASH_SCREEN
 	struct fb_fix_screeninfo *fix = &fb->fix;
@@ -181,10 +192,18 @@ static int s3cfb_draw_logo(struct fb_info *fb)
 		}
 	}
 #endif
+
+#if defined(CONFIG_MACH_WAVE)
+	if(machine_is_wave2())
+		memcpy(fb->screen_base, S8530_LOGO_RGB24, fb->var.yres * fb->fix.line_length);
+	else
+		memcpy(fb->screen_base, S8500_LOGO_RGB24, fb->var.yres * fb->fix.line_length);
+#else
 	if (readl(S5P_INFORM5)) //LPM_CHARGING mode
 		memcpy(fb->screen_base, charging, fb->var.yres * fb->fix.line_length);
 	else
 		memcpy(fb->screen_base, LOGO_RGB24, fb->var.yres * fb->fix.line_length);
+#endif
 	return 0;
 }
 #endif
@@ -927,7 +946,7 @@ err_alloc:
 	return ret;
 }
 
-static int s3cfb_register_framebuffer(struct s3cfb_global *ctrl)
+static int __init s3cfb_register_framebuffer(struct s3cfb_global *ctrl)
 {
 	struct s3c_platform_fb *pdata = to_fb_plat(ctrl->dev);
 	int ret, i, j;
@@ -1088,7 +1107,7 @@ static void progress_timer_handler(unsigned long data)
 }
 #endif
 
-static int __devinit s3cfb_probe(struct platform_device *pdev)
+static int __init s3cfb_probe(struct platform_device *pdev)
 {
 	struct s3c_platform_fb *pdata;
 	struct s3cfb_global *fbdev;
@@ -1117,7 +1136,7 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 		goto err_regulator;
 	}
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	fbdev->vcc_lcd = regulator_get(&pdev->dev, "vcc_lcd");
 	if (!fbdev->vcc_lcd) {
 		dev_err(fbdev->dev, "failed to get vcc_lcd\n");
@@ -1209,6 +1228,14 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 #ifdef CONFIG_FB_S3C_MDNIE
 	mDNIe_Mode_Set();
 #endif
+
+#ifdef CONFIG_MACH_WAVE
+	/* turn off every window - cleans up possibly enabled fbuffers left by bootloaders */
+	for (i = 0; i < pdata->nr_wins; i++) {
+		s3cfb_set_window(fbdev, i, 0);
+	}
+#endif
+
 	s3cfb_set_window(fbdev, pdata->default_win, 1);
 
 	s3cfb_set_alpha_value_width(fbdev, pdata->default_win);
@@ -1224,7 +1251,8 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_FB_S3C_LCD_INIT
-#if defined(CONFIG_FB_S3C_TL2796)
+	printk("CONFIG_FB_S3C_LCD_INIT enabled\n");
+#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573)
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
 #endif
@@ -1236,6 +1264,13 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	fbdev->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
 	register_early_suspend(&fbdev->early_suspend);
 #endif
+
+	if(machine_is_wave()) {
+	/* FIXME: ugly hack around for configuring AMOLED */
+	s3cfb_early_suspend(&fbdev->early_suspend);
+	msleep(200);
+	s3cfb_late_resume(&fbdev->early_suspend);
+	}
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_win_power);
 	if (ret < 0)
@@ -1277,7 +1312,7 @@ err_io:
 	pdata->clk_off(pdev, &fbdev->clock);
 
 err_pdata:
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined (CONFIG_MACH_WAVE)
 	regulator_disable(fbdev->vlcd);
 
 err_vlcd:
@@ -1369,10 +1404,10 @@ void s3cfb_early_suspend(struct early_suspend *h)
 	s3c_mdnie_off();
 #endif
 	clk_disable(fbdev->clock);
-#if defined(CONFIG_FB_S3C_TL2796)
+#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573)
 	lcd_cfg_gpio_early_suspend();
 #endif
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	regulator_disable(fbdev->vlcd);
 	regulator_disable(fbdev->vcc_lcd);
 #endif
@@ -1397,7 +1432,7 @@ void s3cfb_late_resume(struct early_suspend *h)
 	if (ret < 0)
 		dev_err(fbdev->dev, "failed to enable regulator\n");
 
-#ifdef CONFIG_MACH_ARIES
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	ret = regulator_enable(fbdev->vcc_lcd);
 	if (ret < 0)
 		dev_err(fbdev->dev, "failed to enable vcc_lcd\n");
@@ -1407,7 +1442,7 @@ void s3cfb_late_resume(struct early_suspend *h)
 		dev_err(fbdev->dev, "failed to enable vlcd\n");
 #endif
 
-#if defined(CONFIG_FB_S3C_TL2796)
+#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573)
 	lcd_cfg_gpio_late_resume();
 #endif
 	dev_dbg(fbdev->dev, "wake up from suspend\n");

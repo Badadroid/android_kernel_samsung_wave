@@ -53,6 +53,14 @@ obj-$(CONFIG_PHONE_P1_GSM)	+= dev-p1-phone.o
 obj-$(CONFIG_PHONE_P1_GSM) 	+= level.o
 obj-$(CONFIG_MACH_P1)		+= p1-sec_switch.o
 
+obj-$(CONFIG_MACH_WAVE)		+= mach-wave.o wave-rfkill.o
+obj-$(CONFIG_MACH_WAVE)		+= wave-vibrator.o
+obj-$(CONFIG_MACH_WAVE)		+= wave-btlpm.o
+obj-$(CONFIG_MACH_WAVE)		+= wave-watchdog.o
+obj-$(CONFIG_MACH_WAVE)		+= wave-panel-tl2796.o
+obj-$(CONFIG_MACH_WAVE)		+= wave-panel-lg4573.o
+obj-$(CONFIG_MACH_WAVE)		+= dev-wave-phone.o
+
 # device support
 
 obj-y				+= dev-audio.o
