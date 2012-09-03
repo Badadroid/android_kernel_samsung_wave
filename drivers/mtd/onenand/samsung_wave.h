@@ -13,16 +13,16 @@ struct mtd_partition s3c_partition_info[] = {
    the modem like IMSI we don't touch it for now, but we need the data from it, we create a partition
    for that and copy the data from it. For this you need a image from it and mount it as vfat or copy
    it on a kernel with rfs support on the phone.
-   
+
    Partitions on the lower NAND adresses:
-   
+
    0x00000000 - 0x0003FFFF = first stage bootloader
    0x00040000 - 0x0007FFFF = PIT for second stage bootloader
    0x00080000 - 0x00A7FFFF = EFS: IMSI and NVRAM for the modem
    0x00A80000 - 0x00BBFFFF = second stage bootloader
    0x00BC0000 - 0x00CFFFFF = backup of the second stage bootloader (should be loaded if the other fails, unconfirmed!)
    0x00D00000 - 0x011FFFFF = PARAM.lfs config the bootloader
-   
+
    #########################################################################################
    #########################################################################################
    ###### NEVER TOUCH THE FIRST 2 256k PAGES! THEY CONTAIN THE FIRST STAGE BOOTLOADER ######
@@ -42,6 +42,7 @@ struct mtd_partition s3c_partition_info[] = {
 	{
 		.name		= "recovery",
 		.offset		= (102*SZ_256K),
+
 		.size		= (30*SZ_256K), //131
 	},
 	{
@@ -54,7 +55,7 @@ struct mtd_partition s3c_partition_info[] = {
 		.offset		= (1820*SZ_256K),
 		.size		= (70*SZ_256K), //1889
 	},*/
-//	{       /* The reservoir area is used by Samsung's Block Management Layer (BML)
+/*	{       /* The reservoir area is used by Samsung's Block Management Layer (BML)
 	           to map good blocks from this reservoir to bad blocks in user
 	           partitions. A special tool (bml_over_mtd) is needed to write
 	           partition images using bad block mapping.
@@ -72,7 +73,7 @@ struct mtd_partition s3c_partition_info[] = {
 		   LCD_DIM_LEVEL, LCD_DIM_TIME, MELODY_MODE, REBOOT_MODE, NATION_SEL, LANGUAGE_SEL, 
 		   SET_DEFAULT_PARAM, VERSION_LINE, COMMAND_LINE, BOOT_VERSION
 		*/
-/*  
+/*
 	{
 		.name		= "param",
 		.offset		= (52*SZ_256K),
