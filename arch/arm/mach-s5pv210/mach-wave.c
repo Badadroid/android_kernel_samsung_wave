@@ -91,7 +91,7 @@
 
 #include <linux/gp2a.h>
 
-#include <linux/yas529.h>
+#include <linux/i2c/ak8973.h>
 #include <../../../drivers/video/samsung/s3cfb.h>
 #include <linux/sec_jack.h>
 #include <linux/input/mxt224.h>
@@ -2287,25 +2287,18 @@ static struct i2c_board_info i2c_devs11[] __initdata = {
 	},
 };
 
-static struct yas529_platform_data yas529_pdata = {
+static struct akm8973_platform_data akm8973_pdata = {
 	.reset_line = GPIO_MSENSE_nRST,
 	.reset_asserted = GPIO_LEVEL_LOW,
+	.gpio_data_ready_int = GPIO_MSENSE_IRQ,
 };
 
 static struct i2c_board_info i2c_devs12[] __initdata = {
 	{
-		I2C_BOARD_INFO("yas529", 0x2e),
-		.platform_data = &yas529_pdata,
+		I2C_BOARD_INFO("ak8973", 0x1c),
+		.platform_data = &akm8973_pdata,
 	},
 };
-
-#if defined (CONFIG_SAMSUNG_CAPTIVATE)
-static struct i2c_board_info i2c_devs13[] __initdata = {
-  	{
-  		I2C_BOARD_INFO("A1026_driver", (0x3E)),
-  	},
-};
-#endif
 
 static struct resource ram_console_resource[] = {
 	{
@@ -5047,8 +5040,8 @@ static void __init wave_machine_init(void)
 	gp2a_gpio_init();
 	i2c_register_board_info(11, i2c_devs11, ARRAY_SIZE(i2c_devs11));
 	
-	/* yamaha magnetic sensor - disabled for now, TODO: debug*/
-//	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
+	/* AK8973 magnetic sensor */
+	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
 
 	/* panel */
 #ifdef CONFIG_FB_S3C_TL2796
