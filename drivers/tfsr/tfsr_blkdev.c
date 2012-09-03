@@ -62,9 +62,9 @@ EXPORT_SYMBOL(bml_module_resume);
  * It will erase a block before it do write the data
  */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)
-static int bml_transfer(u32 volume, u32 partno, const struct request *req, u32 data_len)
+static int bml_transfer(u32 volume, u32 partno, struct request *req, u32 data_len)
 #else
-static int bml_transfer(u32 volume, u32 partno, const struct request *req)
+static int bml_transfer(u32 volume, u32 partno, struct request *req)
 #endif
 {
 	unsigned long sector, nsect;
