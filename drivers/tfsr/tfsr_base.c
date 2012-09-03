@@ -139,13 +139,14 @@ int fsr_read_partitions(u32 volume, BML_PARTTAB_T *parttab)
 		}
 	}
 	
-	DEBUG(DL1,"pi->nNumOfPartEntry: %d", pi->nNumOfPartEntry);
+	DEBUG(DL1,"pi->nNumOfPartEntry: %d\n", pi->nNumOfPartEntry);
 	parttab->num_parts =  (int) pi->nNumOfPartEntry;
 	for (partno = 0; partno < pi->nNumOfPartEntry; partno++) 
 	{
 		parttab->part_size[partno]      = (int) pi->stPEntry[partno].nNumOfUnits;
 		parttab->part_id[partno]        = (int) pi->stPEntry[partno].nID;
 		parttab->part_attr[partno]      = (int) pi->stPEntry[partno].nAttr;
+		DEBUG(DL1,"==PARTITION #%d==\n nID: %d\n nNumOfUnits: %d\n", partno, part_id[partno], part_size[partno]);
 	}
 	
 	DEBUG(DL3,"TINY[I]: volume(%d)\n", volume);
@@ -159,6 +160,7 @@ int fsr_read_partitions(u32 volume, BML_PARTTAB_T *parttab)
 static int __init fsr_init(void)
 {
 	int error;
+	struct BML_PARTTAB_T temp_tab;
 	
 	DECLARE_TIMER;
 	/*initialize global array*/
@@ -190,7 +192,8 @@ static int __init fsr_init(void)
 		ERRPRINTK("Tiny BML_Block init: error (%x)\n", error);
 		return -ENXIO;
 	}
-
+	
+	fsr_read_partitions(0, &temp_tab);
 	DEBUG(DL3,"TINY[O]\n");
 
 	return 0;
