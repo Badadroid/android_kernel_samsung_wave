@@ -79,7 +79,7 @@ static int bml_transfer(u32 volume, u32 partno, struct request *req)
 	if (req == NULL || (req->cmd_type != REQ_TYPE_FS)) {
 		printk (KERN_NOTICE "Skip non-CMD request\n");
 		__blk_end_request_all(req, -EIO);
-		continue;
+		return -EIO;
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)
