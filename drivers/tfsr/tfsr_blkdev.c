@@ -34,7 +34,7 @@
 /**
  * list to keep track of each created block devices
  */
-static DECLARE_MUTEX(bml_list_mutex);
+static DEFINE_MUTEX(bml_list_mutex);
 static LIST_HEAD(bml_list);
 
 #ifdef CONFIG_PM

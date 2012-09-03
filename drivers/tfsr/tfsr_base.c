@@ -146,7 +146,7 @@ int fsr_read_partitions(u32 volume, BML_PARTTAB_T *parttab)
 		parttab->part_size[partno]      = (int) pi->stPEntry[partno].nNumOfUnits;
 		parttab->part_id[partno]        = (int) pi->stPEntry[partno].nID;
 		parttab->part_attr[partno]      = (int) pi->stPEntry[partno].nAttr;
-		DEBUG(DL1,"==PARTITION #%d==\n nID: %d\n nNumOfUnits: %d\n", partno, part_id[partno], part_size[partno]);
+		DEBUG(DL1,"==PARTITION #%d==\n nID: %d\n nNumOfUnits: %d\n", partno, parttab->part_id[partno], parttab->part_size[partno]);
 	}
 	
 	DEBUG(DL3,"TINY[I]: volume(%d)\n", volume);
@@ -160,7 +160,7 @@ int fsr_read_partitions(u32 volume, BML_PARTTAB_T *parttab)
 static int __init fsr_init(void)
 {
 	int error;
-	struct BML_PARTTAB_T temp_tab;
+	BML_PARTTAB_T temp_tab;
 	
 	DECLARE_TIMER;
 	/*initialize global array*/
