@@ -34,7 +34,7 @@
 /**
  * list to keep track of each created block devices
  */
-static DEFINE_MUTEX(bml_list_mutex);
+static struct semaphore bml_list_mutex;
 static LIST_HEAD(bml_list);
 
 #ifdef CONFIG_PM
@@ -76,9 +76,10 @@ static int bml_transfer(u32 volume, u32 partno, const struct request *req)
 	
 	DEBUG(DL3,"TINY[I]: volume(%d), partno(%d)\n", volume, partno);
 
-	if (!blk_fs_request(req))
-	{
-		return 0;
+	if (req == NULL || (req->cmd_type != REQ_TYPE_FS)) {
+		printk (KERN_NOTICE "Skip non-CMD request\n");
+		__blk_end_request_all(req, -EIO);
+		continue;
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 31)
