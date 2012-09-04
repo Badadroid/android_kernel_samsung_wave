@@ -227,8 +227,8 @@ static irqreturn_t touchkey_interrupt_thread(int irq, void *touchkey_devdata)
 		ret = gpio_get_value(_3_GPIO_TOUCH_INT);
 
 		if (ret & 1) {
-			dev_err(&devdata->client->dev, "%s: possible phantom key press... "
-					"ignore it!\n", __func__);
+			//dev_err(&devdata->client->dev, "%s: possible phantom key press... "
+			//		"ignore it!\n", __func__);
 			goto err;
 		}
 	}
