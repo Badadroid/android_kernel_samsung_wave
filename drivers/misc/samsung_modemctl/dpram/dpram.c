@@ -730,9 +730,6 @@ static int dpram_read_raw(dpram_device_t *device, const u16 non_cmd)
 #ifdef _ENABLE_ERROR_DEVICE
 void request_phone_reset()
 {
-
-	return;
-/*
 	char buf[DPRAM_ERR_MSG_LEN];
 	unsigned long flags;
 
@@ -750,7 +747,6 @@ void request_phone_reset()
     
 	wake_up_interruptible(&dpram_err_wait_q);
 	kill_fasync(&dpram_err_async_q, SIGIO, POLL_IN);
-*/
 }
 #endif
 
