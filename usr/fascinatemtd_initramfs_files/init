@@ -9,8 +9,11 @@ busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-busybox mount -t ext4 /dev/block/mmcblk0p1 /system
-busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
+/lvm/sbin/lvm vgscan --mknodes --ignorelockingfailure
+/lvm/sbin/lvm vgchange -aly --ignorelockingfailure
+
+busybox mount -t ext4 /dev/lvpool/system /system
+busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
 
 image=/stage1/ramdisk.img
 
@@ -25,15 +28,15 @@ if busybox test -e /cache/.startrecovery || \
 elif ! busybox test -e /system/build.prop ; then
 	# emergency boot
 	busybox umount /cache
-	make_ext4fs -b 4096 -g 32768 -i 8192 -I 256 -a /cache /dev/block/mmcblk0p2
-	busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
+	make_ext4fs -b 4096 -g 32768 -i 8192 -I 256 -a /cache /dev/block/mmcblk0p3
+	busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
 	busybox mkdir /cache/recovery
 
 	busybox mount -t vfat /dev/block/mmcblk1p1 /sdcard
 
 	UPDATE=$(busybox cat /sdcard/cyanogenmod.cfg)
 
-	if busybox test -e $UPDATE ; then
+	if busybox test -n "$UPDATE" && busybox test -e $UPDATE ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
 	fi
 

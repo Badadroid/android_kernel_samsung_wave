@@ -9,7 +9,10 @@ busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-busybox mount -t ext4 /dev/block/mmcblk0p2 /system
+/lvm/sbin/lvm vgscan --mknodes --ignorelockingfailure
+/lvm/sbin/lvm vgchange -aly --ignorelockingfailure
+
+busybox mount -t ext4 /dev/lvpool/system /system
 busybox mount -t yaffs2 /dev/block/mtdblock3 /cache
 
 image=/stage1/ramdisk.img
@@ -32,7 +35,7 @@ elif ! busybox test -e /system/build.prop ; then
 
 	UPDATE=$(busybox cat /sdcard/cyanogenmod.cfg)
 
-	if busybox test -e $UPDATE ; then
+	if busybox test -n "$UPDATE" && busybox test -e $UPDATE ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
 	fi
 
