@@ -19,6 +19,7 @@
 //#include <stdlib.h>
 #include "FSR.h"
 #include <linux/clk.h>
+#include <linux/err.h>
 #include <linux/io.h>
 #include <linux/ioport.h>
 
@@ -232,6 +233,7 @@ FSR_PAM_Init(VOID)
 {
     INT32   nRe = FSR_PAM_SUCCESS;
     UINT32  nONDVirBaseAddr;
+	struct clk *nand_clk;
     FSR_STACK_VAR;
 
     FSR_STACK_END;
@@ -273,9 +275,15 @@ FSR_PAM_Init(VOID)
         }
 #else
 		request_mem_region(FSR_ONENAND_PHY_BASE_ADDR, SZ_128K,
-					       "tfsr-onenand");
+					       NULL);
         nONDVirBaseAddr  = FSR_OAM_Pa2Va(FSR_ONENAND_PHY_BASE_ADDR);
-		clk_enable(clk_get(NULL, "onenand"));
+		nand_clk = clk_get(NULL, "onenand");
+		if(IS_ERR(nand_clk))
+		{
+			RTL_PRINT((TEXT("[PAM:ERR] Could not get nand_clk\r\n")));
+			break;
+		}
+		clk_enable(nand_clk);
 #endif
 
         RTL_PRINT((TEXT("[PAM:   ]   OneNAND physical base address       : 0x%08x\r\n"), FSR_ONENAND_PHY_BASE_ADDR));
