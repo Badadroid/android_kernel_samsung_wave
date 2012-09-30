@@ -4955,6 +4955,12 @@ static struct samsung_keypad_platdata wave_keypad_data __initdata = {
 
 };
 
+static void __init onenand_init()
+{
+	struct clk *clk = clk_get(NULL, "onenand");
+	BUG_ON(!clk);
+	clk_enable(clk);
+}
 
 static void __init wave_machine_init(void)
 {
@@ -5111,6 +5117,8 @@ static void __init wave_machine_init(void)
 
 	wave_init_wifi_mem();
 
+	onenand_init();
+	
 	/* write something into the INFORM6 register that we can use to
 	 * differentiate an unclear reboot from a clean reboot (which
 	 * writes a small integer code to INFORM6).

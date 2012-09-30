@@ -277,13 +277,13 @@ FSR_PAM_Init(VOID)
 		request_mem_region(FSR_ONENAND_PHY_BASE_ADDR, SZ_128K,
 					       NULL);
         nONDVirBaseAddr  = FSR_OAM_Pa2Va(FSR_ONENAND_PHY_BASE_ADDR);
-		nand_clk = clk_get(NULL, "onenand");
+	/*	nand_clk = clk_get(NULL, "onenand");
 		if(IS_ERR(nand_clk))
 		{
 			RTL_PRINT((TEXT("[PAM:ERR] Could not get nand_clk\r\n")));
 			break;
 		}
-		clk_enable(nand_clk);
+		clk_enable(nand_clk);*/
 #endif
 
         RTL_PRINT((TEXT("[PAM:   ]   OneNAND physical base address       : 0x%08x\r\n"), FSR_ONENAND_PHY_BASE_ADDR));
