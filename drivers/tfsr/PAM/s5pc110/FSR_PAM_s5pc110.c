@@ -18,6 +18,9 @@
 
 //#include <stdlib.h>
 #include "FSR.h"
+#include <linux/clk.h>
+#include <linux/io.h>
+#include <linux/ioport.h>
 
 /*****************************************************************************/
 /* [PAM customization]                                                       */
@@ -30,6 +33,8 @@
 /* - FSR_ENABLE_ONENAND_LFT                                                  */
 /*                                                                           */
 /*****************************************************************************/
+#define CONFIG_ONENAND
+
 #if defined (CONFIG_FLEXOND)
 /**< if FSR_ENABLE_FLEXOND_LFT is defined, 
      Low level function table is linked with Flex-OneNAND LLD */
@@ -267,7 +272,10 @@ FSR_PAM_Init(VOID)
             RTL_PRINT((TEXT("[PAM:   ]   MMU is Disabed\r\n")));
         }
 #else
+		request_mem_region(FSR_ONENAND_PHY_BASE_ADDR, SZ_128K,
+					       "tfsr-onenand");
         nONDVirBaseAddr  = FSR_OAM_Pa2Va(FSR_ONENAND_PHY_BASE_ADDR);
+		clk_enable(clk_get(NULL, "onenand"));
 #endif
 
         RTL_PRINT((TEXT("[PAM:   ]   OneNAND physical base address       : 0x%08x\r\n"), FSR_ONENAND_PHY_BASE_ADDR));
@@ -285,7 +293,8 @@ FSR_PAM_Init(VOID)
         if (gpOneNANDReg->nMID != 0x00ec)
         {
             /* ERROR : OneNAND address space is not mapped with address space of ARM core */
-            RTL_PRINT((TEXT("[PAM:ERR] OneNAND address space is not mapped with address space of ARM core\r\n")));
+            RTL_PRINT((TEXT("[PAM:ERR] OneNAND address space is not mapped with address space of ARM core, read value: 0x%X\r\n"), 
+				gpOneNANDReg->nMID));
             nRe = FSR_PAM_NAND_PROBE_FAILED;
             break;
         }

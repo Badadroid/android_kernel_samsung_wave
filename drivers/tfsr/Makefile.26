@@ -24,6 +24,8 @@ tfsr-objs	+= OAM/Linux/FSR_OAM_Linux.o
 # Please add your platform here
 ifeq ($(CONFIG_MACH_OMAP_APOLLON),y)
 tfsr-objs   += PAM/ApollonPLUS/FSR_PAM_ApollonPLUS.o
+else ifeq ($(CONFIG_MACH_WAVE),y)
+tfsr-objs   += PAM/s5pc110/FSR_PAM_s5pc110.o
 else
 tfsr-objs   += PAM/Poseidon/FSR_PAM_Poseidon.o
 endif #CONFIG_MACH_OMAP_APOLLON
