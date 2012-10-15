@@ -236,14 +236,14 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $<
 #   usage: stat [-FlLnqrsx] [-f format] [-t timefmt] [file ...]
 #   expire: syntax error
 #
-# So we need to force use of gstat from macports instead
+# So we need to use an alternative syntax
 
 size_append = printf $(shell						\
 dec_size=0;								\
 l_arch=$$(uname -s);							\
 for F in $1; do								\
 	if [ "$$l_arch" == "Darwin" ]; then				\
-		fsize=$$(gstat -c "%s" $$F);				\
+		fsize=$$(stat -f "%z" $$F);				\
 	else								\
 		fsize=$$(stat -c "%s" $$F);				\
 	fi;								\
