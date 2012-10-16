@@ -637,7 +637,11 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	if (!config)
 		return -ENOMEM;
 
+#ifdef CONFIG_SAMSUNG_FASCINATE
+	config->fsg.nluns = 1;
+#else
 	config->fsg.nluns = 2;
+#endif
 	config->fsg.luns[0].removable = 1;
 	config->fsg.luns[1].removable = 1;
 
