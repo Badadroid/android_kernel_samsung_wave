@@ -413,7 +413,7 @@ static struct s5p_media_device aries_media_devs[] = {
 static struct s5pv210_cpufreq_voltage smdkc110_cpufreq_volt[] = {
 	{
 		.freq	= 1200000,
-		.varm	= 1275000,
+		.varm	= 1325000,
 		.vint	= 1100000,
 	}, {
 		.freq	= 1000000,

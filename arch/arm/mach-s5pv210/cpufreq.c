@@ -98,12 +98,12 @@ static unsigned int g_dvfslockval[DVFS_LOCK_TOKEN_NUM];
 //static DEFINE_MUTEX(dvfs_high_lock);
 #endif
 
-const unsigned long arm_volt_max = 1350000;
+const unsigned long arm_volt_max = 1400000;
 const unsigned long int_volt_max = 1250000;
 
 static struct s5pv210_dvs_conf dvs_conf[] = {
 	[OC0] = {
-		.arm_volt   = 1275000,
+		.arm_volt   = 1325000,
 		.int_volt   = 1100000,
 	},
 	[L0] = {
@@ -777,3 +777,42 @@ static int __init s5pv210_cpufreq_init(void)
 }
 
 late_initcall(s5pv210_cpufreq_init);
+
+ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
+{
+	int i, len = 0;
+	for (i = 0; i <= MAX_PERF_LEVEL; i++) {
+		len += sprintf(buf + len, "%dmhz: %d mV\n", s5pv210_freq_table[i].frequency / 1000, dvs_conf[i].arm_volt / 1000);
+	}
+	return len;
+}
+
+ssize_t store_UV_mV_table(struct cpufreq_policy *policy,
+							const char *buf, size_t count)
+{
+	int ret = -EINVAL;
+	int i = 0;
+	int j = 0;
+	int u[MAX_PERF_LEVEL + 1];
+	while (j < MAX_PERF_LEVEL + 1) {
+		int consumed;
+		int val;
+		ret = sscanf(buf, "%d%n", &val, &consumed);
+		if (ret > 0) {
+			buf += consumed;
+			u[j++] = val;
+		}
+		else {
+			break;
+		}
+	}
+
+	for (i = 0; i < j; i++) {
+		if (u[i] > arm_volt_max / 1000) {
+			u[i] = arm_volt_max / 1000;
+		}
+		dvs_conf[i].arm_volt = u[i] * 1000;
+	}
+
+	return count;
+}
