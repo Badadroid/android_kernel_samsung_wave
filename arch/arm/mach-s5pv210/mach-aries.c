@@ -71,8 +71,9 @@
 #include <mach/cpu-freq-v210.h>
 
 #include <media/ce147_platform.h>
+#ifdef CONFIG_VIDEO_S5KA3DFX
 #include <media/s5ka3dfx_platform.h>
-#include <media/s5k4ecgx.h>
+#endif
 
 #include <plat/regs-serial.h>
 #include <plat/s5pv210.h>
@@ -2353,7 +2354,9 @@ static struct s3c_platform_fimc fimc_plat_lsi = {
 	.default_cam	= CAMERA_PAR_A,
 	.camera		= {
 		&ce147,
+#ifdef CONFIG_VIDEO_S5KA3DFX
 		&s5ka3dfx,
+#endif
 	},
 	.hw_ver		= 0x43,
 };
@@ -2643,14 +2646,6 @@ static void gp2a_gpio_init(void)
 	int ret = gpio_request(GPIO_PS_ON, "gp2a_power_supply_on");
 	if (ret)
 		printk(KERN_ERR "Failed to request gpio gp2a power supply.\n");
-
-#ifdef CONFIG_SAMSUNG_FASCINATE
-        s3c_gpio_cfgpin(GPIO_PS_VOUT, S3C_GPIO_SFN(GPIO_PS_VOUT_AF));
-        s3c_gpio_setpull(GPIO_PS_VOUT, S3C_GPIO_PULL_NONE);
-        irq_set_irq_type(IRQ_EINT1, IRQ_TYPE_EDGE_BOTH);
-        gp2a_pdata.p_irq = gpio_to_irq(GPIO_PS_VOUT);
-        gp2a_pdata.p_out = GPIO_PS_VOUT;
-#endif
 }
 
 static struct i2c_board_info i2c_devs11[] __initdata = {
