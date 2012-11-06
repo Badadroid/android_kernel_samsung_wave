@@ -339,20 +339,20 @@ struct s5p_panel_data wave_panel_data = {
 	.seq_etc_set = s6e63m0_SEQ_ETC_SETTING,
 	.standby_on = s6e63m0_SEQ_STANDBY_ON,
 	.standby_off = s6e63m0_SEQ_STANDBY_OFF,
-	.gpio_dcx = S5PV210_GPF0(0), /* H_SYNC pad */
-	.gpio_rdx = S5PV210_GPF0(2), /* Enable */
+	.gpio_dcx = GPIO_DISPLAY_HSYNC, /* H_SYNC pad */
+	.gpio_rdx = GPIO_DISPLAY_DE, /* Enable */
 	.gpio_csx = GPIO_DISPLAY_CS,
-	.gpio_wrx = S5PV210_MP04(1), /* SCL pad */
-	.gpio_rst = S5PV210_MP05(5),
+	.gpio_wrx = GPIO_DISPLAY_CLK, /* SCL pad */
+	.gpio_rst = GPIO_MLCD_RST,
 	.gpio_db = {
-		S5PV210_GPF0(4),
-		S5PV210_GPF0(5),
-		S5PV210_GPF0(6),
-		S5PV210_GPF0(7),
-		S5PV210_GPF1(0),
-		S5PV210_GPF1(1),
-		S5PV210_GPF1(2),
-		S5PV210_GPF1(3),
+		GPIO_LCD_D0,
+		GPIO_LCD_D1,
+		GPIO_LCD_D2,
+		GPIO_LCD_D3,
+		GPIO_LCD_D4,
+		GPIO_LCD_D5,
+		GPIO_LCD_D6,
+		GPIO_LCD_D7,
 	},
 	.configure_mtp_gpios = configure_mtp_gpios,
 	.factory_v255_regs = {

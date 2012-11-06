@@ -907,18 +907,29 @@ struct platform_device sec_device_dpram = {
 static void panel_cfg_gpio(struct platform_device *pdev)
 {
 	int i;
+	
+	/* DISPLAY_HSYNC */
+	s3c_gpio_cfgpin(GPIO_DISPLAY_HSYNC, GPIO_DISPLAY_HSYNC_AF);
+	s3c_gpio_setpull(GPIO_DISPLAY_HSYNC, S3C_GPIO_PULL_NONE);
 
-	for (i = 0; i < 8; i++)
-		s3c_gpio_cfgpin(S5PV210_GPF0(i), S3C_GPIO_SFN(2));
+	/* DISPLAY_VSYNC */
+	s3c_gpio_cfgpin(GPIO_DISPLAY_VSYNC, GPIO_DISPLAY_VSYNC_AF);
+	s3c_gpio_setpull(GPIO_DISPLAY_VSYNC, S3C_GPIO_PULL_NONE);
 
-	for (i = 0; i < 8; i++)
-		s3c_gpio_cfgpin(S5PV210_GPF1(i), S3C_GPIO_SFN(2));
+	/* DISPLAY_DE */
+	s3c_gpio_cfgpin(GPIO_DISPLAY_DE, GPIO_DISPLAY_DE_AF);
+	s3c_gpio_setpull(GPIO_DISPLAY_DE, S3C_GPIO_PULL_NONE);
 
-	for (i = 0; i < 8; i++)
-		s3c_gpio_cfgpin(S5PV210_GPF2(i), S3C_GPIO_SFN(2));
+	/* DISPLAY_PCLK */
+	s3c_gpio_cfgpin(GPIO_DISPLAY_PCLK, GPIO_DISPLAY_PCLK_AF);
+	s3c_gpio_setpull(GPIO_DISPLAY_PCLK, S3C_GPIO_PULL_NONE);
+	
+	for (i = 0; i < 24; i++)	
+	{
+		s3c_gpio_setpull(GPIO_LCD_D0 + i, S3C_GPIO_PULL_NONE);
+		s3c_gpio_cfgpin(GPIO_LCD_D0 + i, S3C_GPIO_SFN(2));
+	}
 
-	for (i = 0; i < 4; i++)
-		s3c_gpio_cfgpin(S5PV210_GPF3(i), S3C_GPIO_SFN(2));
 
 	/* mDNIe SEL: why we shall write 0x2 ? */
 #ifdef CONFIG_FB_S3C_MDNIE
@@ -4955,7 +4966,7 @@ static struct samsung_keypad_platdata wave_keypad_data __initdata = {
 
 };
 
-static void __init onenand_init()
+static void __init onenand_init(void)
 {
 	struct clk *clk = clk_get(NULL, "onenand");
 	BUG_ON(!clk);

@@ -1121,10 +1121,12 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	fbdev->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
 	register_early_suspend(&fbdev->early_suspend);
 #endif
+#ifdef CONFIG_WAVE_S8500
+/* FIXME: ugly hack around for configuring AMOLED */
 	s3cfb_early_suspend(&fbdev->early_suspend);
 	msleep(200);
 	s3cfb_late_resume(&fbdev->early_suspend);
-
+#endif
 	fbdev->vsync_thread = kthread_run(s3cfb_wait_for_vsync_thread,
 			fbdev, "s3cfb-vsync");
 	if (fbdev->vsync_thread == ERR_PTR(-ENOMEM)) {
