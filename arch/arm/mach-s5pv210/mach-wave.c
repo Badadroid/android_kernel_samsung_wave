@@ -5128,7 +5128,7 @@ static void __init wave_machine_init(void)
 
 	wave_init_wifi_mem();
 
-	onenand_init();
+	//onenand_init();
 	
 	/* write something into the INFORM6 register that we can use to
 	 * differentiate an unclear reboot from a clean reboot (which
