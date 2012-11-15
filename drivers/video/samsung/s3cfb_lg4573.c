@@ -136,14 +136,17 @@ static void lg4573_panel_send_sequence(struct s5p_lcd *lcd, const u16 *wbuf)
 			if ((wbuf[i] & DEFMASK) != DATAMASK)
 			{
 				addr = 0x74;			//WRITE INDEX REGISTER
+			//	printk("RGB_Index(0x%X)\n", (u8)wbuf[i]);
+				
 			}
 			else
 			{
 				addr = 0x76;                    //WRITE DATA
+			//	printk("RGB_Data(0x%X)\n", (u8)wbuf[i]);
 			}
 			lg4573_spi_write_byte(lcd, addr, (u8)wbuf[i]);
 			i += 1;
-                } 
+		}
 		else 
 		{
 			msleep(wbuf[i+1]);
@@ -288,18 +291,11 @@ static int s5p_lcd_set_power(struct lcd_device *ld, int power)
 	struct s5p_lcd *lcd = lcd_get_data(ld);
 //	struct s5p_panel_data *pdata = lcd->data;
 
-	printk(KERN_DEBUG "s5p_lcd_set_power is called: %d", power);
-	if(power)
-		lg4573_ldi_disable(lcd);
-	else		
-		lg4573_ldi_enable(lcd);
-
-/*
+	printk(KERN_DEBUG "s5p_lcd_set_power is called: %d\n", power);
 	if (power)
-		s6e63m0_panel_send_sequence(lcd, pdata->display_on);
-	else
-		s6e63m0_panel_send_sequence(lcd, pdata->display_off);
-*/
+		lg4573_ldi_enable(lcd);
+	else		
+		lg4573_ldi_disable(lcd);
 
 	return 0;
 }

@@ -56,6 +56,7 @@
 #include "s3cfb_mdnie.h"
 #endif
 
+
 #if (CONFIG_FB_S3C_NUM_OVLY_WIN >= CONFIG_FB_S3C_DEFAULT_WINDOW)
 #error "FB_S3C_NUM_OVLY_WIN should be less than FB_S3C_DEFAULT_WINDOW"
 #endif
@@ -1087,6 +1088,11 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 #ifdef CONFIG_FB_S3C_MDNIE
 	mDNIe_Mode_Set();
 #endif
+/* turn off every window - cleans up possibly enabled fbuffers left by bootloaders */
+	for (i = 0; i < pdata->nr_wins; i++) {
+		s3cfb_set_window(fbdev, i, 0);
+	}
+	
 	s3cfb_set_window(fbdev, pdata->default_win, 1);
 
 	s3cfb_set_alpha_value_width(fbdev, pdata->default_win);
