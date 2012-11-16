@@ -1088,11 +1088,13 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 #ifdef CONFIG_FB_S3C_MDNIE
 	mDNIe_Mode_Set();
 #endif
+#ifdef CONFIG_WAVE_S8530
+
 /* turn off every window - cleans up possibly enabled fbuffers left by bootloaders */
 	for (i = 0; i < pdata->nr_wins; i++) {
 		s3cfb_set_window(fbdev, i, 0);
 	}
-	
+#endif	
 	s3cfb_set_window(fbdev, pdata->default_win, 1);
 
 	s3cfb_set_alpha_value_width(fbdev, pdata->default_win);

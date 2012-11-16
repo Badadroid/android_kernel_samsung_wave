@@ -907,7 +907,7 @@ struct platform_device sec_device_dpram = {
 static void panel_cfg_gpio(struct platform_device *pdev)
 {
 	int i;
-	
+#ifdef CONFIG_FB_S3C_LG4573
 	/* DISPLAY_HSYNC */
 	s3c_gpio_cfgpin(GPIO_DISPLAY_HSYNC, GPIO_DISPLAY_HSYNC_AF);
 	s3c_gpio_setpull(GPIO_DISPLAY_HSYNC, S3C_GPIO_PULL_NONE);
@@ -930,7 +930,24 @@ static void panel_cfg_gpio(struct platform_device *pdev)
 		s3c_gpio_cfgpin(GPIO_LCD_D0 + i, S3C_GPIO_SFN(2));
 	}
 
+#endif
 
+#ifdef CONFIG_FB_S3C_TL2796
+
+	for (i = 0; i < 8; i++)
+	s3c_gpio_cfgpin(S5PV210_GPF0(i), S3C_GPIO_SFN(2));
+
+	for (i = 0; i < 8; i++)
+	s3c_gpio_cfgpin(S5PV210_GPF1(i), S3C_GPIO_SFN(2));
+
+	for (i = 0; i < 8; i++)
+	s3c_gpio_cfgpin(S5PV210_GPF2(i), S3C_GPIO_SFN(2));
+
+	for (i = 0; i < 8; i++)
+	s3c_gpio_cfgpin(S5PV210_GPF3(i), S3C_GPIO_SFN(2));
+
+
+#endif
 	/* mDNIe SEL: why we shall write 0x2 ? */
 #ifdef CONFIG_FB_S3C_MDNIE
 	writel(0x1, S5P_MDNIE_SEL);
