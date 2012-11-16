@@ -203,9 +203,6 @@ static int s5p_bl_convert_to_tuned_value(int intensity)
 		tune_value = (intensity) * (DIM_BACKLIGHT_VALUE) / (DIM_BACKLIGHT_LEVEL);
 	else
 		tune_value = intensity;
-
-	gprintk("Passed value : [%d], Converted value : [%d]\n", intensity, tune_value);
-
 	return tune_value;
 }
 #endif
@@ -227,7 +224,6 @@ static void update_brightness(struct s5p_lcd *lcd)
 	pwm_enable(lcd->backlight_pwm_dev);
 	/* gprintk("## brightness = [%ld], (bl_freq_count * brightness)/255 =[%ld], ret_val_pwm_config=[%ld] \n", brightness, (bl_freq_count * brightness)/255, ret_val_pwm_config ); */
 #endif
-	gprintk("Update status brightness[0~255]:(%d) \n", lcd->bl);
 }
 
 
@@ -291,7 +287,6 @@ static int s5p_lcd_set_power(struct lcd_device *ld, int power)
 	struct s5p_lcd *lcd = lcd_get_data(ld);
 //	struct s5p_panel_data *pdata = lcd->data;
 
-	printk(KERN_DEBUG "s5p_lcd_set_power is called: %d\n", power);
 	if (power)
 		lg4573_ldi_enable(lcd);
 	else		
@@ -316,8 +311,6 @@ static int s5p_bl_update_status(struct backlight_device *bd)
 	struct s5p_lcd *lcd = bl_get_data(bd);
 	int bl = bd->props.brightness;
 
-	pr_debug("\nupdate status brightness %d\n",
-				bd->props.brightness);
 
 	if (bl < 0 || bl > 255)
 		return -EINVAL;
@@ -327,8 +320,6 @@ static int s5p_bl_update_status(struct backlight_device *bd)
 	lcd->bl = bl;
 
 	if (lcd->ldi_enable) {
-		pr_debug("\n bl :%d\n", bl);
-		printk(KERN_INFO "bl : [%d] \n", bl);
 		update_brightness(lcd);
 	}
 
@@ -541,6 +532,6 @@ module_exit(lg4573_exit);
 
 
 MODULE_AUTHOR("Oleg Kiya");
-MODULE_DESCRIPTION("lg4573 LDI driver");
+MODULE_DESCRIPTION("LG4573 LDI driver");
 MODULE_LICENSE("GPL");
 
