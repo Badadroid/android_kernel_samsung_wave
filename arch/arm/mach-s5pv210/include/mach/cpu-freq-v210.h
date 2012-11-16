@@ -16,7 +16,7 @@
 
 enum perf_level {
 #if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
-	OC0, OC1, L0, L1, L2, L3, L4, MAX_PERF_LEVEL = L4,
+	OC0, OC1, OC2, OC3, L0, L1, L2, L3, L4, MAX_PERF_LEVEL = L4,
 #else
 	OC0, L0, L1, L2, L3, L4, MAX_PERF_LEVEL = L4,
 #endif

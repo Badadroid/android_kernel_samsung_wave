@@ -33,9 +33,11 @@ static struct cpufreq_freqs freqs;
 static DEFINE_MUTEX(set_freq_lock);
 
 #if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
-/* APLL M,P,S values for 1.4G/1.2G/1.0G/800Mhz */
+/* APLL M,P,S values for 1.4-1.0GHz/800Mhz */
 #define APLL_VAL_1400	((1 << 31) | (175 << 16) | (3 << 8) | 1)
+#define APLL_VAL_1300	((1 << 31) | (325 << 16) | (6 << 8) | 1)
 #define APLL_VAL_1200	((1 << 31) | (150 << 16) | (3 << 8) | 1)
+#define APLL_VAL_1100   ((1 << 31) | (141 << 16) | (3 << 8) | 1)
 #else
 /* APLL M,P,S values for 1.2G/1G/800Mhz */
 #define APLL_VAL_1200	((1 << 31) | (150 << 16) | (3 << 8) | 1)
@@ -82,7 +84,9 @@ enum s5pv210_dmc_port {
 static struct cpufreq_frequency_table s5pv210_freq_table[] = {
 #if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
 	{OC0, 1400*1000},
-	{OC1, 1200*1000},
+	{OC1, 1300*1000},
+	{OC2, 1200*1000},
+	{OC3, 1100*1000},
 #else
 	{OC0, 1200*1000},
 #endif
@@ -118,6 +122,14 @@ static struct s5pv210_dvs_conf dvs_conf[] = {
 		.int_volt   = 1150000,
 	},
 	[OC1] = {
+		.arm_volt   = 1325000,
+		.int_volt   = 1125000,
+	},
+	[OC2] = {
+		.arm_volt   = 1275000,
+		.int_volt   = 1100000,
+	},
+	[OC3] = {
 		.arm_volt   = 1275000,
 		.int_volt   = 1100000,
 	},
@@ -175,7 +187,7 @@ static struct s5pv210_dvs_conf dvs_conf[] = {
 #endif
 
 #if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
-static u32 clkdiv_val[7][11] = {
+static u32 clkdiv_val[9][11] = {
 #else
 static u32 clkdiv_val[6][11] = {
 #endif
@@ -190,7 +202,13 @@ static u32 clkdiv_val[6][11] = {
 	/* OC0 : [1400/200/200/100][166/83][133/66][200/200] */
 	{0, 6, 6, 1, 3, 1, 4, 1, 3, 0, 0},
 
-	/* OC1 : [1200/200/100][166/83][133/66][200/200] */
+	/* OC1 : [1300/200/200/100][166/83][133/66][200/200] */
+	{0, 5.5, 5.5, 1, 3, 1, 4, 1, 3, 0, 0},
+
+	/* OC2 : [1200/200/100][166/83][133/66][200/200] */
+	{0, 5, 5, 1, 3, 1, 4, 1, 3, 0, 0},
+
+	/* OC3 : [1100/200/200/100][166/83][133/66][200/200] */
 	{0, 5, 5, 1, 3, 1, 4, 1, 3, 0, 0},
 #else
 	/* OC0 : [1200/200/100][166/83][133/66][200/200] */
@@ -514,14 +532,24 @@ static int s5pv210_target(struct cpufreq_policy *policy,
 		 * 6-2. Wait untile the PLL is locked
 		 */
 		switch (index) {
-		case OC0:
 #if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
+		case OC0:
 			__raw_writel(APLL_VAL_1400, S5P_APLL_CON);
 			break;
 		case OC1:
-#endif
+			__raw_writel(APLL_VAL_1300, S5P_APLL_CON);
+			break;
+		case OC2:
 			__raw_writel(APLL_VAL_1200, S5P_APLL_CON);
 			break;
+		case OC3:
+			__raw_writel(APLL_VAL_1100, S5P_APLL_CON);
+			break;
+#else
+		case OC0:
+			__raw_writel(APLL_VAL_1200, S5P_APLL_CON);
+			break;
+#endif
 		case L0:
 			__raw_writel(APLL_VAL_1000, S5P_APLL_CON);
 			break;
