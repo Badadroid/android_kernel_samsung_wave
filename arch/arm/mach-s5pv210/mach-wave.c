@@ -908,27 +908,18 @@ static void panel_cfg_gpio(struct platform_device *pdev)
 {
 	int i;
 	
-	/* DISPLAY_HSYNC */
-	s3c_gpio_cfgpin(GPIO_DISPLAY_HSYNC, GPIO_DISPLAY_HSYNC_AF);
-	s3c_gpio_setpull(GPIO_DISPLAY_HSYNC, S3C_GPIO_PULL_NONE);
+	/* configure DISPLAY_HSYNC, VSYNC, DE, PCLK and RGB pins */
+	for (i = 0; i < 8; i++)
+		s3c_gpio_cfgpin(S5PV210_GPF0(i), S3C_GPIO_SFN(2));
 
-	/* DISPLAY_VSYNC */
-	s3c_gpio_cfgpin(GPIO_DISPLAY_VSYNC, GPIO_DISPLAY_VSYNC_AF);
-	s3c_gpio_setpull(GPIO_DISPLAY_VSYNC, S3C_GPIO_PULL_NONE);
+	for (i = 0; i < 8; i++)
+		s3c_gpio_cfgpin(S5PV210_GPF1(i), S3C_GPIO_SFN(2));
 
-	/* DISPLAY_DE */
-	s3c_gpio_cfgpin(GPIO_DISPLAY_DE, GPIO_DISPLAY_DE_AF);
-	s3c_gpio_setpull(GPIO_DISPLAY_DE, S3C_GPIO_PULL_NONE);
+	for (i = 0; i < 8; i++)
+		s3c_gpio_cfgpin(S5PV210_GPF2(i), S3C_GPIO_SFN(2));
 
-	/* DISPLAY_PCLK */
-	s3c_gpio_cfgpin(GPIO_DISPLAY_PCLK, GPIO_DISPLAY_PCLK_AF);
-	s3c_gpio_setpull(GPIO_DISPLAY_PCLK, S3C_GPIO_PULL_NONE);
-	
-	for (i = 0; i < 24; i++)	
-	{
-		s3c_gpio_setpull(GPIO_LCD_D0 + i, S3C_GPIO_PULL_NONE);
-		s3c_gpio_cfgpin(GPIO_LCD_D0 + i, S3C_GPIO_SFN(2));
-	}
+	for (i = 0; i < 4; i++)
+		s3c_gpio_cfgpin(S5PV210_GPF3(i), S3C_GPIO_SFN(2));
 
 
 	/* mDNIe SEL: why we shall write 0x2 ? */
@@ -953,8 +944,6 @@ static void panel_cfg_gpio(struct platform_device *pdev)
 	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_NONE);
 	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_NONE);
 #endif
-
-
 	s3c_gpio_setpull(GPIO_OLED_DET, S3C_GPIO_PULL_NONE);
 }
 
@@ -1003,14 +992,7 @@ EXPORT_SYMBOL(lcd_cfg_gpio_early_suspend);
 
 void lcd_cfg_gpio_late_resume(void)
 {
-#ifdef CONFIG_WAVE_S8530
-	/* S8530 LCD_ID pins */
-	s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
-	s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
-
-	s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
-	s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
-#endif
+	/* there's panel_cfg_gpio called by s3cfb driver after this so no need to cfg anything */
 }
 EXPORT_SYMBOL(lcd_cfg_gpio_late_resume);
 
