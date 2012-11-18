@@ -41,8 +41,6 @@
 #include "modem_ctl.h"
 #include "modem_ctl_p.h"
 
-#define RAW_CH_VNET0 10
-
 
 /* general purpose fifo access routines */
 
@@ -169,16 +167,19 @@ static void fifo_dump(const char *tag, struct m_fifo *q,
 	}
 }
 
-
-
 /* Called with mc->lock held whenever we gain access
  * to the mmio region.
  */
 void modem_update_state(struct modemctl *mc)
 {
 	/* update our idea of space available in fifos */
+	pr_info("%s: rx_head=*(0x%08X)=0x%X rx_tail=*(0x%08X)=0x%X\n", __func__, mc->packet_rx.head, *(mc->packet_rx.head), mc->packet_rx.tail, *(mc->packet_rx.tail));
+	pr_info("%s: tx_head=*(0x%08X)=0x%X tx_tail=*(0x%08X)=0x%X\n", __func__, mc->packet_tx.head, *(mc->packet_tx.head), mc->packet_tx.tail, *(mc->packet_tx.tail));	
+	
+	pr_info("%s: before update packet_tx.avail:%d packet_rx.avail: %d\n", __func__, mc->packet_tx.avail, mc->packet_rx.avail);
 	mc->packet_tx.avail = fifo_space(&mc->packet_tx);
 	mc->packet_rx.avail = fifo_count(&mc->packet_rx);
+	pr_info("%s: after update packet_tx.avail:%d packet_rx.avail: %d\n", __func__, mc->packet_tx.avail, mc->packet_rx.avail);
 	if (mc->packet_rx.avail)
 		wake_lock(&mc->packet_pipe.wakelock);
 	else
@@ -192,8 +193,10 @@ void modem_update_pipe(struct m_pipe *pipe)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&pipe->mc->lock, flags);
+	pr_info("%s: before update tx->avail:%d rx->avail: %d\n", __func__, pipe->tx->avail, pipe->rx->avail);
 	pipe->tx->avail = fifo_space(pipe->tx);
 	pipe->rx->avail = fifo_count(pipe->rx);
+	pr_info("%s: after update tx->avail:%d rx->avail: %d\n", __func__, pipe->tx->avail, pipe->rx->avail);
 	if (pipe->rx->avail)
 		wake_lock(&pipe->wakelock);
 	else
@@ -255,7 +258,6 @@ static int modem_pipe_send(struct m_pipe *pipe, struct modem_io *io)
 
 static int modem_pipe_read(struct m_pipe *pipe, struct modem_io *io)
 {
-	unsigned read_size = io->datasize;
 	char hdr[M_PIPE_MAX_HDR];
 	int ret;
 
@@ -275,15 +277,10 @@ static int modem_pipe_read(struct m_pipe *pipe, struct modem_io *io)
 		return -EIO;
 	}
 
-	if (read_size < io->datasize) {
-		pr_info("modem_pipe_read: discarding frame (%d)\n", io->datasize);
-		fifo_move_tail(pipe->rx, SIZ_PACKET_BUFSIZE);
-		return -EAGAIN;
-	} else {
-		if (fifo_read_user(pipe->rx, io->data, io->datasize) != io->datasize)
-			return -EIO;
-		fifo_move_tail(pipe->rx, SIZ_PACKET_BUFSIZE);
-	}
+	if (fifo_read_user(pipe->rx, io->data, io->datasize) != io->datasize)
+		return -EIO;
+	fifo_move_tail(pipe->rx, SIZ_PACKET_BUFSIZE);
+
 	return 0;
 }
 
@@ -353,6 +350,7 @@ static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long _arg)
 	struct modem_io mio;
 	int ret;
 
+	pr_info("modem_io: pipe_ioctl called\n");
 	switch (cmd) {
 	case IOCTL_MODEM_SEND:
 		if (copy_from_user(&mio, arg, sizeof(mio)) != 0)
@@ -434,7 +432,7 @@ int modem_io_init(struct modemctl *mc, void __iomem *mmio)
 	mc->packet_pipe.header_size = sizeof(struct packet_hdr);
 	mc->packet_pipe.mc = mc;
 	if (modem_pipe_register(&mc->packet_pipe, "modem_packet"))
-		pr_err("failed to register modem_fmt pipe\n");
+		pr_err("failed to register modem_packet pipe\n");
 
 	pr_info("modem_io_init done\n");
 

@@ -28,6 +28,7 @@
 
 #define IOCTL_MODEM_ON               	_IO('o', 0x25)
 #define	IOCTL_MODEM_AMSSRUNREQ			_IO('o', 0x26)
+#define IOCTL_MODEM_FORCE_STATUS       	_IO('o', 0x27)
 
 
 #define SIZ_PACKET_FRAME		0x00001000
@@ -35,7 +36,7 @@
 #define	 SIZ_PACKET_BUFSIZE		SIZ_PACKET_FRAME-SIZ_PACKET_HEADER
 
 struct modem_io {
-	uint32_t magic; //filled by modemctl
+	uint32_t magic; //filled by modem_io
 	uint32_t cmd;
 	uint32_t datasize;
 	void *data;

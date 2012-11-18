@@ -203,7 +203,7 @@ static ssize_t modemctl_write(struct file *filp, const char __user *buf,
 	owner = mmio_sem(mc);
 
 	if (mc->status != MODEM_POWER_ON) {
-		pr_err("modemctl_write: modem not powered on\n");
+		pr_err("modemctl_write: modem not powered on, curr status: %d\n", mc->status);
 		ret = -EINVAL;
 		goto done;
 	}
@@ -240,7 +240,12 @@ done:
 	return ret;
 }
 
-
+static int modem_forcestatus(struct modemctl *mc, unsigned long arg)
+{
+	pr_info("[MODEM] forcing status to %d\n", arg);
+	mc->status = arg;
+	return 0;
+}
 static int modem_amssrunreq(struct modemctl *mc)
 {
 	pr_info("[MODEM] modem_amssrunreq()\n");
@@ -254,18 +259,11 @@ static int modem_amssrunreq(struct modemctl *mc)
 		return -EIO;
 	}
 
-	if (mmio_sem(mc) != 1) {
-		pr_err("[MODEM] we do not own the semaphore\n");
-		return -EIO;
-	}
-
+	pr_info("[MODEM] releasing semaphore\n");
 	writel(0, mc->mmio + OFF_SEM);
 	mc->status = MODEM_BOOTING_NORMAL;
+	pr_info("[MODEM] writing MODEM_CMD_AMSSRUNREQ\n");
 	writel(MODEM_CMD_AMSSRUNREQ, mc->mmio + OFF_MBOX_AP);
-
-
-	/* TODO: timeout and fail */
-	wait_event(mc->wq, modem_running(mc));
 
 	pr_info("[MODEM] modem_amssrunreq() DONE\n");
 	return 0;
@@ -392,11 +390,14 @@ static long modemctl_ioctl(struct file *filp,
 	case IOCTL_MODEM_AMSSRUNREQ:
 		ret = modem_amssrunreq(mc);
 		break;
+	case IOCTL_MODEM_FORCE_STATUS:
+		ret = modem_forcestatus(mc, arg);
+		break;
 	default:
 		ret = -EINVAL;
 	}
 	mutex_unlock(&mc->ctl_lock);
-	pr_info("modemctl_ioctl() %d\n", ret);
+	pr_info("modemctl_ioctl() req=%d ret=%d\n", cmd, ret);
 	return ret;
 }
 
@@ -415,39 +416,33 @@ static irqreturn_t modemctl_bp_irq_handler(int irq, void *_mc)
 	return IRQ_HANDLED;
 }
 
-static void modemctl_handle_offline(struct modemctl *mc, unsigned cmd)
-{
-	switch (mc->status) {
-	case MODEM_BOOTING_NORMAL:
-		if (cmd == MODEM_MSG_BINARY_DONE) {
-			pr_info("[MODEM] binary load done\n");
-			mc->status = MODEM_RUNNING;
-			wake_up(&mc->wq);
-		}
-		break;
-	}
-}
-
 static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 {
 	struct modemctl *mc = _mc;
 	unsigned cmd;
 	unsigned long flags;
 
+	spin_lock_irqsave(&mc->lock, flags);
 	cmd = readl(mc->mmio + OFF_MBOX_BP);
 
-	if (unlikely(mc->status != MODEM_RUNNING)) {
-		modemctl_handle_offline(mc, cmd);
-		return IRQ_HANDLED;
+	pr_info("%s: MBOX_BP: 0x%08X\n", __func__, cmd);
+	
+	if (unlikely(mc->status != MODEM_RUNNING) && unlikely(cmd == MODEM_MSG_BINARY_DONE)) {
+		pr_info("[MODEM] received MODEM_MSG_BINARY_DONE\n");
+		mc->status = MODEM_RUNNING;			
+		/* bada does it, why? */
+		gpio_set_value(mc->gpio_flm_sel, 0);
+		s3c_gpio_cfgpin(mc->gpio_flm_sel, S3C_GPIO_OUTPUT);
+		wake_up(&mc->wq);
+		goto done;
 	}
 
 
-	spin_lock_irqsave(&mc->lock, flags);
-
 	if (cmd & MB_SEM_CTRL) {
-		switch (cmd & 2) {
+		switch (cmd & 3) {
 		case MB_REQ_SEM:
 			if (mmio_sem(mc) == 0) {
+				pr_info("[MODEM] CP does request smp already having it\n");
 				/* Sometimes the modem may ask for the
 				 * sem when it already owns it.  Humor
 				 * it and ack that request.
@@ -456,6 +451,7 @@ static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 				       mc->mmio + OFF_MBOX_AP);
 				MODEM_COUNT(mc,bp_req_confused);
 			} else if (mc->mmio_req_count == 0) {
+				pr_info("[MODEM] CP does request smp - passing it\n");
 				/* No references? Give it to the modem. */
 				mc->mmio_owner = 0;
 				writel(0, mc->mmio + OFF_SEM);
@@ -464,6 +460,7 @@ static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 				MODEM_COUNT(mc,bp_req_instant);
 				goto done;
 			} else {
+				pr_info("[MODEM] CP does request smp - cant pass it now\n");
 				/* Busy now, remember the modem needs it. */
 				mc->mmio_bp_request = 1;
 				MODEM_COUNT(mc,bp_req_delayed);
@@ -522,6 +519,7 @@ void modem_force_crash(struct modemctl *mc)
 static int __devinit modemctl_probe(struct platform_device *pdev)
 {
 	int r = -ENOMEM;
+	int retval = 0;
 	struct modemctl *mc;
 	struct modemctl_data *pdata;
 	struct resource *res;
@@ -559,10 +557,11 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 		goto err_free;
 
 	platform_set_drvdata(pdev, mc);
-
+	
 	mc->dev.name = "modem_ctl";
 	mc->dev.minor = MISC_DYNAMIC_MINOR;
 	mc->dev.fops = &modemctl_fops;
+
 	r = misc_register(&mc->dev);
 	if (r)
 		goto err_ioremap;

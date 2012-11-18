@@ -254,8 +254,8 @@ static struct s3c2410_uartcfg wave_uartcfgs[] __initdata = {
 static struct s3cfb_lcd lg4573 = {
 	.width 		= S5PV210_LCD_WIDTH,
 	.height 	= S5PV210_LCD_HEIGHT,
-	.p_width 	= 52,	//  height of lcd in mm
-	.p_height 	= 86,	//  width of lcd in mm
+	.p_width 	= 52,	//  width of lcd in mm
+	.p_height 	= 86,	//  height of lcd in mm
 	.bpp 		= 24,   //
 	.freq 		= 60,	//
 	.timing = {
@@ -3343,7 +3343,7 @@ static struct gpio_init_data wave_init_gpios[] = {
 
 	// GPJ1 ----------------------------
 	{
-		.num	= S5PV210_GPJ1(0), // GPIO_PHONE_ON
+		.num	= S5PV210_GPJ1(0),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
@@ -3611,13 +3611,17 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.val	= S3C_GPIO_SETPIN_ZERO,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
+	},
+	/* leave value set by bootloader */
+/*	{
 		.num	= S5PV210_MP03(5), // GPIO_CP_nRST
 		.cfg	= S3C_GPIO_OUTPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
+	}, 
+*/
+	{
 		.num	= S5PV210_MP03(6),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
@@ -3644,25 +3648,31 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
+	}, 
+	/* leave value set by bootloader */
+	/*{
 		.num	= S5PV210_MP04(4), // GPIO_A1026_SCL
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
+	}, */
+	{
 		.num	= S5PV210_MP04(5), // GPIO_A1026_SDA
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
 		.pud	= S3C_GPIO_PULL_DOWN,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
+	},
+	/* leave value set by bootloader */
+/*	{
 		.num	= S5PV210_MP04(6),
 		.cfg	= S3C_GPIO_OUTPUT,
 		.val	= S3C_GPIO_SETPIN_ZERO,
 		.pud	= S3C_GPIO_PULL_NONE,
 		.drv	= S3C_GPIO_DRVSTR_1X,
-	}, {
+	},*/
+	{
 		.num	= S5PV210_MP04(7),
 		.cfg	= S3C_GPIO_INPUT,
 		.val	= S3C_GPIO_SETPIN_NONE,
@@ -4010,7 +4020,7 @@ static unsigned int wave_sleep_gpio_table[][3] = {
 
 	// GPJ1 ---------------------------------------------------
 #if defined (CONFIG_SAMSUNG_CAPTIVATE)
-	{ S5PV210_GPJ1(0), S3C_GPIO_SLP_OUT0,   S3C_GPIO_PULL_NONE},	//GPIO_PHONE_ON
+	{ S5PV210_GPJ1(0), S3C_GPIO_SLP_OUT0,   S3C_GPIO_PULL_NONE},	
 #elif defined(CONFIG_SAMSUNG_FASCINATE)
   	{ S5PV210_GPJ1(0), S3C_GPIO_SLP_PREV,   S3C_GPIO_PULL_DOWN},
 #else
