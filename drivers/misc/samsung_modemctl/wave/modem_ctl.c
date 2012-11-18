@@ -85,7 +85,7 @@ int modem_request_mmio(struct modemctl *mc)
 			MODEM_COUNT(mc,request_no_wait);
 		} else {
 			/* ask the modem for mmio access */
-			if (modem_running(mc))
+			if (modem_operating(mc))
 				modem_request_sem(mc);
 			MODEM_COUNT(mc,request_wait);
 		}
@@ -103,7 +103,7 @@ void modem_release_mmio(struct modemctl *mc, unsigned bits)
 	spin_lock_irqsave(&mc->lock, flags);
 	mc->mmio_req_count--;
 	mc->mmio_signal_bits |= bits;
-	if ((mc->mmio_req_count == 0) && modem_running(mc)) {
+	if ((mc->mmio_req_count == 0) && modem_operating(mc)) {
 		if (mc->mmio_bp_request) {
 			mc->mmio_bp_request = 0;
 			writel(0, mc->mmio + OFF_SEM);
@@ -141,7 +141,7 @@ int modem_acquire_mmio(struct modemctl *mc)
 			modem_release_mmio(mc, 0);
 			return -ERESTARTSYS;
 		}
-	if (!modem_running(mc)) {
+	if (!modem_operating(mc)) {
 		modem_release_mmio(mc, 0);
 		return -ENODEV;
 	}
@@ -442,7 +442,6 @@ static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 		switch (cmd & 3) {
 		case MB_REQ_SEM:
 			if (mmio_sem(mc) == 0) {
-				pr_info("[MODEM] CP does request smp already having it\n");
 				/* Sometimes the modem may ask for the
 				 * sem when it already owns it.  Humor
 				 * it and ack that request.
@@ -451,7 +450,6 @@ static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 				       mc->mmio + OFF_MBOX_AP);
 				MODEM_COUNT(mc,bp_req_confused);
 			} else if (mc->mmio_req_count == 0) {
-				pr_info("[MODEM] CP does request smp - passing it\n");
 				/* No references? Give it to the modem. */
 				mc->mmio_owner = 0;
 				writel(0, mc->mmio + OFF_SEM);
@@ -460,7 +458,6 @@ static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 				MODEM_COUNT(mc,bp_req_instant);
 				goto done;
 			} else {
-				pr_info("[MODEM] CP does request smp - cant pass it now\n");
 				/* Busy now, remember the modem needs it. */
 				mc->mmio_bp_request = 1;
 				MODEM_COUNT(mc,bp_req_delayed);

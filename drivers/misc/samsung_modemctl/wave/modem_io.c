@@ -173,13 +173,8 @@ static void fifo_dump(const char *tag, struct m_fifo *q,
 void modem_update_state(struct modemctl *mc)
 {
 	/* update our idea of space available in fifos */
-	pr_info("%s: rx_head=*(0x%08X)=0x%X rx_tail=*(0x%08X)=0x%X\n", __func__, mc->packet_rx.head, *(mc->packet_rx.head), mc->packet_rx.tail, *(mc->packet_rx.tail));
-	pr_info("%s: tx_head=*(0x%08X)=0x%X tx_tail=*(0x%08X)=0x%X\n", __func__, mc->packet_tx.head, *(mc->packet_tx.head), mc->packet_tx.tail, *(mc->packet_tx.tail));	
-	
-	pr_info("%s: before update packet_tx.avail:%d packet_rx.avail: %d\n", __func__, mc->packet_tx.avail, mc->packet_rx.avail);
 	mc->packet_tx.avail = fifo_space(&mc->packet_tx);
 	mc->packet_rx.avail = fifo_count(&mc->packet_rx);
-	pr_info("%s: after update packet_tx.avail:%d packet_rx.avail: %d\n", __func__, mc->packet_tx.avail, mc->packet_rx.avail);
 	if (mc->packet_rx.avail)
 		wake_lock(&mc->packet_pipe.wakelock);
 	else
@@ -193,10 +188,8 @@ void modem_update_pipe(struct m_pipe *pipe)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&pipe->mc->lock, flags);
-	pr_info("%s: before update tx->avail:%d rx->avail: %d\n", __func__, pipe->tx->avail, pipe->rx->avail);
 	pipe->tx->avail = fifo_space(pipe->tx);
 	pipe->rx->avail = fifo_count(pipe->rx);
-	pr_info("%s: after update tx->avail:%d rx->avail: %d\n", __func__, pipe->tx->avail, pipe->rx->avail);
 	if (pipe->rx->avail)
 		wake_lock(&pipe->wakelock);
 	else
@@ -269,7 +262,6 @@ static int modem_pipe_read(struct m_pipe *pipe, struct modem_io *io)
 	ret = pipe->pull_header(io, hdr);
 	if (ret)
 		return ret;
-
 
 	if(io->magic != 0xCAFECAFE)
 	{
@@ -350,7 +342,6 @@ static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long _arg)
 	struct modem_io mio;
 	int ret;
 
-	pr_info("modem_io: pipe_ioctl called\n");
 	switch (cmd) {
 	case IOCTL_MODEM_SEND:
 		if (copy_from_user(&mio, arg, sizeof(mio)) != 0)
@@ -359,22 +350,31 @@ static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long _arg)
 			return -EINTR;
 		ret = modem_pipe_send(pipe, &mio);
 		mutex_unlock(&pipe->tx_lock);
-		return ret;
-
+		if(ret)
+			return -EFAULT;
+		break;
 	case IOCTL_MODEM_RECV:
 		if (copy_from_user(&mio, arg, sizeof(mio)) != 0)
+		{		
+			pr_info("modem_io: cannot copy_from_user\n");
 			return -EFAULT;
+		}
 		if (mutex_lock_interruptible(&pipe->rx_lock))
+		{		
+			pr_info("modem_io: cannot mutex_lock_interruptible\n");
 			return -EINTR;
+		}
 		ret = modem_pipe_recv(pipe, &mio);
 		mutex_unlock(&pipe->rx_lock);
 		if (copy_to_user(arg, &mio, sizeof(mio)) != 0)
 			return -EFAULT;
-		return ret;
-
+		if(ret)
+			return -EFAULT;
+		break;
 	default:
 		return -EINVAL;
 	}
+	return 0;
 }
 
 static unsigned int pipe_poll(struct file *filp, poll_table *wait)
@@ -382,8 +382,6 @@ static unsigned int pipe_poll(struct file *filp, poll_table *wait)
 	unsigned long flags;
 	struct m_pipe *pipe = filp->private_data;
 	int ret;
-
-	pr_info("modem_io: pipe_poll called\n");
 
 	poll_wait(filp, &pipe->mc->wq, wait);
 

@@ -29,6 +29,7 @@
 
 #define modem_offline(mc) ((mc)->status < MODEM_POWER_ON)
 #define modem_running(mc) ((mc)->status == MODEM_RUNNING)
+#define modem_operating(mc) ((mc)->status >= MODEM_POWER_ON)
 
 #define M_PIPE_MAX_HDR 16
 
