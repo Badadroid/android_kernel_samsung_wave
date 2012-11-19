@@ -1,38 +1,82 @@
 /* linux/drivers/mtd/onenand/samsung_wave.h
  *
- * Partition Layout for Samsung Wave S8500 Bada 2.0
+ * Partition Layout for Samsung Wave S8500/S8530 Bada 2.0
  *
  */
 
 struct mtd_partition s3c_partition_info[] = {
 
- /*This is partition layout from the oneNAND it SHOULD match the pitfile on the second page of the NAND.
-   It will work if it doesn't but beware to write below the adress 0x01200000 there are the bootloaders.
-   Currently we won't map them, but we should keep that in mind for later things like flashing bootloader
-   from Linux. There is a partition 'efs' starting @ 0x00080000 40 256K pages long, it contains data for
-   the modem like IMSI we don't touch it for now, but we need the data from it, we create a partition
-   for that and copy the data from it. For this you need a image from it and mount it as vfat or copy
-   it on a kernel with rfs support on the phone.
-
-   Partitions on the lower NAND adresses:
-
-   0x00000000 - 0x0003FFFF = first stage bootloader
-   0x00040000 - 0x0007FFFF = PIT for second stage bootloader
-   0x00080000 - 0x00A7FFFF = EFS: IMSI and NVRAM for the modem
-   0x00A80000 - 0x00BBFFFF = second stage bootloader
-   0x00BC0000 - 0x00CFFFFF = backup of the second stage bootloader (should be loaded if the other fails, unconfirmed!)
-   0x00D00000 - 0x011FFFFF = PARAM.lfs config the bootloader
-
+ /*
    #########################################################################################
    #########################################################################################
-   ###### NEVER TOUCH THE FIRST 2 256k PAGES! THEY CONTAIN THE FIRST STAGE BOOTLOADER ######
+   ###### NEVER TOUCH THE FIRST 16 256k PAGES! THEY CONTAIN THE FIRST BOOTLOADERS     ######
    #########################################################################################
    #########################################################################################*/
+#ifdef CONFIG_WAVE_S8500
+	{
+		.name           = "nv_data",
+		.offset         = (1948*SZ_256K), //0x1E700000
+		.size           = (20*SZ_256K),
+	},
+	
 	{
 		.name           = "fota",
 		.offset         = (204*SZ_256K),
-		.size           = (10*SZ_256K), //214
+		.size           = (12*SZ_256K),
 	},
+#elif defined(CONFIG_WAVE_S8530)
+	{
+		.name           = "nv_data",
+		.offset         = (1984*SZ_256K), //0x1F000000
+		.size           = (20*SZ_256K),
+	},
+	{
+		.name           = "fw_block",
+		.offset         = (16*SZ_256K), //0x00600000
+		.size           = (592*SZ_256K),
+	},
+	{
+		.name           = "dbl",
+		.offset         = (16*SZ_256K), //0x00400000
+		.size           = (8*SZ_256K),
+	},		
+	{
+		.name           = "amss",
+		.offset         = (24*SZ_256K), //0x00600000
+		.size           = (54*SZ_256K),
+	},		
+	{
+		.name           = "apps",
+		.offset         = (76*SZ_256K), //0x01300000
+		.size           = (140*SZ_256K),
+	},		
+	{
+		.name           = "rsrc1",
+		.offset         = (216*SZ_256K), //0x01300000
+		.size           = (380*SZ_256K),
+	},			
+	{
+		.name           = "fota",
+		.offset         = (596*SZ_256K), //0x09500000
+		.size           = (12*SZ_256K),
+	},	
+	{
+		.name           = "unknown1",
+		.offset         = (608*SZ_256K), //0x18F00000
+		.size           = (988*SZ_256K),
+	},	
+	{
+		.name           = "unknown2",
+		.offset         = (1596*SZ_256K), //0x18F00000
+		.size           = (372*SZ_256K),
+	},	
+	{
+		.name           = "unknown3",
+		.offset         = (1968*SZ_256K), //0x1EC00000
+		.size           = (16*SZ_256K),
+	},
+#endif
+
 };
 
 
