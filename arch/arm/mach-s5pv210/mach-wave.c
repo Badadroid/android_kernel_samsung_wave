@@ -407,6 +407,10 @@ static struct s5p_media_device wave_media_devs[] = {
 #ifdef CONFIG_CPU_FREQ
 static struct s5pv210_cpufreq_voltage smdkc110_cpufreq_volt[] = {
 	{
+		.freq	= 1400000,
+		.varm	= 1350000,
+		.vint	= 1150000,
+	}, {
 		.freq	= 1200000,
 		.varm	= 1275000,
 		.vint	= 1100000,

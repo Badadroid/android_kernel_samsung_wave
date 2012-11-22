@@ -15,7 +15,11 @@
 #include <linux/cpufreq.h>
 
 enum perf_level {
+#if defined(CONFIG_MACH_ARIES) || defined(CONFIG_MACH_WAVE)
+	OC0, OC1, L0, L1, L2, L3, L4, MAX_PERF_LEVEL = L4,
+#else
 	OC0, L0, L1, L2, L3, L4, MAX_PERF_LEVEL = L4,
+#endif
 };
 
 /* For cpu-freq driver */
