@@ -61,17 +61,17 @@ struct mtd_partition s3c_partition_info[] = {
 		.size           = (12*SZ_256K),
 	},	
 	{
-		.name           = "unknown1",
+		.name           = "stl1",
 		.offset         = (608*SZ_256K), //0x18F00000
 		.size           = (988*SZ_256K),
 	},	
 	{
-		.name           = "unknown2",
+		.name           = "stl2",
 		.offset         = (1596*SZ_256K), //0x18F00000
 		.size           = (372*SZ_256K),
 	},	
 	{
-		.name           = "unknown3",
+		.name           = "secdata",
 		.offset         = (1968*SZ_256K), //0x1EC00000
 		.size           = (16*SZ_256K),
 	},
