@@ -3,7 +3,7 @@
  * Copyright (c) 2010 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * Copyright (c) 2012 Dominik Marszk
+ * Copyright (c) 2012 Dominik Marszk <dmarszk@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -1746,6 +1746,7 @@ static int ce147_power_en(int onoff)
 /*	int bd_level; // unused variable */
 	int err = 0;
 
+
 	if (onoff != ce147_powered_on) {
 		if (onoff)
 			err = ce147_power_on();
@@ -1922,6 +1923,7 @@ static int s5ka3dfx_power_off(void)
 	udelay(1);
 
 	gpio_set_value(GPIO_CAM_ANALOG_EN, 0);
+
 
 	gpio_free(GPIO_CAM_ANALOG_EN);
 	gpio_free(GPIO_CAM_VGA_nRST);
@@ -5062,6 +5064,7 @@ static void __init wave_machine_init(void)
 
 	/* fm radio */
 	i2c_register_board_info(8, i2c_devs8, ARRAY_SIZE(i2c_devs8));
+
 
 	/* optical sensor */
 	gp2a_gpio_init();
