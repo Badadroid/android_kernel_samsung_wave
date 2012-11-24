@@ -2056,6 +2056,22 @@ static u8 t7_config[] = {GEN_POWERCONFIG_T7,
 64, 255, 50};
 static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 7, 0, 5, 0, 0, 0, 9, 35};
+#if defined (CONFIG_WAVE_S8530)
+static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
+143,
+0, 0, //xorigin, yorigin
+19,11, //xsize, ysize
+0, 33, 30, 2, 7, 0, 3, 1,
+46, MXT224_MAX_MT_FINGERS,
+5, 40,
+10, //amphyst
+0, 0, //xrange, yrange
+0, 0, 0, 0, 0, 0,
+143, 40, //xedgectrl, dist
+143, 80, //yedgectrl, dist
+18//jumplimit
+};
+#else
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
 139,
 0, 0, //xorigin, yorigin
@@ -2070,6 +2086,7 @@ static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
 143, 80, //yedgectrl, dist
 18//jumplimit
 };
+#endif
 static u8 t18_config[] = {SPT_COMCONFIG_T18,
 0, 1};
 static u8 t20_config[] = {PROCI_GRIPFACESUPPRESSION_T20,
