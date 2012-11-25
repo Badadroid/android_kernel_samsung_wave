@@ -1021,13 +1021,6 @@ static int panel_reset_lcd(struct platform_device *pdev)
 	return 0;
 }
 
-static int panel_backlight_on(struct platform_device *pdev)
-{
-	printk("%s (empty stub)\n", __FUNCTION__);
-	return 0;
-}
-
-
 #define LCD_BUS_NUM     3
 
 #ifdef CONFIG_FB_S3C_LG4573
@@ -1055,7 +1048,6 @@ static struct s3c_platform_fb lg4573_data __initdata = {
 
 	.lcd = &lg4573,
 	.cfg_gpio	= panel_cfg_gpio,
-	.backlight_on	= panel_backlight_on,
 	.reset_lcd	= panel_reset_lcd,
 };
 
@@ -1086,7 +1078,6 @@ static struct s3c_platform_fb tl2796_data __initdata = {
 
 	.lcd = &s6e63m0,
 	.cfg_gpio	= panel_cfg_gpio,
-	.backlight_on	= panel_backlight_on,
 	.reset_lcd	= panel_reset_lcd,
 };
 
