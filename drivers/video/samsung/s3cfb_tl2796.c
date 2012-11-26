@@ -801,7 +801,7 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 		debugfs_create_file("current_gamma", S_IRUGO,
 			lcd->debug_dir, lcd, &tl2796_current_gamma_fops);
 
-	pr_info("tl2796_probe successfully proved\n");
+	pr_info("tl2796_probe successfully probed\n");
 
 	misc_register(&color_tuning_device);
 	if (sysfs_create_group(&color_tuning_device.this_device->kobj, &color_tuning_group) < 0)
@@ -813,7 +813,6 @@ static int __devinit tl2796_probe(struct spi_device *spi)
 	tl2796_ldi_disable(lcd);
 	msleep(200);
 	tl2796_ldi_enable(lcd);
-
 	// copy the pointer for use with the color tuning sysfs interface
 	lcd_ = lcd;
 

@@ -1127,6 +1127,7 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	fbdev->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
 	register_early_suspend(&fbdev->early_suspend);
 #endif
+
 #ifdef CONFIG_WAVE_S8500
 /* FIXME: ugly hack around for configuring AMOLED */
 	s3cfb_early_suspend(&fbdev->early_suspend);
