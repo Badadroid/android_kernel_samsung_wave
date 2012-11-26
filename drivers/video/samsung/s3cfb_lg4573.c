@@ -58,7 +58,7 @@ extern void init_mdnie_class(void);
 #endif
 /*******************************************************************************/
 
-#define LCD_TUNNING_VALUE 1
+#define LCD_TUNNING_VALUE 0
 
 #if defined (LCD_TUNNING_VALUE)
 #define MAX_BRIGHTNESS_LEVEL 255 /* values received from platform */
@@ -165,9 +165,9 @@ static ssize_t update_brightness_cmd_show(struct device *dev, struct device_attr
 static ssize_t upadate_brightness_cmd_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct s5p_lcd *lcd = dev_get_drvdata(dev);
-        int brightness = 0;
+	int brightness = 0;
 
-        sscanf(buf, "%d", &brightness);
+	sscanf(buf, "%d", &brightness);
 
 
 	if ( ! (lcd->ldi_enable) ) {
@@ -215,12 +215,12 @@ static void update_brightness(struct s5p_lcd *lcd)
 	int brightness =  lcd->bl;
 	
 #if defined (LCD_TUNNING_VALUE)
-	int tunned_brightness = 0;
-	tunned_brightness = s5p_bl_convert_to_tuned_value(brightness);
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * tunned_brightness)/MAX_BL, bl_freq_count);
+	int tuned_brightness = 0;
+	tuned_brightness = s5p_bl_convert_to_tuned_value(brightness);
+	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * (MAX_BL - tuned_brightness))/MAX_BL, bl_freq_count);
 	pwm_enable(lcd->backlight_pwm_dev);
 #else
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * brightness)/255, bl_freq_count);
+	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * (MAX_BL - brightness))/MAX_BL, bl_freq_count);
 	pwm_enable(lcd->backlight_pwm_dev);
 	/* gprintk("## brightness = [%ld], (bl_freq_count * brightness)/255 =[%ld], ret_val_pwm_config=[%ld] \n", brightness, (bl_freq_count * brightness)/255, ret_val_pwm_config ); */
 #endif
