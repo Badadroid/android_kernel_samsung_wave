@@ -97,6 +97,7 @@
 #include <linux/input/mxt224.h>
 #include <linux/mfd/max8998.h>
 #include <linux/switch.h>
+#include <linux/ipc_fuelgauge.h>
 
 #ifdef CONFIG_KERNEL_DEBUG_SEC
 #include <linux/kernel_sec_common.h>
@@ -2248,6 +2249,30 @@ static struct i2c_board_info i2c_devs6[] __initdata = {
 		I2C_BOARD_INFO("rtc_max8998", (0x0D >> 1)),
 	},
 #endif
+};
+
+static int ipc_fuelgauge_power_supply_register(struct device *parent,
+	struct power_supply *psy)
+{
+	wave_charger.psy_fuelgauge = psy;
+	return 0;
+}
+
+static void ipc_fuelgauge_power_supply_unregister(struct power_supply *psy)
+{
+	wave_charger.psy_fuelgauge = NULL;
+}
+
+static struct ipc_fuelgauge_platform_data ipc_fuelgauge_pdata = {
+	.power_supply_register = ipc_fuelgauge_power_supply_register,
+	.power_supply_unregister = ipc_fuelgauge_power_supply_unregister,
+};
+
+static struct platform_device ipc_fuelgauge_device = {
+	.name			= "ipc-fuelgauge",
+	.dev			= {
+		.platform_data = &ipc_fuelgauge_pdata,
+	},
 };
 
 static int gp2a_power(bool on)
@@ -4634,8 +4659,6 @@ static struct platform_device *wave_devices[] __initdata = {
 	&s5pv210_device_iis0,
 	&s3c_device_wdt,
 
-
-
 #ifdef CONFIG_VIDEO_MFC50
 	&s3c_device_mfc,
 #endif
@@ -4714,10 +4737,11 @@ static struct platform_device *wave_devices[] __initdata = {
 	&s3c_device_hsmmc3,
 #endif
 #ifdef CONFIG_VIDEO_TV20
-        &s5p_device_tvout,
+	&s5p_device_tvout,
 #endif
 	&sec_device_battery,
-	//&s3c_device_i2c10,
+	
+	&ipc_fuelgauge_device,
 
 #ifdef CONFIG_S5PV210_POWER_DOMAIN
 	&s5pv210_pd_audio,
@@ -5045,17 +5069,12 @@ static void __init wave_machine_init(void)
 	/* max8998 */
 	i2c_register_board_info(6, i2c_devs6, ARRAY_SIZE(i2c_devs6));
 
-	/* cypress touchkey */
-	//touch_keypad_gpio_init();
-	//i2c_register_board_info(10, i2c_devs10, ARRAY_SIZE(i2c_devs10));
-
 	/* FSA9480 */
 	fsa9480_gpio_init();
 	i2c_register_board_info(7, i2c_devs7, ARRAY_SIZE(i2c_devs7));
 
 	/* fm radio */
 	i2c_register_board_info(8, i2c_devs8, ARRAY_SIZE(i2c_devs8));
-
 
 	/* optical sensor */
 	gp2a_gpio_init();
@@ -5075,7 +5094,6 @@ static void __init wave_machine_init(void)
 	s3cfb_set_platdata(&lg4573_data);
 #endif
 
-	
 #if defined(CONFIG_S5P_ADC)
 	s3c_adc_set_platdata(&s3c_adc_platform);
 #endif

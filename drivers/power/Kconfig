@@ -191,6 +191,11 @@ config BATTERY_S5PC110
 	help
 	  Say Y to enable support for batteries with s5pc110 chip.	  
 
+config IPC_FUEL_GAUGE
+	tristate "Driver for phones with fuel gauge wired to Baseband processor"
+	help
+	 Say Y to create dummy fuel gauge driver that can be updated from filesystem.
+	  
 config CHARGER_PCF50633
 	tristate "NXP PCF50633 MBC"
 	depends on MFD_PCF50633
