@@ -162,7 +162,8 @@ static ssize_t update_brightness_cmd_show(struct device *dev, struct device_attr
 	gprintk("called %s\n", __func__);
 	return sprintf(buf, "%u\n", lcd->bl);
 }
-static ssize_t upadate_brightness_cmd_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+
+static ssize_t update_brightness_cmd_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct s5p_lcd *lcd = dev_get_drvdata(dev);
         int brightness = 0;
@@ -170,7 +171,7 @@ static ssize_t upadate_brightness_cmd_store(struct device *dev, struct device_at
         sscanf(buf, "%d", &brightness);
 
 
-	if ( ! (lcd->ldi_enable) ) {
+	if (!lcd->ldi_enable) {
 		printk(KERN_ERR "[LCD] (%s) LDI not enabled \n", __func__);
 		return 0;
 	}
@@ -186,7 +187,7 @@ static ssize_t upadate_brightness_cmd_store(struct device *dev, struct device_at
 	update_brightness(lcd);
 	return 0;
 }
-static DEVICE_ATTR(update_brightness_cmd,0664, update_brightness_cmd_show, upadate_brightness_cmd_store);
+static DEVICE_ATTR(update_brightness_cmd, 0664, update_brightness_cmd_show, update_brightness_cmd_store);
 
 
 
