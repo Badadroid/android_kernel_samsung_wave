@@ -2051,7 +2051,7 @@ static u8 t8_config[] = {GEN_ACQUISITIONCONFIG_T8,
 7, 0, 5, 0, 0, 0, 9, 35};
 #if defined (CONFIG_WAVE_S8530)
 static u8 t9_config[] = {TOUCH_MULTITOUCHSCREEN_T9,
-143,
+139,
 0, 0, //xorigin, yorigin
 19,11, //xsize, ysize
 0, 33, 30, 2, 7, 0, 3, 1,
