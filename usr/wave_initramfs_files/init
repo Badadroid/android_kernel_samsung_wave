@@ -33,19 +33,20 @@ busybox chmod 0777 /bada_app
 # 	fi
 
 
+busybox mount -t vfat -o noatime /dev/block/mmcblk0p1 /bada_system
 busybox mount -t vfat -o noatime /dev/block/mmcblk0p2 /bada_user
 busybox mount -t vfat -o noatime /dev/block/mmcblk0p3 /bada_app
 
-if busybox mount | busybox grep -q /bada_user ;
+if busybox mount | busybox grep -q /bada_system ;
 then
 	#check partitions existance
-	if [ ! -f /bada_user/cache.img ] ; then		
+	if [ ! -f /bada_system/cache.img ] ; then		
 		#18MB cache partition
-		make_ext4fs -l 18874368 /bada_user/cache.img
+		make_ext4fs -l 18874368 /bada_system/cache.img
 	fi
-	if [ ! -f /bada_user/system.img ] ; then			
+	if [ ! -f /bada_system/system.img ] ; then			
 		#240MB system partition	
-		make_ext4fs -l 252143616 /bada_user/system.img		
+		make_ext4fs -l 252143616 /bada_system/system.img		
 		force_recovery="1"
 	fi
 else
@@ -66,8 +67,8 @@ fi
 
 busybox echo "force_recovery: $force_recovery"
 
-busybox losetup /dev/loop0 /bada_user/system.img
-busybox losetup /dev/loop1 /bada_user/cache.img
+busybox losetup /dev/loop0 /bada_system/system.img
+busybox losetup /dev/loop1 /bada_system/cache.img
 busybox mount -t ext4 /dev/loop0 /system
 busybox mount -t ext4 /dev/loop1 /cache
 
@@ -93,7 +94,7 @@ elif ! busybox test -e /system/build.prop; then
 
 	UPDATE=$(busybox cat /bada_user/cyanogenmod.cfg)
 
-	if busybox test -e $UPDATE ; then
+	if [ -e $UPDATE ]; then
 		busybox mkdir /cache/recovery
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
 	fi
