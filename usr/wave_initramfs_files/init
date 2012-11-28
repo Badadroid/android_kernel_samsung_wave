@@ -4,6 +4,9 @@ export PATH=/stage1
 
 force_recovery="0"
 
+#give movinand chance to probe
+busybox sleep 1
+
 busybox cd /
 busybox date >>boot.txt
 exec >>boot.txt 2>&1
