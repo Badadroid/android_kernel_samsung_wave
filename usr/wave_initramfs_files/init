@@ -40,34 +40,35 @@ busybox mount -t vfat -o noatime /dev/block/mmcblk0p1 /bada_system
 busybox mount -t vfat -o noatime /dev/block/mmcblk0p2 /bada_user
 busybox mount -t vfat -o noatime /dev/block/mmcblk0p3 /bada_app
 
-if busybox mount | busybox grep -q /bada_system ;
-then
-	#check partitions existance
-	if [ ! -f /bada_system/cache.img ] ; then		
-		#18MB cache partition
-		make_ext4fs -l 18874368 /bada_system/cache.img
-	fi
-	if [ ! -f /bada_system/system.img ] ; then			
-		#250MB system partition	
-		make_ext4fs -l 262144000 /bada_system/system.img		
+if ! busybox grep -q bootmode=2 /proc/cmdline ; then
+	if busybox mount | busybox grep -q /bada_system ;
+	then
+		#check partitions existance
+		if [ ! -f /bada_system/cache.img ] ; then		
+			#18MB cache partition
+			make_ext4fs -l 18874368 /bada_system/cache.img
+		fi
+		if [ ! -f /bada_system/system.img ] ; then			
+			#250MB system partition	
+			make_ext4fs -l 262144000 /bada_system/system.img		
+			force_recovery="1"
+		fi
+	else
+		#something went terriwrong
 		force_recovery="1"
 	fi
-else
-	#something went terriwrong
-	force_recovery="1"
-fi
 
-if busybox mount | busybox grep -q /bada_app ;
-then
-	if [ ! -f /bada_app/data.img ] ; then		
-		#400MB data partition		
-		make_ext4fs -l 419430400 /bada_app/data.img
+	if busybox mount | busybox grep -q /bada_app ;
+	then
+		if [ ! -f /bada_app/data.img ] ; then		
+			#400MB data partition		
+			make_ext4fs -l 419430400 /bada_app/data.img
+		fi
+	else
+		#something went terriwrong
+		force_recovery="1"
 	fi
-else
-	#something went terriwrong
-	force_recovery="1"
 fi
-
 busybox echo "force_recovery: $force_recovery"
 
 busybox losetup /dev/loop0 /bada_system/system.img
