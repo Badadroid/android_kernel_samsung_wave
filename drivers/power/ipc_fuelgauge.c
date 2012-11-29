@@ -23,7 +23,7 @@
 
 #include <linux/ipc_fuelgauge.h>
 
-#define DRIVER_NAME	"ipc-fuelgauge"
+#define DRIVER_NAME	"ipc_fuelgauge"
 
 struct ipc_fuelgauge {
 	struct power_supply		battery;

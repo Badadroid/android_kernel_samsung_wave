@@ -2269,7 +2269,7 @@ static struct ipc_fuelgauge_platform_data ipc_fuelgauge_pdata = {
 };
 
 static struct platform_device ipc_fuelgauge_device = {
-	.name			= "ipc-fuelgauge",
+	.name			= "ipc_fuelgauge",
 	.dev			= {
 		.platform_data = &ipc_fuelgauge_pdata,
 	},
