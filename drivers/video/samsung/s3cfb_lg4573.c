@@ -58,7 +58,7 @@ extern void init_mdnie_class(void);
 #endif
 /*******************************************************************************/
 
-#define LCD_TUNNING_VALUE 1
+#define LCD_TUNNING_VALUE 0
 
 #if defined (LCD_TUNNING_VALUE)
 #define MAX_BRIGHTNESS_LEVEL 255 /* values received from platform */
@@ -71,11 +71,6 @@ extern void init_mdnie_class(void);
 static int s5p_bl_convert_to_tuned_value(int intensity);
 #endif
 
-
-//#define BACKLIGHT_SYSFS_INTERFACE 1 
-
-
-//struct pwm_device	*backlight_pwm_dev; 
 int bl_freq_count = 100000;
 
 
@@ -88,7 +83,6 @@ struct s5p_lcd {
 	struct mutex	lock;
 	struct device *dev;
 	struct spi_device *g_spi;
-//	struct s5p_panel_data	*data;
 	struct backlight_device *bl_dev;
 	struct lcd_device *lcd_dev;
 	struct pwm_device *backlight_pwm_dev;
@@ -166,9 +160,9 @@ static ssize_t update_brightness_cmd_show(struct device *dev, struct device_attr
 static ssize_t update_brightness_cmd_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 	struct s5p_lcd *lcd = dev_get_drvdata(dev);
-        int brightness = 0;
+	int brightness = 0;
 
-        sscanf(buf, "%d", &brightness);
+	sscanf(buf, "%d", &brightness);
 
 
 	if (!lcd->ldi_enable) {
@@ -216,12 +210,12 @@ static void update_brightness(struct s5p_lcd *lcd)
 	int brightness =  lcd->bl;
 	
 #if defined (LCD_TUNNING_VALUE)
-	int tunned_brightness = 0;
-	tunned_brightness = s5p_bl_convert_to_tuned_value(brightness);
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * tunned_brightness)/MAX_BL, bl_freq_count);
+	int tuned_brightness = 0;
+	tuned_brightness = s5p_bl_convert_to_tuned_value(brightness);
+	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * tuned_brightness)/MAX_BL, bl_freq_count);
 	pwm_enable(lcd->backlight_pwm_dev);
 #else
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * brightness)/255, bl_freq_count);
+	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * brightness)/MAX_BL, bl_freq_count);
 	pwm_enable(lcd->backlight_pwm_dev);
 	/* gprintk("## brightness = [%ld], (bl_freq_count * brightness)/255 =[%ld], ret_val_pwm_config=[%ld] \n", brightness, (bl_freq_count * brightness)/255, ret_val_pwm_config ); */
 #endif
@@ -273,11 +267,9 @@ static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 		goto finito;
 	}
 	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_ON);
-#if 1 /* nat : need to check */
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * 0)/255, bl_freq_count);
+	
 	pwm_disable(lcd->backlight_pwm_dev);
-#endif
-
+	
 	lcd->ldi_enable = 0;
 finito:
 	mutex_unlock(&lcd->lock);
@@ -416,8 +408,7 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 	} else
 		dev_err(lcd->dev, "got pwm for backlight\n");
 		
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count*70)/100, bl_freq_count);	
-	pwm_enable(lcd->backlight_pwm_dev);
+	update_brightness(lcd);
 
 
 	lcd->bl_dev = backlight_device_register("s5p_bl",

@@ -52,9 +52,14 @@ struct mtd_partition s3c_partition_info[] = {
 	},		
 	{
 		.name           = "rsrc1",
-		.offset         = (216*SZ_256K), //0x01300000
-		.size           = (380*SZ_256K),
-	},			
+		.offset         = (216*SZ_256K), //0x03600000
+		.size           = (260*SZ_256K),
+	},		
+	{
+		.name           = "csc",
+		.offset         = (476*SZ_256K), //0x07700000
+		.size           = (120*SZ_256K),
+	},	
 	{
 		.name           = "fota",
 		.offset         = (596*SZ_256K), //0x09500000
@@ -62,7 +67,7 @@ struct mtd_partition s3c_partition_info[] = {
 	},	
 	{
 		.name           = "stl1",
-		.offset         = (608*SZ_256K), //0x18F00000
+		.offset         = (608*SZ_256K), //0x09800000
 		.size           = (988*SZ_256K),
 	},	
 	{

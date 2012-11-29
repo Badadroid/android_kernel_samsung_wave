@@ -8,6 +8,11 @@ dir /dev/block 755 0 0
 nod /dev/block/mmcblk0 644 0 0 b 179 0
 nod /dev/block/mmcblk0p1 644 0 0 b 179 1
 nod /dev/block/mmcblk0p2 644 0 0 b 179 2
+nod /dev/block/mmcblk0p3 644 0 0 b 179 3
+nod /dev/loop0 644 0 0 b 7 0
+nod /dev/loop1 644 0 0 b 7 1
+nod /dev/loop2 644 0 0 b 7 2
+nod /dev/loop3 644 0 0 b 7 3
 slink /init /stage1/init 777 0 0
 dir /proc 755 0 0
 dir /stage1 755 0 0
@@ -17,6 +22,7 @@ dir /sdcard 755 0 0
 file /stage1/busybox source/usr/wave_initramfs_files/busybox 755 0 0
 file /stage1/init source/usr/wave_initramfs_files/init 755 0 0
 file /stage1/erase_image source/usr/wave_initramfs_files/erase_image 755 0 0
+file /stage1/make_ext4fs source/usr/wave_initramfs_files/make_ext4fs 755 0 0
 file /stage1/ramdisk.img ../../ramdisk.img 700 0 0
 file /stage1/ramdisk-recovery.img ../../ramdisk-recovery.img 700 0 0
 dir /sys 755 0 0
