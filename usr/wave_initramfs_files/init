@@ -48,8 +48,8 @@ then
 		make_ext4fs -l 18874368 /bada_system/cache.img
 	fi
 	if [ ! -f /bada_system/system.img ] ; then			
-		#240MB system partition	
-		make_ext4fs -l 252143616 /bada_system/system.img		
+		#250MB system partition	
+		make_ext4fs -l 262144000 /bada_system/system.img		
 		force_recovery="1"
 	fi
 else
@@ -60,8 +60,8 @@ fi
 if busybox mount | busybox grep -q /bada_app ;
 then
 	if [ ! -f /bada_app/data.img ] ; then		
-		#300MB data partition		
-		make_ext4fs -l 314572800 /bada_app/data.img
+		#400MB data partition		
+		make_ext4fs -l 419430400 /bada_app/data.img
 	fi
 else
 	#something went terriwrong
@@ -86,20 +86,18 @@ if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmd
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
 elif ! busybox test -e /system/build.prop; then
 	# emergency boot
-	busybox umount /cache
-
-	erase_image /dev/loop1
-
-	busybox mount -t ext4 /dev/loop1 /cache
-
+	busybox rm -fr /cache/*
 
 #	busybox mount -t vfat /dev/block/mmcblk0p2 /sdcard	
 
-	UPDATE=$(busybox cat /bada_user/cyanogenmod.cfg)
+	UPDATE_INFO=/bada_user/cyanogenmod.cfg
+	if [ -e $UPDATE_INFO ]; then
+		UPDATE=$(busybox cat $UPDATE_INFO)
 
-	if [ -e $UPDATE ]; then
-		busybox mkdir /cache/recovery
-		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
+		if [ -e $UPDATE ]; then
+			busybox mkdir /cache/recovery
+			busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
+		fi
 	fi
 
 	image=/stage1/ramdisk-recovery.img
