@@ -4809,8 +4809,8 @@ static void __init wave_fixup(struct machine_desc *desc,
 	mi->bank[1].size = 255 * SZ_1M;
 	mi->nr_banks = 2;
 
-	ram_console_start = mi->bank[1].start + mi->bank[1].size;
-	ram_console_size = SZ_1M - SZ_4K; /* 4K for PM debug scratchpad */
+	ram_console_start = mi->bank[1].start + mi->bank[1].size + SZ_1K; /* 1K to preserve Bada BootSharedInfo */
+	ram_console_size = SZ_1M - SZ_4K - SZ_1K; /* 4K for PM debug scratchpad  */
 
 	pm_debug_scratchpad = ram_console_start + ram_console_size;
 }
