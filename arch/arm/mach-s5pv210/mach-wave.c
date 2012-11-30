@@ -5008,8 +5008,6 @@ static void __init wave_machine_init(void)
 	wave_inject_cmdline();
 	platform_add_devices(wave_devices, ARRAY_SIZE(wave_devices));
 	console_suspend_enabled = 0;
-	/* smb380 */
-	/* platform_device_register(&wave_s3c_device_i2c5); */
 
 	/* Find out S5PC110 chip version */
 	_hw_version_check();
