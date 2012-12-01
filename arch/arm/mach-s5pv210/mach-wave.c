@@ -4410,7 +4410,7 @@ static int wlan_power_en(int onoff)
 		s3c_gpio_slp_setpull_updown(GPIO_WLAN_BT_EN,
 					S3C_GPIO_PULL_NONE);
 
-		msleep(80);
+		msleep(200);
 	} else {
 		gpio_set_value(GPIO_WLAN_nRST, GPIO_LEVEL_LOW);
 		s3c_gpio_slp_cfgpin(GPIO_WLAN_nRST, S3C_GPIO_SLP_OUT0);
@@ -4460,6 +4460,7 @@ static int wlan_carddetect_en(int onoff)
 	udelay(5);
 
 	sdhci_s3c_force_presence_change(&s3c_device_hsmmc1);
+	msleep(500); /* wait for carddetect */
 	return 0;
 }
 
