@@ -49,8 +49,9 @@ if ! busybox grep -q bootmode=2 /proc/cmdline ; then
 			make_ext4fs -l 18874368 /bada_system/cache.img
 		fi
 		if [ ! -f /bada_system/system.img ] ; then			
-			#250MB system partition	
-			make_ext4fs -l 262144000 /bada_system/system.img		
+			# 270MB system partition	
+			# make_ext4fs -l 283115520 /bada_system/system.img		
+			# Don't make it - shorten bootup time. Recovery package will recreate this partition anyway.
 			force_recovery="1"
 		fi
 	else
