@@ -240,12 +240,13 @@ done:
 	return ret;
 }
 
-static int modem_forcestatus(struct modemctl *mc, unsigned long arg)
+static int modem_setstatus(struct modemctl *mc, unsigned long arg)
 {
-	pr_info("[MODEM] forcing status to %d\n", arg);
+	pr_info("[MODEM] setting status on ioctl request to %d\n", arg);
 	mc->status = arg;
 	return 0;
 }
+
 static int modem_amssrunreq(struct modemctl *mc)
 {
 	pr_info("[MODEM] modem_amssrunreq()\n");
@@ -390,8 +391,13 @@ static long modemctl_ioctl(struct file *filp,
 	case IOCTL_MODEM_AMSSRUNREQ:
 		ret = modem_amssrunreq(mc);
 		break;
-	case IOCTL_MODEM_FORCE_STATUS:
-		ret = modem_forcestatus(mc, arg);
+	case IOCTL_MODEM_SET_STATUS:
+		ret = modem_setstatus(mc, arg);
+		break;	
+	case IOCTL_MODEM_GET_STATUS:
+		if(copy_to_user(arg, &mc->status, sizeof(int32_t)) != 0)
+			return -EFAULT;
+		ret = 0;
 		break;
 	default:
 		ret = -EINVAL;

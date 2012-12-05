@@ -28,7 +28,8 @@
 
 #define IOCTL_MODEM_ON               	_IO('o', 0x25)
 #define	IOCTL_MODEM_AMSSRUNREQ			_IO('o', 0x26)
-#define IOCTL_MODEM_FORCE_STATUS       	_IO('o', 0x27)
+#define IOCTL_MODEM_GET_STATUS       	_IO('o', 0x27)
+#define IOCTL_MODEM_SET_STATUS       	_IO('o', 0x28)
 
 
 #define SIZ_PACKET_FRAME		0x00001000
