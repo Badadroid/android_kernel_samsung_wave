@@ -58,7 +58,7 @@ extern void init_mdnie_class(void);
 #endif
 /*******************************************************************************/
 
-#define LCD_TUNNING_VALUE 0
+//#define LCD_TUNNING_VALUE 1
 
 #if defined (LCD_TUNNING_VALUE)
 #define MAX_BRIGHTNESS_LEVEL 255 /* values received from platform */
@@ -164,19 +164,13 @@ static ssize_t update_brightness_cmd_store(struct device *dev, struct device_att
 
 	sscanf(buf, "%d", &brightness);
 
-
-	if (!lcd->ldi_enable) {
-		printk(KERN_ERR "[LCD] (%s) LDI not enabled \n", __func__);
-		return 0;
-	}
-
 	/* Sanity check */
-/*	if(brightness < 0)
+	if(brightness < 0)
 		brightness = 0;
 
 	if(brightness > lcd->bl_dev->props.max_brightness)
 		brightness = lcd->bl_dev->props.max_brightness;
-*/
+
 	lcd->bl = brightness;
 	update_brightness(lcd);
 	return 0;
@@ -208,9 +202,15 @@ static void update_brightness(struct s5p_lcd *lcd)
 {
 //	struct s5p_panel_data *pdata = lcd->data;	
 	int brightness =  lcd->bl;
+#if defined (LCD_TUNNING_VALUE)
+	int tuned_brightness;
+#endif
+	
+	if(brightness <= 0) {
+		pwm_disable(lcd->backlight_pwm_dev);
+	}
 	
 #if defined (LCD_TUNNING_VALUE)
-	int tuned_brightness = 0;
 	tuned_brightness = s5p_bl_convert_to_tuned_value(brightness);
 	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * tuned_brightness)/MAX_BL, bl_freq_count);
 	pwm_enable(lcd->backlight_pwm_dev);
@@ -249,7 +249,6 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 
 	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_OFF);
 
-	update_brightness(lcd);
 	lcd->ldi_enable = 1;
 finito:
 	mutex_unlock(&lcd->lock);
@@ -267,9 +266,7 @@ static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 		goto finito;
 	}
 	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_ON);
-	
-	pwm_disable(lcd->backlight_pwm_dev);
-	
+		
 	lcd->ldi_enable = 0;
 finito:
 	mutex_unlock(&lcd->lock);
