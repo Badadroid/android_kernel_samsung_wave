@@ -257,7 +257,7 @@ void s3c_sdhci_set_platdata(void)
 	s3c_sdhci1_set_platdata(&hsmmc1_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC2)
-	if (machine_is_herring()) {
+	if (machine_is_herring() && herring_is_cdma_wimax_dev()) {
 		if (herring_is_cdma_wimax_dev()) {
 			hsmmc2_platdata.cd_type = S3C_SDHCI_CD_EXTERNAL;
 			hsmmc2_platdata.ext_cd_init = ext_cd_init_hsmmc2;
@@ -265,19 +265,22 @@ void s3c_sdhci_set_platdata(void)
 			hsmmc2_platdata.built_in = 1;
 			hsmmc2_platdata.must_maintain_clock = 1;
 			hsmmc2_platdata.enable_intr_on_resume = 1;
-		} else {
-			hsmmc2_platdata.cd_type = S3C_SDHCI_CD_GPIO;
-			hsmmc2_platdata.ext_cd_gpio = GPIO_T_FLASH_DETECT;
-			hsmmc2_platdata.ext_cd_gpio_invert = true;
-			universal_sdhci2_cfg_ext_cd();
 		}
 	}
-
-	if (machine_is_aries() || machine_is_wave()) {
+	else if (machine_is_aries() || (machine_is_herring() && !herring_is_cdma_wimax_dev())) {
 		hsmmc2_platdata.cd_type = S3C_SDHCI_CD_GPIO;
 		hsmmc2_platdata.ext_cd_gpio = GPIO_T_FLASH_DETECT;
 		hsmmc2_platdata.ext_cd_gpio_invert = true;
 		universal_sdhci2_cfg_ext_cd();
+	}
+	else if(machine_is_wave())
+	{
+		/* There is T-Flash detect GPIO on Wave board, 
+		 * but appears to be not working on some boards.
+		 * We don't know how to recognize faulty boards,
+		 * so let's force SDHCI_QUIRK_BROKEN_CARD_DETECTION
+		 * card will be polled by SDHCI driver.*/
+		hsmmc2_platdata.cd_type = S3C_SDHCI_CD_NONE;
 	}
 
 	s3c_sdhci2_set_platdata(&hsmmc2_platdata);
