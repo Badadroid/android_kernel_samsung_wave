@@ -97,7 +97,6 @@
 #include <linux/input/mxt224.h>
 #include <linux/mfd/max8998.h>
 #include <linux/switch.h>
-#include <linux/ipc_fuelgauge.h>
 
 #ifdef CONFIG_KERNEL_DEBUG_SEC
 #include <linux/kernel_sec_common.h>
@@ -2251,30 +2250,6 @@ static struct i2c_board_info i2c_devs6[] __initdata = {
 #endif
 };
 
-static int ipc_fuelgauge_power_supply_register(struct device *parent,
-	struct power_supply *psy)
-{
-	wave_charger.psy_fuelgauge = psy;
-	return 0;
-}
-
-static void ipc_fuelgauge_power_supply_unregister(struct power_supply *psy)
-{
-	wave_charger.psy_fuelgauge = NULL;
-}
-
-static struct ipc_fuelgauge_platform_data ipc_fuelgauge_pdata = {
-	.power_supply_register = ipc_fuelgauge_power_supply_register,
-	.power_supply_unregister = ipc_fuelgauge_power_supply_unregister,
-};
-
-static struct platform_device ipc_fuelgauge_device = {
-	.name			= "ipc_fuelgauge",
-	.dev			= {
-		.platform_data = &ipc_fuelgauge_pdata,
-	},
-};
-
 static int gp2a_power(bool on)
 {
 	/* this controls the power supply rail to the gp2a IC */
@@ -2403,8 +2378,8 @@ static void __init android_pmem_set_platdata(void)
 }
 #endif
 
-struct platform_device sec_device_battery = {
-	.name	= "sec-battery",
+struct platform_device wave_charger_device = {
+	.name	= "wave_charger",
 	.id	= -1,
 };
 
@@ -4739,9 +4714,8 @@ static struct platform_device *wave_devices[] __initdata = {
 #ifdef CONFIG_VIDEO_TV20
 	&s5p_device_tvout,
 #endif
-	&sec_device_battery,
-	
-	&ipc_fuelgauge_device,
+	&wave_charger_device,
+
 
 #ifdef CONFIG_S5PV210_POWER_DOMAIN
 	&s5pv210_pd_audio,

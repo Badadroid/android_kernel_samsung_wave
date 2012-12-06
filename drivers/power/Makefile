@@ -39,4 +39,4 @@ obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
 obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
 obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
 
-obj-$(CONFIG_IPC_FUEL_GAUGE) += ipc_fuelgauge.o
+obj-$(CONFIG_CHARGER_WAVE) += wave_charger.o
