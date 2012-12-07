@@ -5039,13 +5039,17 @@ static void __init wave_machine_init(void)
 
 	/* panel */
 #ifdef CONFIG_FB_S3C_TL2796
-	spi_register_board_info(tl2796_spi_board_info, ARRAY_SIZE(tl2796_spi_board_info));
-	s3cfb_set_platdata(&tl2796_data);
+	if(machine_is_wave()) {
+		spi_register_board_info(tl2796_spi_board_info, ARRAY_SIZE(tl2796_spi_board_info));
+		s3cfb_set_platdata(&tl2796_data);
+	}
 #endif
 
 #ifdef CONFIG_FB_S3C_LG4573
-	spi_register_board_info(lg4573_spi_board_info, ARRAY_SIZE(lg4573_spi_board_info));
-	s3cfb_set_platdata(&lg4573_data);
+	if(machine_is_wave2()) {
+		spi_register_board_info(lg4573_spi_board_info, ARRAY_SIZE(lg4573_spi_board_info));
+		s3cfb_set_platdata(&lg4573_data);
+	}
 #endif
 
 #if defined(CONFIG_S5P_ADC)
