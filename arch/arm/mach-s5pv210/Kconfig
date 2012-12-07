@@ -249,23 +249,7 @@ config MACH_WAVE
 	select S5P_DEV_CSIS0
 	select S5P_SETUP_MIPIPHY
 	help
-	  Machine support for Wave
-if MACH_WAVE
-choice
-	prompt "Select phone Type"
-config WAVE_S8500
-	bool "select S8500"
-	depends on MACH_WAVE
-	help
-	Select Wave I (GT-S8500)
-
-config WAVE_S8530
-	bool "select S8530"
-	depends on MACH_WAVE
-	help
-	Select Wave II (GT-S8530)
-endchoice
-endif
+	  Machine support for Wave I (GT-S8500) and Wave II (GT-S8530)
 
 config MACH_ARIES
 	bool "Aries"

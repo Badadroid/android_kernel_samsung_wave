@@ -47,9 +47,6 @@ static int __init bt_lpm_init(void)
 {
 	int ret;
 
-	if (!machine_is_wave())
-		return 0;
-
 	ret = gpio_request(GPIO_BT_WAKE, "gpio_bt_wake");
 	if (ret) {
 		printk(KERN_ERR "Failed to request gpio_bt_wake control\n");

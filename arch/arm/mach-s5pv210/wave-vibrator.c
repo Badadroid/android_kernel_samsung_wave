@@ -108,10 +108,6 @@ static int __init wave_init_vibrator(void)
 {
 	int ret = 0;
 
-#ifdef CONFIG_MACH_WAVE
-	if (!machine_is_wave())
-		return 0;
-#endif
 	hrtimer_init(&vibdata.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	vibdata.timer.function = wave_vibrator_timer_func;
 	INIT_WORK(&vibdata.work, wave_vibrator_work);

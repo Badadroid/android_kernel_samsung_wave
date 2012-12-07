@@ -324,7 +324,7 @@ static int s5p_bl_get_brightness(struct backlight_device *bd)
 	return lcd->bl;
 }
 
-const struct backlight_ops s5p_bl_ops = {
+static const struct backlight_ops s5p_bl_ops = {
 	.update_status = s5p_bl_update_status,
 	.get_brightness = s5p_bl_get_brightness,
 };

@@ -31,6 +31,7 @@
 #include <linux/io.h>
 
 #include <asm/setup.h>
+#include <asm/mach-types.h>
 #include <linux/string.h>
 
 enum soc_type {
@@ -1107,8 +1108,13 @@ static int s3c_onenand_probe(struct platform_device *pdev)
 #endif
 	if (num_partitions <= 0) {
 		/* default partition table */
-		num_partitions = ARRAY_SIZE(s3c_partition_info);	/* pdata->nr_parts */
-		partitions = s3c_partition_info;			/* pdata->parts */
+		if(machine_is_wave2()) {
+			num_partitions = ARRAY_SIZE(wave_s8530_partition_info);	/* pdata->nr_parts */
+			partitions = wave_s8530_partition_info;			/* pdata->parts */
+		} else {
+			num_partitions = ARRAY_SIZE(wave_s8500_partition_info);	/* pdata->nr_parts */
+			partitions = wave_s8500_partition_info;			/* pdata->parts */
+		}
 	}
 
 	if (partitions && num_partitions > 0)

@@ -46,10 +46,9 @@
 #endif
 
 #include <mach/regs-clock.h>
-#if defined(CONFIG_WAVE_S8500)
+#include <asm/mach-types.h>
+#if defined(CONFIG_MACH_WAVE)
 #include "s8500-logo.h"
-#endif
-#if defined(CONFIG_WAVE_S8530)
 #include "s8530-logo.h"
 #endif
 #ifdef CONFIG_FB_S3C_MDNIE
@@ -129,7 +128,10 @@ static int s3cfb_draw_logo(struct fb_info *fb)
 	else
 		memcpy(fb->screen_base, LOGO_RGB24, fb->var.yres * fb->fix.line_length);
 #elif defined(CONFIG_MACH_WAVE)
-	memcpy(fb->screen_base, LOGO_RGB24, fb->var.yres * fb->fix.line_length);
+	if(machine_is_wave2())
+		memcpy(fb->screen_base, S8530_LOGO_RGB24, fb->var.yres * fb->fix.line_length);
+	else
+		memcpy(fb->screen_base, S8500_LOGO_RGB24, fb->var.yres * fb->fix.line_length);
 #endif
 	return 0;
 }
@@ -1128,12 +1130,12 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 	register_early_suspend(&fbdev->early_suspend);
 #endif
 
-#ifdef CONFIG_WAVE_S8500
-/* FIXME: ugly hack around for configuring AMOLED */
-	s3cfb_early_suspend(&fbdev->early_suspend);
-	msleep(200);
-	s3cfb_late_resume(&fbdev->early_suspend);
-#endif
+	if(machine_is_wave()) {
+	/* FIXME: ugly hack around for configuring AMOLED */
+		s3cfb_early_suspend(&fbdev->early_suspend);
+		msleep(200);
+		s3cfb_late_resume(&fbdev->early_suspend);
+	}
 	fbdev->vsync_thread = kthread_run(s3cfb_wait_for_vsync_thread,
 			fbdev, "s3cfb-vsync");
 	if (fbdev->vsync_thread == ERR_PTR(-ENOMEM)) {

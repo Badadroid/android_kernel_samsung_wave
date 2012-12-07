@@ -1,18 +1,10 @@
 /* linux/drivers/mtd/onenand/samsung_wave.h
  *
- * Partition Layout for Samsung Wave S8500/S8530 Bada 2.0
+ * Partition Layouts for Samsung Wave S8500/S8530 Bada 2.0
  *
  */
 
-struct mtd_partition s3c_partition_info[] = {
-
- /*
-   #########################################################################################
-   #########################################################################################
-   ###### NEVER TOUCH THE FIRST 16 256k PAGES! THEY CONTAIN THE FIRST BOOTLOADERS     ######
-   #########################################################################################
-   #########################################################################################*/
-#ifdef CONFIG_WAVE_S8500
+struct mtd_partition wave_s8500_partition_info[] = {
 	{
 		.name           = "nv_data",
 		.offset         = (1948*SZ_256K), //0x1E700000
@@ -24,7 +16,9 @@ struct mtd_partition s3c_partition_info[] = {
 		.offset         = (204*SZ_256K),
 		.size           = (12*SZ_256K),
 	},
-#elif defined(CONFIG_WAVE_S8530)
+};
+
+struct mtd_partition wave_s8530_partition_info[] = {
 	{
 		.name           = "nv_data",
 		.offset         = (1984*SZ_256K), //0x1F000000
@@ -80,8 +74,8 @@ struct mtd_partition s3c_partition_info[] = {
 		.offset         = (1968*SZ_256K), //0x1EC00000
 		.size           = (16*SZ_256K),
 	},
-#endif
-
 };
+
+
 
 
