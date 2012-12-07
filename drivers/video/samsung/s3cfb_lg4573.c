@@ -74,7 +74,7 @@ extern int get_lcdtype(void);
 
 
 struct s5p_lcd {
-	int ldi_enable;
+	int ldi_enabled;
 	int bl;
 	struct mutex	lock;
 	struct device *dev;
@@ -193,14 +193,13 @@ static int s5p_bl_convert_to_tuned_value(int intensity)
 
 static void update_brightness(struct s5p_lcd *lcd)
 {
-	int brightness =  lcd->bl;
+	int brightness = lcd->bl;
 #if defined (LCD_TUNNING_VALUE)
 	int tuned_brightness;
 #endif
-	
-	if(!lcd->ldi_enable)
+	if(!lcd->ldi_enabled)
 		brightness = 0;
-	
+
 	if(brightness <= 0) {
 		s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, S3C_GPIO_OUTPUT);
 		gpio_set_value(GPIO_LCD_BL_PWM, 0);
@@ -226,7 +225,7 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 	struct s5p_lg4573_panel_data *pdata = lcd->data;
 
 	mutex_lock(&lcd->lock);
-	if(lcd->ldi_enable)
+	if(lcd->ldi_enabled)
 	{
 		printk("%s already enabled!\n", __func__);
 		goto finito;
@@ -250,25 +249,28 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 
 	lg4573_panel_send_sequence(lcd, pdata->seq_standby_off);
 
-	lcd->ldi_enable = 1;
+	lcd->ldi_enabled = 1;	
+	/* Will bring back up previous backlight state with ldi_enabled == 1 */
+	update_brightness(lcd);
 finito:
 	mutex_unlock(&lcd->lock);
 }
-
 
 static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 {
 	struct s5p_lg4573_panel_data *pdata = lcd->data;
 
 	mutex_lock(&lcd->lock);
-	if(!lcd->ldi_enable)
+	if(!lcd->ldi_enabled)
 	{
 		printk("%s already disabled!\n", __func__);
 		goto finito;
 	}
 	lg4573_panel_send_sequence(lcd, pdata->seq_standby_on);
 		
-	lcd->ldi_enable = 0;
+	lcd->ldi_enabled = 0;	
+	/* Will turn off backlight with ldi_enabled == 0 */
+	update_brightness(lcd);
 finito:
 	mutex_unlock(&lcd->lock);
 }
@@ -333,10 +335,8 @@ void lg4573_early_suspend(struct early_suspend *h)
 {
 	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd, early_suspend);
 
-	lcd->bl = 0;
-	update_brightness(lcd);
 	lg4573_ldi_disable(lcd);
-
+	
 	return;
 }
 
@@ -345,7 +345,7 @@ void lg4573_late_resume(struct early_suspend *h)
 	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd, early_suspend);
 
 	lg4573_ldi_enable(lcd);
-
+	
 	return;
 }
 
@@ -407,7 +407,6 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 	} else
 		dev_err(lcd->dev, "got pwm for backlight\n");
 		
-	update_brightness(lcd);
 
 	lcd->bl_dev = backlight_device_register("s5p_bl",
 			&spi->dev, lcd, &s5p_bl_ops, NULL);
@@ -420,7 +419,6 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 
 	lcd->bl_dev->props.max_brightness = 255;
 
-
 	lcd->lcd_dev = lcd_device_register("s5p_lcd", &spi->dev, lcd, &s5p_lcd_ops);
 	if (!lcd->lcd_dev) 
 	{
@@ -428,8 +426,7 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 		ret = -EINVAL;
 		goto err_setup_lcd;
 	}
-
-			
+	
 	// Class and device file creation 
 	printk(KERN_ERR "ldi_class create\n");
 
