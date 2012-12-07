@@ -1006,7 +1006,7 @@ static int panel_reset_lcd(struct platform_device *pdev)
 
 	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
 	if (err) {
-		printk(KERN_ERR "failed to request MP0(5) for "
+		printk(KERN_ERR "failed to request GPIO_MLCD_RST for "
 				"lcd reset control\n");
 		return err;
 	}
@@ -2020,19 +2020,11 @@ static struct s3c_platform_jpeg jpeg_plat __initdata = {
 };
 #endif
 
-/* I2C0 */
-static struct i2c_board_info i2c_devs0[] __initdata = {
-};
-
 static struct i2c_board_info i2c_devs4[] __initdata = {
 	{
 		I2C_BOARD_INFO("wm8994-samsung", (0x34>>1)),
 		.platform_data = &wm8994_pdata,
 	},
-};
-
-/* I2C1 */
-static struct i2c_board_info i2c_devs1[] __initdata = {
 };
 
 static void mxt224_power_on(void)
@@ -2248,9 +2240,12 @@ static struct i2c_board_info i2c_devs6[] __initdata = {
 		I2C_BOARD_INFO("max8998", (0xCC >> 1)),
 		.platform_data	= &max8998_pdata,
 		.irq		= IRQ_EINT7,
-	}, {
-		I2C_BOARD_INFO("rtc_max8998", (0x0D >> 1)),
 	},
+/* MAX8998 MFC Driver will register it, so no need to even try it
+	{
+		I2C_BOARD_INFO("rtc_max8998", (0x0C >> 1)),
+	},
+*/
 #endif
 };
 
@@ -2261,15 +2256,10 @@ static int gp2a_power(bool on)
 	return 0;
 }
 
-static int gp2a_light_adc_value(void)
-{
-	return s3c_adc_get_adc_data(9);
-}
 
 static struct gp2a_platform_data gp2a_pdata = {
 	.power = gp2a_power,
 	.p_out = GPIO_PS_VOUT,
-	.light_adc_value = gp2a_light_adc_value
 };
 
 static void gp2a_gpio_init(void)
@@ -2287,7 +2277,7 @@ static void gp2a_gpio_init(void)
 #endif
 }
 
-static struct i2c_board_info i2c_devs11[] __initdata = {
+static struct i2c_board_info i2c_dev_gp2a[] __initdata = {
 	{
 		I2C_BOARD_INFO("gp2a", (0x88 >> 1)),
 		.platform_data = &gp2a_pdata,
@@ -5056,7 +5046,7 @@ static void __init wave_machine_init(void)
 
 	/* optical sensor */
 	gp2a_gpio_init();
-	i2c_register_board_info(11, i2c_devs11, ARRAY_SIZE(i2c_devs11));
+	i2c_register_board_info(0, i2c_dev_gp2a, ARRAY_SIZE(i2c_dev_gp2a));
 	
 	/* AK8973 magnetic sensor */
 	i2c_register_board_info(12, i2c_devs12, ARRAY_SIZE(i2c_devs12));
