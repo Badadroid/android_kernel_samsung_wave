@@ -1029,17 +1029,6 @@ static int panel_reset_lcd(struct platform_device *pdev)
 
 #ifdef CONFIG_FB_S3C_LG4573
 
-int get_lcdtype(void)
-{
-	int panel_id;
-
-	panel_id = (gpio_get_value(GPIO_DIC_ID) << 1) | gpio_get_value(GPIO_OLED_ID);
-
-    printk("LCD_ID1=0x%x, LCD_ID2=0x%x, LCDTYPE=%d\n", gpio_get_value(GPIO_OLED_ID), gpio_get_value(GPIO_DIC_ID), panel_id);
-
-	return panel_id;
-}
-EXPORT_SYMBOL(get_lcdtype);
 
 
 //SLCD for S8530
@@ -1061,7 +1050,7 @@ static struct s3c_platform_fb lg4573_data __initdata = {
 static struct spi_board_info lg4573_spi_board_info[] __initdata = {
 	{
 		.modalias	= "lg4573",
-//		.platform_data	= &wave_panel_data,
+		.platform_data	= &wave_lg4573_panel_data,
 		.max_speed_hz	= 1200000,
 		.bus_num	= LCD_BUS_NUM,
 		.chip_select	= 0,
@@ -1088,7 +1077,7 @@ static struct s3c_platform_fb tl2796_data __initdata = {
 static struct spi_board_info tl2796_spi_board_info[] __initdata = {
 	{
 		.modalias	= "tl2796",
-		.platform_data	= &wave_panel_data,
+		.platform_data	= &wave_tl2796_panel_data,
 		.max_speed_hz	= 1200000,
 		.bus_num	= LCD_BUS_NUM,
 		.chip_select	= 0,

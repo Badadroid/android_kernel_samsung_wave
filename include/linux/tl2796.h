@@ -9,7 +9,15 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
 */
+#ifndef __TL2796_H__
+#define __TL2796_H__
+
 #include <linux/types.h>
+
+#define SLEEPMSEC		0x1000
+#define ENDDEF			0x2000
+#define DATAMASK		0x0100
+#define	DEFMASK			0xFF00
 
 struct gamma_entry {
 	u32 brightness;
@@ -31,7 +39,7 @@ struct tl2796_color_adj {
 	int rshift;
 };
 
-struct s5p_panel_data {
+struct s5p_tl2796_panel_data {
 	const u16 *seq_display_set;
 	const u16 *seq_etc_set;
 	const u16 *standby_on;
@@ -43,7 +51,7 @@ struct s5p_panel_data {
 	int gpio_wrx;
 	int gpio_rst;
 	int gpio_db[8];
-	int (*configure_mtp_gpios)(struct s5p_panel_data *pdata, bool enable);
+	int (*configure_mtp_gpios)(struct s5p_tl2796_panel_data *pdata, bool enable);
 	u16 factory_v255_regs[3];
 	struct tl2796_color_adj color_adj;
 
@@ -61,4 +69,6 @@ enum {
 	BV_171 = 0x6A472534,
 	BV_255 = 0xFFFFFFFF,
 };
+
+#endif
 

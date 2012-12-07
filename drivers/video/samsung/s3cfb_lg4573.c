@@ -30,13 +30,9 @@
 #include <plat/regs-fb.h>
 #include <linux/earlysuspend.h>
 #include <linux/pwm.h>
-#include <mach/gpio-wave.h> /* nat : need to check*/
-#include "s3cfb.h"
-#include "lg4573.h"
+#include <mach/gpio-wave.h>
+#include <linux/lg4573.h>
 
-#if defined(CONFIG_FB_S3C_MDNIE)
-#include "s3cfb_mdnie.h"
-#endif
 
 #if defined(CONFIG_FB_S3C_MDNIE)
 extern void init_mdnie_class(void);
@@ -83,6 +79,7 @@ struct s5p_lcd {
 	struct mutex	lock;
 	struct device *dev;
 	struct spi_device *g_spi;
+	struct s5p_lg4573_panel_data	*data;
 	struct backlight_device *bl_dev;
 	struct lcd_device *lcd_dev;
 	struct pwm_device *backlight_pwm_dev;
@@ -177,8 +174,6 @@ static ssize_t update_brightness_cmd_store(struct device *dev, struct device_att
 }
 static DEVICE_ATTR(update_brightness_cmd, 0664, update_brightness_cmd_show, update_brightness_cmd_store);
 
-
-
 #if defined (LCD_TUNNING_VALUE)
 static int s5p_bl_convert_to_tuned_value(int intensity)
 {
@@ -196,19 +191,23 @@ static int s5p_bl_convert_to_tuned_value(int intensity)
 }
 #endif
 
-
-
 static void update_brightness(struct s5p_lcd *lcd)
 {
-//	struct s5p_panel_data *pdata = lcd->data;	
 	int brightness =  lcd->bl;
 #if defined (LCD_TUNNING_VALUE)
 	int tuned_brightness;
 #endif
 	
+	if(!lcd->ldi_enable)
+		brightness = 0;
+	
 	if(brightness <= 0) {
+		s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, S3C_GPIO_OUTPUT);
+		gpio_set_value(GPIO_LCD_BL_PWM, 0);
 		pwm_disable(lcd->backlight_pwm_dev);
+		return;
 	}
+	s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, 0x2); //PWM output
 	
 #if defined (LCD_TUNNING_VALUE)
 	tuned_brightness = s5p_bl_convert_to_tuned_value(brightness);
@@ -224,7 +223,7 @@ static void update_brightness(struct s5p_lcd *lcd)
 
 static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 {
-//	struct s5p_panel_data *pdata = lcd->data;
+	struct s5p_lg4573_panel_data *pdata = lcd->data;
 
 	mutex_lock(&lcd->lock);
 	if(lcd->ldi_enable)
@@ -235,19 +234,21 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 	switch (lcd->lcd_type) 
 	{
 		case 1:
+			printk(KERN_ERR "%s Unsupported LCD type 1!\n", __func__);
 			break;
 		case 2:
+			printk(KERN_ERR "%s Unsupported LCD type 2!\n", __func__);
 			break;
 		case 3:
-			lg4573_panel_send_sequence(lcd,LG4573_SEQ_SETTING_TYPE_3);
+			lg4573_panel_send_sequence(lcd, pdata->seq_settings_type3);
 			break;
 		case 0:
 		default:
-			lg4573_panel_send_sequence(lcd,LG4573_SEQ_SETTING_TYPE_0);
+			lg4573_panel_send_sequence(lcd, pdata->seq_settings_type0);
 			break;
 	}
 
-	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_OFF);
+	lg4573_panel_send_sequence(lcd, pdata->seq_standby_off);
 
 	lcd->ldi_enable = 1;
 finito:
@@ -257,7 +258,7 @@ finito:
 
 static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 {
-//	struct s5p_panel_data *pdata = lcd->data;
+	struct s5p_lg4573_panel_data *pdata = lcd->data;
 
 	mutex_lock(&lcd->lock);
 	if(!lcd->ldi_enable)
@@ -265,7 +266,7 @@ static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 		printk("%s already disabled!\n", __func__);
 		goto finito;
 	}
-	lg4573_panel_send_sequence(lcd,LG4573_SEQ_SLEEP_ON);
+	lg4573_panel_send_sequence(lcd, pdata->seq_standby_on);
 		
 	lcd->ldi_enable = 0;
 finito:
@@ -275,7 +276,6 @@ finito:
 static int s5p_lcd_set_power(struct lcd_device *ld, int power)
 {
 	struct s5p_lcd *lcd = lcd_get_data(ld);
-//	struct s5p_panel_data *pdata = lcd->data;
 
 	if (power)
 		lg4573_ldi_enable(lcd);
@@ -295,7 +295,6 @@ struct lcd_ops s5p_lcd_ops = {
 	.check_fb = s5p_lcd_check_fb,
 };
 
-
 static int s5p_bl_update_status(struct backlight_device *bd)
 {
 	struct s5p_lcd *lcd = bl_get_data(bd);
@@ -309,9 +308,7 @@ static int s5p_bl_update_status(struct backlight_device *bd)
 
 	lcd->bl = bl;
 
-	if (lcd->ldi_enable) {
-		update_brightness(lcd);
-	}
+	update_brightness(lcd);
 
 	mutex_unlock(&lcd->lock);
 
@@ -327,19 +324,17 @@ static int s5p_bl_get_brightness(struct backlight_device *bd)
 	return lcd->bl;
 }
 
-
-
 const struct backlight_ops s5p_bl_ops = {
 	.update_status = s5p_bl_update_status,
 	.get_brightness = s5p_bl_get_brightness,
 };
 
-
-
 void lg4573_early_suspend(struct early_suspend *h)
 {
-	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd,	early_suspend);
+	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd, early_suspend);
 
+	lcd->bl = 0;
+	update_brightness(lcd);
 	lg4573_ldi_disable(lcd);
 
 	return;
@@ -347,14 +342,12 @@ void lg4573_early_suspend(struct early_suspend *h)
 
 void lg4573_late_resume(struct early_suspend *h)
 {
-	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd,	early_suspend);
+	struct s5p_lcd *lcd = container_of(h, struct s5p_lcd, early_suspend);
 
 	lg4573_ldi_enable(lcd);
 
 	return;
 }
-
-
 
 static int __devinit lg4573_probe(struct spi_device *spi)
 {
@@ -379,24 +372,33 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 	lcd->g_spi = spi;
 	lcd->dev = &spi->dev;
 	lcd->bl = 128; //half of max brightness
-/*
+
 	if (!spi->dev.platform_data) {
 		dev_err(lcd->dev, "failed to get platform data\n");
 		ret = -EINVAL;
 		goto err_setup;
-	}*/
-//TODO: grab it from platform
-//	lcd->data = (struct s5p_panel_data *)spi->dev.platform_data;
-
+	}
+	lcd->data = (struct s5p_lg4573_panel_data *)spi->dev.platform_data;
+	
+	if (!lcd->data->seq_settings_type0 || !lcd->data->seq_settings_type1 ||
+		!lcd->data->seq_settings_type2 || !lcd->data->seq_settings_type3 ||
+		!lcd->data->seq_standby_on || !lcd->data->seq_standby_off ||
+		!lcd->data->get_lcdtype) {
+		dev_err(lcd->dev, "Invalid platform data\n");
+		ret = -EINVAL;
+		goto err_setup;
+	}
+	
 	//determine the LCD type
-	lcd->lcd_type = get_lcdtype();
+	lcd->lcd_type = lcd->data->get_lcdtype();
 
+    dev_info(lcd->dev, "LCDTYPE=%d\n", lcd->lcd_type);
+	
 	ret = gpio_request(GPIO_LCD_BL_PWM, "lcd_bl_pwm");
 	if (ret < 0) {
 		dev_err(lcd->dev, "unable to request gpio for backlight\n");	
 		return ret;
 	}
-	s3c_gpio_cfgpin(GPIO_LCD_BL_PWM,  (0x2 << 0));
 
 	lcd->backlight_pwm_dev = pwm_request(0, "backlight-pwm");
 
@@ -406,7 +408,6 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 		dev_err(lcd->dev, "got pwm for backlight\n");
 		
 	update_brightness(lcd);
-
 
 	lcd->bl_dev = backlight_device_register("s5p_bl",
 			&spi->dev, lcd, &s5p_bl_ops, NULL);
@@ -446,11 +447,8 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 		goto err_setup_ldi;
 	}
 
-	
 	if (device_create_file(lcd->ldi_dev, &dev_attr_update_brightness_cmd) < 0)
 		pr_err("Failed to create device file(%s)!\n", dev_attr_update_brightness_cmd.attr.name);
-
-
 
 	spi_set_drvdata(spi, lcd);
 

@@ -16,16 +16,9 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/tl2796.h>
-#include <linux/nt35580.h>
 #include <mach/gpio.h>
 #include <mach/gpio-wave.h>
 #include <linux/delay.h>
-
-#ifdef CONFIG_FB_S3C_LG4573
-//TODO: relocate all LG4573 sequences here
-struct s5p_panel_data wave_panel_data = {
-};
-#else
 
 static const u16 s6e63m0_SEQ_STANDBY_ON[] = {
 	0x010,	/* Stand-by On Command */
@@ -264,7 +257,7 @@ static const struct gamma_entry gamma_table[] = {
 	{ 0xFFFFFFFF, { 1489879, 1576363, 1151415, }, },
 };
 
-static void reset_lcd(struct s5p_panel_data *pdata)
+static void reset_lcd(struct s5p_tl2796_panel_data *pdata)
 {
 	gpio_direction_output(pdata->gpio_rst, 1);
 	msleep(10);
@@ -276,7 +269,7 @@ static void reset_lcd(struct s5p_panel_data *pdata)
 	msleep(10);
 }
 
-static int configure_mtp_gpios(struct s5p_panel_data *pdata, bool enable)
+static int configure_mtp_gpios(struct s5p_tl2796_panel_data *pdata, bool enable)
 {
 	int i;
 	int ret = 0;
@@ -334,7 +327,7 @@ err_rdx:
 	return ret;
 }
 
-struct s5p_panel_data wave_panel_data = {
+struct s5p_tl2796_panel_data wave_tl2796_panel_data = {
 	.seq_display_set = s6e63m0_SEQ_DISPLAY_SETTING,
 	.seq_etc_set = s6e63m0_SEQ_ETC_SETTING,
 	.standby_on = s6e63m0_SEQ_STANDBY_ON,
@@ -365,4 +358,3 @@ struct s5p_panel_data wave_panel_data = {
 	.gamma_table_size = ARRAY_SIZE(gamma_table),
 };
 
-#endif

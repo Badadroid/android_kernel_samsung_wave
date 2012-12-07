@@ -1,7 +1,24 @@
-#define SLEEPMSEC		0x1000
-#define ENDDEF			0x2000
-#define DATAMASK		0x0100
-#define	DEFMASK			0xFF00
+/*
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+#include <linux/kernel.h>
+#include <linux/types.h>
+#include <linux/lg4573.h>
+#include <mach/gpio.h>
+#include <mach/gpio-wave.h>
+#include <linux/delay.h>
 
 const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
 // 20111230
@@ -302,12 +319,6 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_0[] = {
 };
 
 
-const unsigned short brightness_setting_table[] = {
-	0x51, 0x17f,
-	ENDDEF, 0x0000                                
-};
-
-
 const unsigned short LG4573_SEQ_SLEEP_OFF[] = {
 	0x11, 
 	SLEEPMSEC, 200,
@@ -322,4 +333,25 @@ const unsigned short LG4573_SEQ_SLEEP_ON[] = {
 	0x28, 
 	SLEEPMSEC, 200,
         ENDDEF, 0x0000
+};
+
+int get_lcdtype(void)
+{
+	int panel_id;
+
+	panel_id = (gpio_get_value(GPIO_DIC_ID) << 1) | gpio_get_value(GPIO_OLED_ID);
+
+	return panel_id;
+}
+
+struct s5p_lg4573_panel_data wave_lg4573_panel_data = {
+	.seq_settings_type0 = LG4573_SEQ_SETTING_TYPE_0,
+	/* TODO fix type1 and type2 tables */
+	.seq_settings_type1 = LG4573_SEQ_SETTING_TYPE_0,
+	.seq_settings_type2 = LG4573_SEQ_SETTING_TYPE_0,
+	.seq_settings_type3 = LG4573_SEQ_SETTING_TYPE_3,
+	.seq_standby_on = LG4573_SEQ_SLEEP_OFF,
+	.seq_standby_off = LG4573_SEQ_SLEEP_ON,
+	
+	.get_lcdtype = &get_lcdtype,
 };
