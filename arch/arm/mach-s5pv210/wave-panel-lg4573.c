@@ -350,8 +350,8 @@ struct s5p_lg4573_panel_data wave_lg4573_panel_data = {
 	.seq_settings_type1 = LG4573_SEQ_SETTING_TYPE_0,
 	.seq_settings_type2 = LG4573_SEQ_SETTING_TYPE_0,
 	.seq_settings_type3 = LG4573_SEQ_SETTING_TYPE_3,
-	.seq_standby_on = LG4573_SEQ_SLEEP_OFF,
-	.seq_standby_off = LG4573_SEQ_SLEEP_ON,
+	.seq_standby_on = LG4573_SEQ_SLEEP_ON,
+	.seq_standby_off = LG4573_SEQ_SLEEP_OFF,
 	
 	.get_lcdtype = &get_lcdtype,
 };
