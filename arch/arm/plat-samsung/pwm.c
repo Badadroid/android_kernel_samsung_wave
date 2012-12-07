@@ -320,15 +320,9 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 
 	spin_lock_irqsave(&pwm_spin_lock, flags);
 
-#ifdef CONFIG_WAVE_S8530
-	if(pwm->pwm_id != 0) {
-#endif
-		tcon = __raw_readl(S3C2410_TCON);
-		tcon |= pwm_tcon_invert(pwm);
-		__raw_writel(tcon, S3C2410_TCON);
-#ifdef CONFIG_WAVE_S8530
-	}
-#endif
+	tcon = __raw_readl(S3C2410_TCON);
+	tcon |= pwm_tcon_invert(pwm);
+	__raw_writel(tcon, S3C2410_TCON);
 
 	spin_unlock_irqrestore(&pwm_spin_lock, flags);
 
@@ -390,17 +384,12 @@ static int s3c_pwm_resume(struct platform_device *pdev)
 {
 	struct pwm_device *pwm = platform_get_drvdata(pdev);
 	unsigned long tcon;
-	
-#ifdef CONFIG_WAVE_S8530
-	if(pwm->pwm_id != 0) {
-#endif
+
 	/* Restore invertion */
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_invert(pwm);
 	__raw_writel(tcon, S3C2410_TCON);
-#ifdef CONFIG_WAVE_S8530
-	}
-#endif
+
 	return 0;
 }
 
