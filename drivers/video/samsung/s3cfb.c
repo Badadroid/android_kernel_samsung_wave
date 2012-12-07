@@ -1109,16 +1109,11 @@ static int __devinit s3cfb_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_FB_S3C_LCD_INIT
 	printk("CONFIG_FB_S3C_LCD_INIT enabled\n");
-#if defined(CONFIG_FB_S3C_TL2796) || defined (CONFIG_FB_S3C_LG4573) 
+	if (!bootloaderfb && pdata->reset_lcd)
+		pdata->reset_lcd(pdev);	
+		
 	if (pdata->backlight_on)
 		pdata->backlight_on(pdev);
-#endif
-/*
-#if !defined(CONFIG_MACH_ARIES)// && !defined(CONFIG_MACH_WAVE)
-	if (!bootloaderfb && pdata->reset_lcd)
-		pdata->reset_lcd(pdev);
-#endif
-*/
 #endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
