@@ -1,4 +1,5 @@
 #!/stage1/busybox sh
+echo "OHAI, stage1 init starting" > /dev/kmsg
 export _PATH="$PATH"
 export PATH=/stage1
 
@@ -127,6 +128,8 @@ busybox zcat $image | busybox cpio -i
 busybox umount /sys
 busybox umount /proc
 busybox date >>boot.txt
+echo "stage1 log:" > /dev/kmsg
+busybox cat boot.txt > /dev/kmsg
 busybox rm -fr /stage1 /dev/*
 export PATH="${_PATH}"
 exec /init
