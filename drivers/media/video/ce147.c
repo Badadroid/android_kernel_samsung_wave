@@ -2091,7 +2091,7 @@ static int ce147_set_capture_exif(struct v4l2_subdev *sd)
 
 	unsigned char ce147_gps_processing[130] = { 0x00, };
 	unsigned int ce147_reglen_gps_processing = 130;
-#if !defined(CONFIG_SAMSUNG_CAPTIVATE)
+#if defined(CONFIG_SAMSUNG_CAPTIVATE)
 	unsigned char ce147_str_model[9] = "SGH-I897\0";
 #elif defined(CONFIG_SAMSUNG_GALAXYS)
 	unsigned char ce147_str_model[9] = "GT-I9000\0";
