@@ -171,6 +171,8 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
 
 const unsigned short LG4573_SEQ_SETTING_TYPE_0[] = {
 // 20111230
+	0x01,	 // sw reset
+	SLEEPMSEC, 120,
 	0xC1,	 // Stand-by off
 	0x100,
 
@@ -311,11 +313,11 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_0[] = {
 	0x116,
 	0x103,
             	
-//	SLEEPMSEC, 100,
+	SLEEPMSEC, 100,
 
-//	0x029, //Disp ON
-
-       	ENDDEF, 0x0000 
+	0x029, //Disp ON
+	
+	ENDDEF, 0x0000 
 };
 
 
@@ -332,7 +334,7 @@ const unsigned short LG4573_SEQ_SLEEP_ON[] = {
 	SLEEPMSEC, 200,
 	0x28, 
 	SLEEPMSEC, 200,
-        ENDDEF, 0x0000
+	ENDDEF, 0x0000
 };
 
 int get_lcdtype(void)

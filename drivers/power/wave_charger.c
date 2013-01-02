@@ -966,6 +966,6 @@ static void __exit max8998_charger_exit(void)
 late_initcall(max8998_charger_init);
 module_exit(max8998_charger_exit);
 
-MODULE_AUTHOR("Minsung Kim <ms925.kim@samsung.com>");
+MODULE_AUTHOR("Dominik Marszk <dmarszk@samsung.com>");
 MODULE_DESCRIPTION("Wave MAX8998 charger driver");
 MODULE_LICENSE("GPL");

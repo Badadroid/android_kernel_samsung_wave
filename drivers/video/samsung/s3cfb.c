@@ -1108,7 +1108,8 @@ static int __init s3cfb_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_irq;
 	}
-
+	//if (!bootloaderfb && pdata->reset_lcd)
+	//	pdata->reset_lcd(pdev);	
 #ifdef CONFIG_FB_S3C_LCD_INIT
 	printk("CONFIG_FB_S3C_LCD_INIT enabled\n");
 	if (!bootloaderfb && pdata->reset_lcd)

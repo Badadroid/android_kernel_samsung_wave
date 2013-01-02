@@ -934,16 +934,18 @@ static void panel_cfg_gpio(struct platform_device *pdev)
 #endif
 
 	if(machine_is_wave2()) {
-		/* S8530 LCD Backlight */
-		s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, GPIO_LCD_BL_PWM_AF);
-		s3c_gpio_setpull(GPIO_LCD_BL_PWM, S3C_GPIO_PULL_NONE);
+		/* S8530 LCD Backlight is set by LG4573 driver*/
 
 		/* S8530 LCD_ID pins */
 		s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
 		s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
 
 		s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
-		s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
+		s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);		
+		
+		s3c_gpio_cfgpin(GPIO_MLCD_RST, S3C_GPIO_OUTPUT);
+		s3c_gpio_set_drvstrength(GPIO_MLCD_RST, S3C_GPIO_DRVSTR_2X);
+		/* do not set RST value yet, panel_reset will deal with it */
 	} else {
 		s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_NONE);
 		s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_NONE);
@@ -975,6 +977,7 @@ void lcd_cfg_gpio_early_suspend(void)
 		gpio_set_value(S5PV210_GPF3(i), 0);
 	}
 
+	/* don't set S8530 panel in RST state */
 	gpio_set_value(GPIO_MLCD_RST, 0);
 
 	gpio_set_value(GPIO_DISPLAY_CS, 0);
@@ -1012,13 +1015,13 @@ static int panel_reset_lcd(struct platform_device *pdev)
 	}
 
 	gpio_direction_output(GPIO_MLCD_RST, 1);
-	msleep(10);
+	msleep(25);
 
 	gpio_set_value(GPIO_MLCD_RST, 0);
 	msleep(10);
 
 	gpio_set_value(GPIO_MLCD_RST, 1);
-	msleep(10);
+	msleep(150);
 
 	gpio_free(GPIO_MLCD_RST);
 
@@ -1041,8 +1044,6 @@ static struct s3c_platform_fb lg4573_data __initdata = {
 	.cfg_gpio	= panel_cfg_gpio,
 	.reset_lcd	= panel_reset_lcd,
 };
-
-
 
 //for S8530 - LG4573
 static struct spi_board_info lg4573_spi_board_info[] __initdata = {

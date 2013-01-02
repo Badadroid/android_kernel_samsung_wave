@@ -17,6 +17,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/wait.h>
@@ -38,13 +39,7 @@
 extern void init_mdnie_class(void);
 #endif
 
-
-
-// Brightness Level 
-#define DIM_BL	20
-#define MIN_BL	30
 #define MAX_BL	255
-
 
 /*********** for debug **********************************************************/
 #if 1
@@ -53,19 +48,6 @@ extern void init_mdnie_class(void);
 #define gprintk(x...) do { } while (0)
 #endif
 /*******************************************************************************/
-
-//#define LCD_TUNNING_VALUE 1
-
-#if defined (LCD_TUNNING_VALUE)
-#define MAX_BRIGHTNESS_LEVEL 255 /* values received from platform */
-#define LOW_BRIGHTNESS_LEVEL 30
-#define DIM_BACKLIGHT_LEVEL 20	
-#define MAX_BACKLIGHT_VALUE 159  /* values kernel tries to set. */
-#define LOW_BACKLIGHT_VALUE 7
-#define DIM_BACKLIGHT_VALUE 7	
-
-static int s5p_bl_convert_to_tuned_value(int intensity);
-#endif
 
 int bl_freq_count = 100000;
 
@@ -135,7 +117,8 @@ static void lg4573_panel_send_sequence(struct s5p_lcd *lcd, const u16 *wbuf)
 				addr = 0x76;                    //WRITE DATA
 			//	printk("RGB_Data(0x%X)\n", (u8)wbuf[i]);
 			}
-			lg4573_spi_write_byte(lcd, addr, (u8)wbuf[i]);
+			if(!(addr == 0x74 && (u8)wbuf[i] == 0))
+				lg4573_spi_write_byte(lcd, addr, (u8)wbuf[i]);
 			i += 1;
 		}
 		else 
@@ -174,29 +157,9 @@ static ssize_t update_brightness_cmd_store(struct device *dev, struct device_att
 }
 static DEVICE_ATTR(update_brightness_cmd, 0664, update_brightness_cmd_show, update_brightness_cmd_store);
 
-#if defined (LCD_TUNNING_VALUE)
-static int s5p_bl_convert_to_tuned_value(int intensity)
-{
-	int tune_value;
-
-	if(intensity >= LOW_BRIGHTNESS_LEVEL)
-		tune_value = (intensity - LOW_BRIGHTNESS_LEVEL) * (MAX_BACKLIGHT_VALUE-LOW_BACKLIGHT_VALUE) / (MAX_BRIGHTNESS_LEVEL-LOW_BRIGHTNESS_LEVEL) + LOW_BACKLIGHT_VALUE;
-	else if(intensity >= DIM_BACKLIGHT_LEVEL)
-		tune_value = (intensity - DIM_BACKLIGHT_LEVEL) * (LOW_BACKLIGHT_VALUE-DIM_BACKLIGHT_VALUE) / (LOW_BRIGHTNESS_LEVEL-DIM_BACKLIGHT_LEVEL) + DIM_BACKLIGHT_VALUE;
-	else if(intensity > 0)
-		tune_value = (intensity) * (DIM_BACKLIGHT_VALUE) / (DIM_BACKLIGHT_LEVEL);
-	else
-		tune_value = intensity;
-	return tune_value;
-}
-#endif
-
 static void update_brightness(struct s5p_lcd *lcd)
 {
 	int brightness = lcd->bl;
-#if defined (LCD_TUNNING_VALUE)
-	int tuned_brightness;
-#endif
 	if(!lcd->ldi_enabled)
 		brightness = 0;
 
@@ -208,22 +171,15 @@ static void update_brightness(struct s5p_lcd *lcd)
 	}
 	s3c_gpio_cfgpin(GPIO_LCD_BL_PWM, 0x2); //PWM output
 	
-#if defined (LCD_TUNNING_VALUE)
-	tuned_brightness = s5p_bl_convert_to_tuned_value(brightness);
-	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * tuned_brightness)/MAX_BL, bl_freq_count);
-	pwm_enable(lcd->backlight_pwm_dev);
-#else
 	pwm_config(lcd->backlight_pwm_dev, (bl_freq_count * brightness)/MAX_BL, bl_freq_count);
 	pwm_enable(lcd->backlight_pwm_dev);
-	/* gprintk("## brightness = [%ld], (bl_freq_count * brightness)/255 =[%ld], ret_val_pwm_config=[%ld] \n", brightness, (bl_freq_count * brightness)/255, ret_val_pwm_config ); */
-#endif
 }
 
 
 static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 {
 	struct s5p_lg4573_panel_data *pdata = lcd->data;
-
+	dev_dbg(lcd->ldi_dev, "%s\n", __func__);
 	mutex_lock(&lcd->lock);
 	if(lcd->ldi_enabled)
 	{
@@ -233,10 +189,10 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 	switch (lcd->lcd_type) 
 	{
 		case 1:
-			printk(KERN_ERR "%s Unsupported LCD type 1!\n", __func__);
+			printk(KERN_ERR "%s: Unsupported LCD type 1!\n", __func__);
 			break;
 		case 2:
-			printk(KERN_ERR "%s Unsupported LCD type 2!\n", __func__);
+			printk(KERN_ERR "%s: Unsupported LCD type 2!\n", __func__);
 			break;
 		case 3:
 			lg4573_panel_send_sequence(lcd, pdata->seq_settings_type3);
@@ -247,7 +203,7 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 			break;
 	}
 
-	lg4573_panel_send_sequence(lcd, pdata->seq_standby_off);
+	//lg4573_panel_send_sequence(lcd, pdata->seq_standby_off);
 
 	lcd->ldi_enabled = 1;	
 	/* Will bring back up previous backlight state with ldi_enabled == 1 */
@@ -260,6 +216,7 @@ static void lg4573_ldi_disable(struct s5p_lcd *lcd)
 {
 	struct s5p_lg4573_panel_data *pdata = lcd->data;
 
+	dev_dbg(lcd->ldi_dev, "%s\n", __func__);
 	mutex_lock(&lcd->lock);
 	if(!lcd->ldi_enabled)
 	{
@@ -303,7 +260,7 @@ static int s5p_bl_update_status(struct backlight_device *bd)
 	int bl = bd->props.brightness;
 
 
-	if (bl < 0 || bl > 255)
+	if (bl < 0 || bl > MAX_BL)
 		return -EINVAL;
 
 	mutex_lock(&lcd->lock);
@@ -417,7 +374,7 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 		goto err_setup;
 	}
 
-	lcd->bl_dev->props.max_brightness = 255;
+	lcd->bl_dev->props.max_brightness = MAX_BL;
 
 	lcd->lcd_dev = lcd_device_register("s5p_lcd", &spi->dev, lcd, &s5p_lcd_ops);
 	if (!lcd->lcd_dev) 
