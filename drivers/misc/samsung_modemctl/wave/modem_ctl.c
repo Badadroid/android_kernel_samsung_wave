@@ -596,7 +596,7 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 	modem_io_init(mc, mc->mmio);
 
 	r = request_irq(mc->irq_bp, modemctl_cp_reset_handler,
-			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+			IRQF_TRIGGER_FALLING,
 			"modemctl_cp_reset", mc);
 	if (r)
 		goto err_ioremap;
