@@ -416,9 +416,29 @@ static const struct file_operations modemctl_fops = {
 	.unlocked_ioctl =	modemctl_ioctl,
 };
 
-static irqreturn_t modemctl_bp_irq_handler(int irq, void *_mc)
+int phone_active_irq_count = 0;
+
+static irqreturn_t modemctl_cp_reset_handler(int irq, void *_mc)
 {
-	pr_info("[MODEM] bp_irq() - PHONE_ACTIVE interrupt\n");
+	char filename[17];
+	struct modemctl *mc = _mc;
+	phone_active_irq_count++;
+	pr_info("[MODEM] bp_irq() - PHONE_ACTIVE interrupt, %d occurence\n", phone_active_irq_count);
+	if(phone_active_irq_count > 1)
+	{
+		pr_err("[MODEM] more than one PHONE_ACTIVE interrupt occured, abnormal CP reset, dumping some info");
+		if (mmio_sem(mc) != 1) {
+			pr_err("[MODEM] cannot obtain semaphore\n");
+			return IRQ_HANDLED;
+		}
+		filename[16] = 0x00;
+		memcpy(filename, mc->mmio + OFF_CP_CRASH_INFO + 8, 16);
+		pr_err("[MODEM] state: 0x%08X file: %s line: %d\n", 
+		*(u32*)(mc->mmio + OFF_CP_CRASH_INFO), 
+		filename,
+		*(u32*)(mc->mmio + OFF_CP_CRASH_INFO+4));
+		
+	}
 	return IRQ_HANDLED;
 }
 
@@ -575,9 +595,9 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 
 	modem_io_init(mc, mc->mmio);
 
-	r = request_irq(mc->irq_bp, modemctl_bp_irq_handler,
+	r = request_irq(mc->irq_bp, modemctl_cp_reset_handler,
 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-			"modemctl_bp", mc);
+			"modemctl_cp_reset", mc);
 	if (r)
 		goto err_ioremap;
 

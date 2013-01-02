@@ -223,6 +223,8 @@ void modem_force_crash(struct modemctl *mc);
 #define OFF_PACKET_TX_TAIL		0x00800024
 #define OFF_PACKET_TX_DATA		0x00800030
 
+#define OFF_CP_CRASH_INFO		0x00E00150
+
 
 #define SIZ_PACKET_DATA			0x00200000
 
