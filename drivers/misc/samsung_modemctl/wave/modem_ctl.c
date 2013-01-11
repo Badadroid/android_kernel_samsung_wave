@@ -451,7 +451,7 @@ static irqreturn_t modemctl_mbox_irq_handler(int irq, void *_mc)
 	spin_lock_irqsave(&mc->lock, flags);
 	cmd = readl(mc->mmio + OFF_MBOX_BP);
 
-	pr_info("%s: MBOX_BP: 0x%08X\n", __func__, cmd);
+	pr_debug("%s: MBOX_BP: 0x%08X\n", __func__, cmd);
 	
 	if (unlikely(mc->status != MODEM_RUNNING) && unlikely(cmd == MODEM_MSG_BINARY_DONE)) {
 		pr_info("[MODEM] received MODEM_MSG_BINARY_DONE\n");
