@@ -53,6 +53,10 @@
 #ifdef CONFIG_SAMSUNG_FASCINATE
 extern const unsigned long touch_int_flt_width;
 void touch_key_set_int_flt(unsigned long width);
+int error_cnt = 0;
+u8 prev_data = 0x7;
+unsigned long first_error_time;
+unsigned long last_error_time;
 #endif
 
 int bl_on = 0;
@@ -247,10 +251,60 @@ static irqreturn_t touchkey_interrupt_thread(int irq, void *touchkey_devdata)
 	if (devdata->has_legacy_keycode) {
 		scancode = (data & SCANCODE_MASK) - 1;
 		if (scancode < 0 || scancode >= devdata->pdata->keycode_cnt) {
-			dev_err(&devdata->client->dev, "%s: scancode is out of "
-				"range\n", __func__);
+			dev_err(&devdata->client->dev, "%s: scancode %d is out of "
+				"range\n", __func__, scancode);
 			goto err;
 		}
+
+#ifdef CONFIG_SAMSUNG_FASCINATE
+		switch (data) {
+		// On key down event continue if preceded by a key up event.
+		case 0x1:
+		case 0x2:
+		case 0x3:
+		case 0x4:
+			// The previous key event was key up and was successful,
+			// we'll assume this is a legitimate key event.
+			if (prev_data >= 0x9) {
+				goto process;
+			}
+			// If we're getting multiple rapid errors...
+			// bail if within 100ms of the last error or
+			// if within 500ms of the first error
+			if (error_cnt > 1) {
+				if ((time_before(jiffies, last_error_time + msecs_to_jiffies(100))) ||
+					(time_before(jiffies, first_error_time + msecs_to_jiffies(500)))) {
+					//dev_err(&devdata->client->dev,"%s : multiple rapid errors, bailing... "
+					//	"error_cnt = %d ####\n", __func__, error_cnt);
+					goto err;
+				}
+			}
+			break;
+		// On key up event only continue if preceded by a key down event
+		// from the same key.
+		case 0x9:
+		case 0xa:
+		case 0xb:
+		case 0xc:
+			if (prev_data <= 0x4 && (data - prev_data == 0x8)) {
+				// This should _definitely_ be a valid keypress
+				goto process;
+			} else {
+				//dev_err(&devdata->client->dev,"%s : bogus up key event, "
+				//	"data = 0x%x, prev_data = 0x%x ####\n", __func__, data, prev_data);
+				goto err;
+			}
+		default:
+			// wtf? this _can't_ be a valid keypress
+			//dev_err(&devdata->client->dev, "%s: data is out of "
+			//	"range : 0x%x ####\n", __func__, data);
+			goto err;
+		}
+
+process:
+		error_cnt = 0;
+		prev_data = data;
+#endif
 
 		/* Don't send down event while the touch screen is being pressed
 		 * to prevent accidental touch key hit.
@@ -269,7 +323,16 @@ static irqreturn_t touchkey_interrupt_thread(int irq, void *touchkey_devdata)
 
 	input_sync(devdata->input_dev);
 	bl_set_timeout();
+
+	return IRQ_HANDLED;
 err:
+#ifdef CONFIG_SAMSUNG_FASCINATE
+	error_cnt++;
+	if (error_cnt == 1) first_error_time = jiffies;
+	last_error_time = jiffies;
+	prev_data = 0x7; // invalid
+	all_keys_up(devdata);
+#endif
 	return IRQ_HANDLED;
 }
 
