@@ -2063,8 +2063,8 @@ static u8 t9_s8500_config[] = {TOUCH_MULTITOUCHSCREEN_T9, // for Wave1
 10, //amphyst
 0, 0, //xrange, yrange
 0, 0, 0, 0, 0, 0,
-143, 40, //xedgectrl, dist
-143, 80, //yedgectrl, dist
+143, 80, //xedgectrl, dist
+143, 120, //yedgectrl, dist
 18//jumplimit
 };
 
