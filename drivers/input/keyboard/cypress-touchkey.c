@@ -331,7 +331,6 @@ err:
 	if (error_cnt == 1) first_error_time = jiffies;
 	last_error_time = jiffies;
 	prev_data = 0x7; // invalid
-	all_keys_up(devdata);
 #endif
 	return IRQ_HANDLED;
 }
