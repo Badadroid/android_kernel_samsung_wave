@@ -84,7 +84,7 @@ struct binder_version {
 /* This is the current protocol version. */
 #define BINDER_CURRENT_PROTOCOL_VERSION 7
 
-#define BINDER_WRITE_READ   		_IOWR('b', 1, struct binder_write_read)
+#define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
 #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, int64_t)
 #define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
 #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, int)
@@ -163,7 +163,7 @@ struct binder_pri_ptr_cookie {
 	void *cookie;
 };
 
-enum BinderDriverReturnProtocol {
+enum binder_driver_return_protocol {
 	BR_ERROR = _IOR('r', 0, int),
 	/*
 	 * int: error code
@@ -251,7 +251,7 @@ enum BinderDriverReturnProtocol {
 	 */
 };
 
-enum BinderDriverCommandProtocol {
+enum binder_driver_command_protocol {
 	BC_TRANSACTION = _IOW('c', 0, struct binder_transaction_data),
 	BC_REPLY = _IOW('c', 1, struct binder_transaction_data),
 	/*
