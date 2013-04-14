@@ -21,7 +21,7 @@
 #include <linux/delay.h>
 
 const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
-// 20111230
+	SLEEPMSEC, 120,
 	0xC1,	 // Stand-by off
 	0x100,
 
@@ -161,10 +161,10 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
 	0x166,	//0x161,
 	0x131,	//0x116,
 	0x103,	//0x103,
-	
-//	SLEEPMSEC, 100,
+            	
+	SLEEPMSEC, 100,
 
-//	0x029, //Disp ON
+	0x29, //Disp ON
 
        	ENDDEF, 0x0000 
 };
