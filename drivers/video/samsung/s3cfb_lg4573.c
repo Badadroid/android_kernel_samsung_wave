@@ -17,7 +17,6 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/wait.h>
@@ -41,19 +40,9 @@ extern void init_mdnie_class(void);
 
 #define MAX_BL	255
 
-/*********** for debug **********************************************************/
-#if 1
-#define gprintk(fmt, x... ) printk( "%s(%d): " fmt, __FUNCTION__ ,__LINE__, ## x)
-#else
-#define gprintk(x...) do { } while (0)
-#endif
-/*******************************************************************************/
-
 int bl_freq_count = 100000;
 
-
 extern int get_lcdtype(void);
-
 
 struct s5p_lcd {
 	int ldi_enabled;
@@ -76,7 +65,7 @@ static void update_brightness(struct s5p_lcd *lcd);
 
 static int lg4573_spi_write_byte(struct s5p_lcd *lcd, u8 addr, u8 data)
 {
-	u16 buf;
+	u8 buf[2];
 	int ret;
 	struct spi_message msg;
 
@@ -85,8 +74,9 @@ static int lg4573_spi_write_byte(struct s5p_lcd *lcd, u8 addr, u8 data)
 		.tx_buf	= &buf,
 	};
 
-	buf = (addr << 8) | data;
-
+	buf[0] = addr;
+	buf[1] = data;
+	
 	spi_message_init(&msg);
 	spi_message_add_tail(&xfer, &msg);
 
@@ -133,7 +123,7 @@ static ssize_t update_brightness_cmd_show(struct device *dev, struct device_attr
 {
 	struct s5p_lcd *lcd = dev_get_drvdata(dev);
 
-	gprintk("called %s\n", __func__);
+	dev_dbg(dev, "called %s\n", __func__);
 	return sprintf(buf, "%u\n", lcd->bl);
 }
 
@@ -186,6 +176,7 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 		printk("%s already enabled!\n", __func__);
 		goto finito;
 	}
+
 	switch (lcd->lcd_type) 
 	{
 		case 1:
@@ -419,7 +410,7 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 	lcd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;
 	register_early_suspend(&lcd->early_suspend);
 #endif
-	gprintk("%s successfully probed\n", __func__);
+	dev_dbg(lcd->ldi_dev, "%s successfully probed\n", __func__);
 
 	return 0;
 

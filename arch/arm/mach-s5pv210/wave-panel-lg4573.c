@@ -170,8 +170,6 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
 };
 
 const unsigned short LG4573_SEQ_SETTING_TYPE_0[] = {
-// 20111230
-	0x01,	 // sw reset
 	SLEEPMSEC, 120,
 	0xC1,	 // Stand-by off
 	0x100,
@@ -315,7 +313,7 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_0[] = {
             	
 	SLEEPMSEC, 100,
 
-	0x029, //Disp ON
+	0x29, //Disp ON
 	
 	ENDDEF, 0x0000 
 };
