@@ -981,7 +981,6 @@ void lcd_cfg_gpio_early_suspend(void)
 		gpio_set_value(S5PV210_GPF3(i), 0);
 	}
 
-	/* don't set S8530 panel in RST state */
 	gpio_set_value(GPIO_MLCD_RST, 0);
 
 	gpio_set_value(GPIO_DISPLAY_CS, 0);
@@ -1010,7 +1009,7 @@ EXPORT_SYMBOL(lcd_cfg_gpio_late_resume);
 static int panel_reset_lcd(struct platform_device *pdev)
 {
 	int err;
-
+	printk(KERN_ERR "panel_reset_lcd\n");
 	err = gpio_request(GPIO_MLCD_RST, "MLCD_RST");
 	if (err) {
 		printk(KERN_ERR "failed to request GPIO_MLCD_RST for "
@@ -1093,7 +1092,7 @@ static struct spi_board_info tl2796_spi_board_info[] __initdata = {
 static struct spi_gpio_platform_data wave_display_spi_gpio_data = {
 	.sck	= GPIO_DISPLAY_CLK,
 	.mosi	= GPIO_DISPLAY_SI,
-	.miso	= -1,
+	.miso	= SPI_GPIO_NO_MISO,
 	.num_chipselect = 2,
 };
 
@@ -1271,22 +1270,9 @@ static bool wm8994_mic_bias;
 static bool jack_mic_bias;
 static void set_shared_mic_bias(void)
 {
-#if defined(CONFIG_SAMSUNG_CAPTIVATE)
-	gpio_set_value(GPIO_MICBIAS_EN, wm8994_mic_bias);
-    gpio_set_value(GPIO_EARPATH_SEL, jack_mic_bias);
-	gpio_set_value(GPIO_EAR_MICBIAS_EN, jack_mic_bias);
-#elif defined(CONFIG_SAMSUNG_VIBRANT)
-    if((HWREV == 0x0A) || (HWREV == 0x0C) || (HWREV == 0x0D) || (HWREV == 0x0E) ) //0x0A:00, 0x0C:00, 0x0D:01, 0x0E:05
-        gpio_set_value(GPIO_MICBIAS_EN, wm8994_mic_bias || jack_mic_bias);
-    else {
-        gpio_set_value(GPIO_MICBIAS_EN2, jack_mic_bias);
-        gpio_set_value(GPIO_MICBIAS_EN, wm8994_mic_bias);
-    }
-    gpio_set_value(GPIO_EARPATH_SEL, jack_mic_bias);
-#else
 	gpio_set_value(GPIO_MICBIAS_EN, wm8994_mic_bias || jack_mic_bias);
     gpio_set_value(GPIO_EARPATH_SEL, wm8994_mic_bias || jack_mic_bias);
-#endif
+	gpio_direction_output(GPIO_PCM_SEL, wm8994_mic_bias || jack_mic_bias);
 }
 
 static void wm8994_set_mic_bias(bool on)
@@ -3624,10 +3610,10 @@ static struct gpio_init_data wave_init_gpios[] = {
 		.drv	= S3C_GPIO_DRVSTR_1X,
 	}, {
 		.num	= S5PV210_MP03(7), // GPIO_PCM_SEL
-		.cfg	= S3C_GPIO_INPUT,
-		.val	= S3C_GPIO_SETPIN_NONE,
-		.pud	= S3C_GPIO_PULL_DOWN,
-		.drv	= S3C_GPIO_DRVSTR_1X,
+		.cfg	= S3C_GPIO_OUTPUT,
+		.val	= S3C_GPIO_SETPIN_ZERO,
+		.pud	= S3C_GPIO_PULL_NONE,
+		.drv	= S3C_GPIO_DRVSTR_2X,
 	},
 
 	// MP04 ----------------------------
@@ -4117,7 +4103,7 @@ static unsigned int wave_sleep_gpio_table[][3] = {
 	{ S5PV210_MP03(4), S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_NONE},
 	{ S5PV210_MP03(5), S3C_GPIO_SLP_OUT1,	S3C_GPIO_PULL_NONE},
 	{ S5PV210_MP03(6), S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
-	{ S5PV210_MP03(7), S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
+	{ S5PV210_MP03(7), S3C_GPIO_SLP_OUT1,	S3C_GPIO_PULL_NONE},	//PCM_SEL
 
 	// MP04 ---------------------------------------------------
 	{ S5PV210_MP04(0), S3C_GPIO_SLP_INPUT,	S3C_GPIO_PULL_DOWN},
