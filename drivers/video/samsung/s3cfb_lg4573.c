@@ -63,19 +63,15 @@ struct s5p_lcd {
 
 static void update_brightness(struct s5p_lcd *lcd);
 
-static int lg4573_spi_write_byte(struct s5p_lcd *lcd, u8 addr, u8 data)
+static int lg4573_spi_write_data(struct s5p_lcd *lcd, u16 data)
 {
-	u8 buf[2];
 	int ret;
 	struct spi_message msg;
 
 	struct spi_transfer xfer = {
 		.len	= 2,
-		.tx_buf	= &buf,
+		.tx_buf	= &data,
 	};
-
-	buf[0] = addr;
-	buf[1] = data;
 	
 	spi_message_init(&msg);
 	spi_message_add_tail(&xfer, &msg);
@@ -96,19 +92,22 @@ static void lg4573_panel_send_sequence(struct s5p_lcd *lcd, const u16 *wbuf)
 	while ((wbuf[i] & DEFMASK) != ENDDEF)
 		if ((wbuf[i] & DEFMASK) != SLEEPMSEC) 
 		{
-			if ((wbuf[i] & DEFMASK) != DATAMASK)
+			if (lcd->lcd_type == 0 || lcd->lcd_type == 3)
 			{
-				addr = 0x74;			//WRITE INDEX REGISTER
-			//	printk("RGB_Index(0x%X)\n", (u8)wbuf[i]);
-				
+				if ((wbuf[i] & DEFMASK) != DATAMASK)
+				{
+					addr = 0x74;
+				}
+				else
+				{
+					addr = 0x76;
+				}
+				if(wbuf[i] != 0)
+					lg4573_spi_write_data(lcd, addr | ((wbuf[i] & 0xFF) << 8));
 			}
-			else
-			{
-				addr = 0x76;                    //WRITE DATA
-			//	printk("RGB_Data(0x%X)\n", (u8)wbuf[i]);
+			else {
+				lg4573_spi_write_data(lcd, wbuf[i]);
 			}
-			if(!(addr == 0x74 && (u8)wbuf[i] == 0))
-				lg4573_spi_write_byte(lcd, addr, (u8)wbuf[i]);
 			i += 1;
 		}
 		else 
@@ -183,7 +182,7 @@ static void lg4573_ldi_enable(struct s5p_lcd *lcd)
 			printk(KERN_ERR "%s: Unsupported LCD type 1!\n", __func__);
 			break;
 		case 2:
-			printk(KERN_ERR "%s: Unsupported LCD type 2!\n", __func__);
+			lg4573_panel_send_sequence(lcd, pdata->seq_settings_type2);
 			break;
 		case 3:
 			lg4573_panel_send_sequence(lcd, pdata->seq_settings_type3);
@@ -310,13 +309,6 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 	}
 	mutex_init(&lcd->lock);
 
-	spi->bits_per_word = 8;
-	if (spi_setup(spi)) {
-		pr_err("failed to setup spi\n");
-		ret = -EINVAL;
-		goto err_setup;
-	}
-
 	lcd->g_spi = spi;
 	lcd->dev = &spi->dev;
 	lcd->bl = 128; //half of max brightness
@@ -341,6 +333,24 @@ static int __devinit lg4573_probe(struct spi_device *spi)
 	lcd->lcd_type = lcd->data->get_lcdtype();
 
     dev_info(lcd->dev, "LCDTYPE=%d\n", lcd->lcd_type);
+	switch(lcd->lcd_type)
+	{
+		case 1:
+		case 2:
+			spi->bits_per_word = 9;
+			break;
+		case 0:
+		case 3:
+		default:
+			spi->bits_per_word = 8;
+			break;
+	}
+
+	if (spi_setup(spi)) {
+		pr_err("failed to setup spi\n");
+		ret = -EINVAL;
+		goto err_setup;
+	}
 	
 	ret = gpio_request(GPIO_LCD_BL_PWM, "lcd_bl_pwm");
 	if (ret < 0) {
