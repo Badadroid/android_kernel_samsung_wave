@@ -250,6 +250,7 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_manulupdate(pwm);
 	tcon |= pwm_tcon_autoreload(pwm);
+	tcon |= pwm_tcon_invert(pwm);
 	__raw_writel(tcon, S3C2410_TCON);
 
 	tcon &= ~pwm_tcon_manulupdate(pwm);
@@ -318,14 +319,6 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 		goto err_clk_tin;
 	}
 
-	spin_lock_irqsave(&pwm_spin_lock, flags);
-
-	tcon = __raw_readl(S3C2410_TCON);
-	tcon |= pwm_tcon_invert(pwm);
-	__raw_writel(tcon, S3C2410_TCON);
-
-	spin_unlock_irqrestore(&pwm_spin_lock, flags);
-
 	ret = pwm_register(pwm);
 	if (ret) {
 		dev_err(dev, "failed to register pwm\n");
@@ -382,14 +375,6 @@ static int s3c_pwm_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int s3c_pwm_resume(struct platform_device *pdev)
 {
-	struct pwm_device *pwm = platform_get_drvdata(pdev);
-	unsigned long tcon;
-
-	/* Restore invertion */
-	tcon = __raw_readl(S3C2410_TCON);
-	tcon |= pwm_tcon_invert(pwm);
-	__raw_writel(tcon, S3C2410_TCON);
-
 	return 0;
 }
 
