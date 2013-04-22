@@ -317,15 +317,13 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 		ret = PTR_ERR(pwm->clk_div);
 		goto err_clk_tin;
 	}
-	clk_enable(pwm->clk);
-	clk_enable(pwm->clk_div);
-	
+
 	spin_lock_irqsave(&pwm_spin_lock, flags);
-	
-	tcon = __raw_readl(S3C2410_TCON);	
+
+	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_invert(pwm);
 	__raw_writel(tcon, S3C2410_TCON);
-		
+
 	spin_unlock_irqrestore(&pwm_spin_lock, flags);
 
 	ret = pwm_register(pwm);
@@ -334,12 +332,9 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 		goto err_clk_tdiv;
 	}
 
-	pwm_dbg(pwm, "config bits - 0x%02x\n",
+	pwm_dbg(pwm, "config bits %02x\n",
 		(__raw_readl(S3C2410_TCON) >> pwm->tcon_base) & 0x0f);
-		
-	clk_disable(pwm->clk);
-	clk_disable(pwm->clk_div);
-	
+
 	dev_info(dev, "tin at %lu, tdiv at %lu, tin=%sclk, base %d\n",
 		 clk_get_rate(pwm->clk),
 		 clk_get_rate(pwm->clk_div),
