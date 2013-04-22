@@ -591,27 +591,30 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
 
 const unsigned short LG4573_SEQ_SLEEP_OFF[] = {
 	0x11, 
-	SLEEPMSEC, 200,
+	SLEEPMSEC, 120,
 	0x29,
-	SLEEPMSEC, 200,
+	SLEEPMSEC, 100,
 	ENDDEF, 0x0000
 };
 
 const unsigned short LG4573_SEQ_SLEEP_ON[] = {
 	0x10,            
-	SLEEPMSEC, 200,
+	SLEEPMSEC, 120,
 	0x28, 
-	SLEEPMSEC, 200,
+	SLEEPMSEC, 100,
 	ENDDEF, 0x0000
 };
 
 int get_lcdtype(void)
-{
-	int panel_id;
-
-	panel_id = (gpio_get_value(GPIO_DIC_ID) << 1) | gpio_get_value(GPIO_OLED_ID);
-
-	return panel_id;
+{	
+	extern unsigned int HWREV;
+	s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
+	s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
+	if(HWREV == 0x5)
+		return (gpio_get_value(GPIO_DIC_ID) ? 3 : 0);
+	if(HWREV == 0x6)
+		return (gpio_get_value(GPIO_DIC_ID) << 1) | gpio_get_value(GPIO_OLED_ID);
+	return 0;
 }
 
 struct s5p_lg4573_panel_data wave_lg4573_panel_data = {

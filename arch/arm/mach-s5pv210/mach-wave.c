@@ -940,12 +940,7 @@ static void panel_cfg_gpio(struct platform_device *pdev)
 	if(machine_is_wave2()) {
 		/* S8530 LCD Backlight is set by LG4573 driver*/
 
-		/* S8530 LCD_ID pins */
-		s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
-		s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
-
-		s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
-		s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);		
+		/* S8530 LCD_ID pins */	
 		
 		s3c_gpio_cfgpin(GPIO_MLCD_RST, S3C_GPIO_OUTPUT);
 		s3c_gpio_set_drvstrength(GPIO_MLCD_RST, S3C_GPIO_DRVSTR_2X);
@@ -986,13 +981,7 @@ void lcd_cfg_gpio_early_suspend(void)
 	gpio_set_value(GPIO_DISPLAY_CS, 0);
 	gpio_set_value(GPIO_DISPLAY_CLK, 0);
 	gpio_set_value(GPIO_DISPLAY_SI, 0);
-	if(machine_is_wave2()) {
-		s3c_gpio_cfgpin(GPIO_OLED_ID, S3C_GPIO_INPUT);
-		s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
-
-		s3c_gpio_cfgpin(GPIO_DIC_ID, S3C_GPIO_INPUT);
-		s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
-	} else {
+	if(machine_is_wave()){
 		s3c_gpio_setpull(GPIO_OLED_DET, S3C_GPIO_PULL_DOWN);
 		s3c_gpio_setpull(GPIO_OLED_ID, S3C_GPIO_PULL_DOWN);
 		s3c_gpio_setpull(GPIO_DIC_ID, S3C_GPIO_PULL_DOWN);
