@@ -28,7 +28,7 @@ dir /stage1 755 0 0
 dir /system 755 0 0
 dir /cache 755 0 0
 dir /sdcard 755 0 0
-file /stage1/busybox source/usr/p1_initramfs_files/busybox 755 0 0
+file /stage1/busybox ../../utilities/busybox 755 0 0
 file /stage1/init source/usr/p1_initramfs_files/init 755 0 0
 file /stage1/make_ext4fs ../../utilities/make_ext4fs 755 0 0
 file /stage1/boot.cpio ../../ramdisk.cpio 644 0 0
