@@ -86,7 +86,11 @@ static VibeInt8 g_nForceLog[FORCE_LOG_BUFFER_SIZE];
 #endif
 
 /* Needs to be included after the global variables because it uses them */
+#ifdef CONFIG_HIGH_RES_TIMERS
+#include "VibeOSKernelLinuxHRTime.c"
+#else
 #include "VibeOSKernelLinuxTime.c"
+#endif
 
 /* timed_output */
 #if defined(CONFIG_PHONE_P1_GSM)
