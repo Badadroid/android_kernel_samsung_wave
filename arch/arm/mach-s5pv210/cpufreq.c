@@ -670,7 +670,7 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
 
 	cpufreq_frequency_table_get_attr(s5pv210_freq_table, policy->cpu);
 
-#if CONFIG_MACH_ARIES
+#ifdef CONFIG_MACH_ARIES
 	policy->cpuinfo.transition_latency = 40000;
 #else // CONFIG_MACH_P1
 	policy->cpuinfo.transition_latency = 100000; /* 1us */
