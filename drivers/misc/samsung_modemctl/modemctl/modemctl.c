@@ -80,7 +80,7 @@ struct modemctl {
 #ifdef CONFIG_HAS_WAKELOCK
 	struct wake_lock mc_wlock;
 	long	 waketime;
-#endif
+#endif	
 
 	struct modemctl_ops *ops;
 
@@ -176,8 +176,8 @@ static struct attribute *modemctl_attributes[] = {
 	&dev_attr_control.attr,
 	&dev_attr_status.attr,
 	&dev_attr_debug.attr,
-	&dev_attr_sim.attr,
-	&dev_attr_phoneactive.attr,
+	&dev_attr_sim.attr,	
+	&dev_attr_phoneactive.attr,	
 	NULL
 };
 
@@ -187,9 +187,7 @@ static const struct attribute_group modemctl_group = {
 
 /* declare mailbox init function for xmm */
 extern void onedram_init_mailbox(void);
-#ifdef CONFIG_PHONE_P1_GSM
-static void xmm_reset(struct modemctl *mc);
-#endif
+
 static void xmm_on(struct modemctl *mc)
 {
 	dev_dbg(mc->dev, "%s\n", __func__);
@@ -203,22 +201,17 @@ static void xmm_on(struct modemctl *mc)
 	/* ensure cp_reset pin set to low */
 	gpio_set_value(mc->gpio_cp_reset, 0);
 	if(mc->gpio_reset_req_n)
-#ifdef CONFIG_PHONE_P1_GSM
-		gpio_set_value(mc->gpio_reset_req_n, 0);
-#else
 		gpio_direction_output(mc->gpio_reset_req_n, 0);
-#endif
 
 	msleep(100);
 
 	//gpio_set_value(mc->gpio_cp_reset, 1);
 	if(mc->gpio_phone_on)
 		gpio_set_value(mc->gpio_phone_on, 1);
-#ifndef CONFIG_PHONE_P1_GSM
 	gpio_set_value(mc->gpio_cp_reset, 0);
 	msleep(100);  /* no spec, confirm later exactly how much time
 			needed to initialize CP with RESET_PMU_N */
-#endif
+
 	gpio_set_value(mc->gpio_cp_reset, 1);
 	/* Follow RESET timming delay not Power-On timming,
 	   because CP_RST & PHONE_ON have been set high already. */
@@ -227,10 +220,8 @@ static void xmm_on(struct modemctl *mc)
 	msleep(100); /*wait modem stable */
 
 	gpio_set_value(mc->gpio_pda_active, 1);
-#ifndef CONFIG_PHONE_P1_GSM
 	if(mc->gpio_reset_req_n)
 		gpio_direction_input(mc->gpio_reset_req_n);
-#endif
 }
 
 static void xmm_off(struct modemctl *mc)
@@ -238,21 +229,10 @@ static void xmm_off(struct modemctl *mc)
 	dev_dbg(mc->dev, "%s\n", __func__);
 	if(!mc->gpio_cp_reset)
 		return;
-#ifdef CONFIG_PHONE_P1_GSM
-	gpio_set_value(mc->gpio_pda_active, 0);
-	msleep(100);
-	if(mc->gpio_reset_req_n)
-		gpio_set_value(mc->gpio_reset_req_n, 0);
 
-	msleep(100);
-#endif
 	if(mc->gpio_phone_on)
 		gpio_set_value(mc->gpio_phone_on, 0);
-
 	gpio_set_value(mc->gpio_cp_reset, 0);
-#ifdef CONFIG_PHONE_P1_GSM
-	onedram_init_mailbox();
-#endif
 }
 
 static void xmm_reset(struct modemctl *mc)
@@ -294,7 +274,7 @@ static int modem_on(struct modemctl *mc)
 {
 	dev_dbg(mc->dev, "%s\n", __func__);
 	if(!mc->ops || !mc->ops->modem_on) {
-		//
+		// 
 		return -ENXIO;
 	}
 
@@ -307,7 +287,7 @@ static int modem_off(struct modemctl *mc)
 {
 	dev_dbg(mc->dev, "%s\n", __func__);
 	if(!mc->ops || !mc->ops->modem_off) {
-		//
+		// 
 		return -ENXIO;
 	}
 
@@ -320,7 +300,7 @@ static int modem_reset(struct modemctl *mc)
 {
 	dev_dbg(mc->dev, "%s\n", __func__);
 	if(!mc->ops || !mc->ops->modem_reset) {
-		//
+		// 
 		return -ENXIO;
 	}
 
@@ -333,7 +313,7 @@ static int modem_boot_on(struct modemctl *mc)
 {
 	dev_dbg(mc->dev, "%s\n", __func__);
 	if(!mc->ops || !mc->ops->modem_boot_on) {
-		//
+		// 
 		return -ENXIO;
 	}
 
@@ -346,7 +326,7 @@ static int modem_boot_off(struct modemctl *mc)
 {
 	dev_dbg(mc->dev, "%s\n", __func__);
 	if(!mc->ops || !mc->ops->modem_boot_off) {
-		//
+		// 
 		return -ENXIO;
 	}
 
@@ -568,7 +548,7 @@ static void mc_work(struct work_struct *work)
 
 	if (r) {
 		if (mc->sim_change_reset == SIM_LEVEL_CHANGED) {
-			kobject_uevent(&mc->dev->kobj, KOBJ_CHANGE);
+			kobject_uevent(&mc->dev->kobj, KOBJ_CHANGE);	
 		} else {
 			if (mc->sim_reference_level == SIM_LEVEL_NONE) {
 				sim_get_reference_status(mc);
@@ -596,7 +576,7 @@ static int sim_get_reference_status(struct modemctl* mc)
 	if(!mc->gpio_sim_ndetect)
 		return -ENXIO;
 
-	mc->sim_reference_level = gpio_get_value(mc->gpio_sim_ndetect);
+	mc->sim_reference_level = gpio_get_value(mc->gpio_sim_ndetect);	
 
 	return 0;
 }
@@ -610,7 +590,7 @@ static int sim_check_status(struct modemctl* mc)
 
 	if (mc->sim_reference_level != gpio_get_value(mc->gpio_sim_ndetect)) {
 		mc->sim_change_reset = SIM_LEVEL_CHANGED;
-		}
+		}		
 	else
 		{
 		mc->sim_change_reset = SIM_LEVEL_STABLE;
@@ -733,7 +713,7 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 		goto err;
 	}
 	irq_sim_ndetect = res->start;
-
+	
 	mc = kzalloc(sizeof(struct modemctl), GFP_KERNEL);
 	if(!mc) {
 		dev_err(&pdev->dev, "failed to allocate device\n");
@@ -799,7 +779,7 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 				irq_phone_active);
 		goto err;
 	}
-
+	
 	mc->irq_phone_active = irq_phone_active;
 
 	setup_timer(&mc->sim_irq_debounce_timer, (void*)sim_irq_debounce_timer_func,(unsigned long)mc);
@@ -812,7 +792,7 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 				irq_sim_ndetect);
 		goto err;
 	}
-
+	
 	r = enable_irq_wake(irq_sim_ndetect);
 	if(r) {
 		dev_err(&pdev->dev, "failed to set wakeup source(%d)\n",

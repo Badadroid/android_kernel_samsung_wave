@@ -1,8 +1,0 @@
-#
-#
-#
-menuconfig VIBETONZ
-	tristate "Vibetonz"
-	default n
-	help
-		Say Y to enable Vibetonz support.

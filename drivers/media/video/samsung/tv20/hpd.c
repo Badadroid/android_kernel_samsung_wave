@@ -21,7 +21,6 @@
 #include <linux/irq.h>
 #include <linux/kobject.h>
 #include <linux/io.h>
-#include <linux/timer.h>
 
 #include <mach/gpio.h>
 #include <plat/gpio-cfg.h>
@@ -109,7 +108,7 @@ int s5p_hpd_set_hdmiint(void)
 {
 	/* EINT -> HDMI */
 
-	irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_NONE);
+	set_irq_type(IRQ_EINT13, IRQ_TYPE_NONE);
 
 	if (last_hpd_state)
 		s5p_hdmi_disable_interrupts(HDMI_IRQ_HPD_UNPLUG);
@@ -147,11 +146,6 @@ int s5p_hpd_set_eint(void)
 
 	s3c_gpio_cfgpin(S5PV210_GPH1(5), S5PV210_GPH1_5_EXT_INT31_5);
 	s3c_gpio_setpull(S5PV210_GPH1(5), S3C_GPIO_PULL_DOWN);
-	if (s5p_hpd_get_state())
-		irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_FALLING);
-	else
-		irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_RISING);
-
 	s3c_gpio_set_drvstrength(S5PV210_GPH1(5), S3C_GPIO_DRVSTR_4X);
 
 	printk(KERN_INFO "\n++ s5p_hpd_set_eint\n");
@@ -176,9 +170,9 @@ int irq_eint(int irq)
 	}
 
 	if (atomic_read(&hpd_struct.state))
-		irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_FALLING);
+		set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_FALLING);
 	else
-		irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_RISING);
+		set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_RISING);
 
 	schedule_work(&hpd_work);
 
@@ -264,36 +258,11 @@ out:
  * Handles interrupt requests from HPD hardware.
  * Handler changes value of internal variable and notifies waiting thread.
  */
-
-enum {
-	EVENT_NONE,
-	EVENT_RISING,
-	EVENT_FALLING,
-};
-
-static int irq_event =  EVENT_NONE;
-
-static void hpd_irq_check_timer_func(unsigned long dummy);
-
-static DEFINE_TIMER(hpd_irq_check_timer, hpd_irq_check_timer_func, 0, 0);
-
-irqreturn_t s5p_hpd_irq_handler(int irq)
+irqreturn_t s5p_hpd_irq_handler(int irq, void *dev_id)
 {
 	int ret = IRQ_HANDLED;
-	unsigned long flags;
 
-	spin_lock_irqsave(&hpd_struct.lock, flags);
-
-	if (gpio_get_value(S5PV210_GPH1(5))) {
-
-		if (irq_event == EVENT_FALLING) {
-			mod_timer(&hpd_irq_check_timer, jiffies + HZ/20);
-		}
-		irq_event = EVENT_RISING;
-	} else {
-		irq_event =  EVENT_FALLING;
-		del_timer(&hpd_irq_check_timer);
-	}
+	spin_lock_irq(&hpd_struct.lock);
 
 	/* check HDMI status */
 	if (atomic_read(&hdmi_status)) {
@@ -306,23 +275,9 @@ irqreturn_t s5p_hpd_irq_handler(int irq)
 		HPDIFPRINTK("EINT HPD interrupt\n");
 	}
 
-	spin_unlock_irqrestore(&hpd_struct.lock, flags);
+	spin_unlock_irq(&hpd_struct.lock);
 
 	return ret;
-}
-
-static void hpd_irq_check_timer_func(unsigned long dummy)
-{
-	unsigned long flags;
-
-	//printk("[TVOUT][%s:called]\n",__func__);
-
-	if (irq_event ==EVENT_RISING && !gpio_get_value(S5PV210_GPH1(5))) {
-		printk("[TVOUT][%s:re-call irq handler]\n",__func__);
-		//local_irq_save(flags);
-		s5p_hpd_irq_handler(IRQ_EINT13);
-		//local_irq_restore(flags);
-	}
 }
 
 static int __init s5p_hpd_probe(struct platform_device *pdev)
@@ -348,14 +303,12 @@ static int __init s5p_hpd_probe(struct platform_device *pdev)
 	if (gpio_get_value(S5PV210_GPH1(5))) {
 		atomic_set(&hpd_struct.state, HPD_HI);
 		last_hpd_state = HPD_HI;
-		irq_event = EVENT_RISING;
 	} else {
 		atomic_set(&hpd_struct.state, HPD_LO);
 		last_hpd_state = HPD_LO;
-		irq_event = EVENT_FALLING;
 	}
 
-	irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_BOTH);
+	set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_BOTH);
 
 	if (request_irq(IRQ_EINT13, s5p_hpd_irq_handler, IRQF_DISABLED,
 		"hpd", s5p_hpd_irq_handler)) {

@@ -227,10 +227,8 @@ struct s3cfb_global {
 	struct device		*dev;
 	struct clk		*clock;
 	struct regulator	*regulator;
-#ifdef CONFIG_MACH_ARIES
 	struct regulator	*vcc_lcd;
 	struct regulator	*vlcd;
-#endif
 	int			irq;
 	struct fb_info		**fb;
 
@@ -356,9 +354,6 @@ extern int s3cfb_set_window_size(struct s3cfb_global *ctrl, int id);
 extern int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id);
 extern int s3cfb_set_buffer_size(struct s3cfb_global *ctrl, int id);
 extern int s3cfb_set_chroma_key(struct s3cfb_global *ctrl, int id);
-#if defined(CONFIG_FB_S3C_MDNIE)
-extern int s3cfb_ielcd_enable(struct s3cfb_global *ctrl, int en);
-#endif
 
 #ifdef CONFIG_HAS_WAKELOCK
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -373,11 +368,6 @@ extern void tl2796_ldi_enable(void);
 extern void tl2796_ldi_disable(void);
 extern void lcd_cfg_gpio_early_suspend(void);
 extern void lcd_cfg_gpio_late_resume(void);
-#endif
-
-#if defined (CONFIG_FB_S3C_LVDS)
-void lms700_powerup(void);
-void lms700_powerdown(void);
 #endif
 
 #endif /* _S3CFB_H */
