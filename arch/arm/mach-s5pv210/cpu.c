@@ -217,6 +217,7 @@ int __init s5pv210_init(void)
 
 	/* set sw_reset function */
 	if (!(machine_is_herring() || machine_is_aries() || machine_is_wave() || machine_is_wave2()))
+
 		s5p_reset_hook = s5pv210_sw_reset;
 
 	return sysdev_register(&s5pv210_sysdev);

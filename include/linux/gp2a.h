@@ -26,9 +26,6 @@
 #define GP2A_OPT "gp2a-opt"
 struct gp2a_platform_data {
 	int p_out;  /* proximity-sensor-output gpio */
-#ifdef CONFIG_SAMSUNG_FASCINATE
-	int p_irq;
-#endif
 	int (*power)(bool); /* power to the chip */
 };
 #endif /* __KERNEL__ */

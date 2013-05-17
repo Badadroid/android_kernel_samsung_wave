@@ -29,17 +29,25 @@
 
 #include <mach/gpio-aries.h>
 
+#include <linux/device.h>
+#include <linux/miscdevice.h>
+
 #define GPD0_TOUT_1		2 << 4
 
 #ifdef CONFIG_SAMSUNG_VIBRANT
-#define PWM_PERIOD      (87084 / 2)
-#define PWM_DUTY        (87000 / 2)
+#define PWM_PERIOD              (87084 / 2)
+#define PWM_DUTY_MAX            (87000 / 2)
 #else
 #define PWM_PERIOD		(89284 / 2)
-#define PWM_DUTY		(87280 / 2)
+#define PWM_DUTY_MAX		(87280 / 2)
 #endif
 
 #define MAX_TIMEOUT		10000 /* 10s */
+
+#define PWM_DUTY_MIN		22340
+static unsigned int multiplier = (PWM_DUTY_MAX - PWM_DUTY_MIN) / 100;
+static unsigned int pwm_duty = 100;
+static unsigned int pwm_duty_value = PWM_DUTY_MAX;
 
 static struct vibrator {
 	struct wake_lock wklock;
@@ -75,7 +83,7 @@ static void aries_vibrator_enable(struct timed_output_dev *dev, int value)
 	cancel_work_sync(&vibdata.work);
 	if (value) {
 		wake_lock(&vibdata.wklock);
-		pwm_config(vibdata.pwm_dev, PWM_DUTY, PWM_PERIOD);
+		pwm_config(vibdata.pwm_dev, pwm_duty_value, PWM_PERIOD);
 		pwm_enable(vibdata.pwm_dev);
 		gpio_direction_output(GPIO_VIBTONE_EN1, GPIO_LEVEL_HIGH);
 
@@ -92,6 +100,33 @@ static void aries_vibrator_enable(struct timed_output_dev *dev, int value)
 
 	mutex_unlock(&vibdata.lock);
 }
+
+static ssize_t aries_vibrator_set_duty(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	sscanf(buf, "%d\n", &pwm_duty);
+	if (pwm_duty >= 0 && pwm_duty <= 100) pwm_duty_value = (pwm_duty * multiplier) + PWM_DUTY_MIN;
+	return size;
+}
+static ssize_t aries_vibrator_show_duty(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf)
+{
+	return sprintf(buf, "%d", pwm_duty);
+}
+static DEVICE_ATTR(pwm_duty, S_IRUGO | S_IWUGO, aries_vibrator_show_duty, aries_vibrator_set_duty);
+static struct attribute *pwm_duty_attributes[] = {
+	&dev_attr_pwm_duty,
+	NULL
+};
+static struct attribute_group pwm_duty_group = {
+	.attrs = pwm_duty_attributes,
+};
+static struct miscdevice pwm_duty_device = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "pwm_duty",
+};
 
 static struct timed_output_dev to_dev = {
 	.name		= "vibrator",
@@ -140,6 +175,13 @@ static int __init aries_init_vibrator(void)
 	ret = timed_output_dev_register(&to_dev);
 	if (ret < 0)
 		goto err_to_dev_reg;
+
+	if (misc_register(&pwm_duty_device))
+		printk("%s misc_register(%s) failed\n", __FUNCTION__, pwm_duty_device.name);
+	else {
+		if (sysfs_create_group(&pwm_duty_device.this_device->kobj, &pwm_duty_group))
+			dev_err("failed to create sysfs group for device %s\n", pwm_duty_device.name);
+	}
 
 	return 0;
 
