@@ -655,7 +655,6 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
 
 	cpufreq_frequency_table_get_attr(s5pv210_freq_table, policy->cpu);
 
-#ifdef CONFIG_MACH_ARIES
 	policy->cpuinfo.transition_latency = 40000;
 
 #ifdef CONFIG_DVFS_LIMIT
