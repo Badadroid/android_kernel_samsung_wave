@@ -20,10 +20,10 @@ dir /stage1 755 0 0
 dir /system 755 0 0
 dir /cache 755 0 0
 dir /sdcard 755 0 0
-file /stage1/busybox source/usr/wave_initramfs_files/busybox 755 0 0
+file /stage1/busybox ../../utilities/busybox 755 0 0
 file /stage1/init source/usr/wave_initramfs_files/init 755 0 0
 file /stage1/erase_image source/usr/wave_initramfs_files/erase_image 755 0 0
-file /stage1/make_ext4fs source/usr/wave_initramfs_files/make_ext4fs 755 0 0
+file /stage1/make_ext4fs ../../utilities/make_ext4fs 755 0 0
 file /stage1/ramdisk.img ../../ramdisk.img 700 0 0
 file /stage1/ramdisk-recovery.img ../../ramdisk-recovery.img 700 0 0
 dir /sys 755 0 0
