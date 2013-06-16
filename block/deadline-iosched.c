@@ -17,10 +17,10 @@
 /*
  * See Documentation/block/deadline-iosched.txt
  */
-static const int read_expire = HZ / 4;  /* max time before a read is submitted. */
+static const int read_expire = HZ / 2;  /* max time before a read is submitted. */
 static const int write_expire = 5 * HZ; /* ditto for writes, these limits are SOFT! */
-static const int writes_starved = 4;    /* max times reads can starve a write */
-static const int fifo_batch = 16;       /* # of sequential requests treated as one
+static const int writes_starved = 1;    /* max times reads can starve a write */
+static const int fifo_batch = 1;       /* # of sequential requests treated as one
 				     by the above parameters. For throughput. */
 
 struct deadline_data {
@@ -352,7 +352,7 @@ static void *deadline_init_queue(struct request_queue *q)
 	dd->fifo_expire[READ] = read_expire;
 	dd->fifo_expire[WRITE] = write_expire;
 	dd->writes_starved = writes_starved;
-	dd->front_merges = 0;
+	dd->front_merges = 1;
 	dd->fifo_batch = fifo_batch;
 	return dd;
 }
@@ -448,9 +448,7 @@ static struct elevator_type iosched_deadline = {
 
 static int __init deadline_init(void)
 {
-	elv_register(&iosched_deadline);
-
-	return 0;
+	return elv_register(&iosched_deadline);
 }
 
 static void __exit deadline_exit(void)
@@ -458,7 +456,11 @@ static void __exit deadline_exit(void)
 	elv_unregister(&iosched_deadline);
 }
 
+#ifdef CONFIG_FAST_RESUME
+beforeresume_initcall(deadline_init);
+#else
 module_init(deadline_init);
+#endif
 module_exit(deadline_exit);
 
 MODULE_AUTHOR("Jens Axboe");

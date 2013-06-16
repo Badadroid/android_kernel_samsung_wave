@@ -655,7 +655,7 @@ void elv_quiesce_start(struct request_queue *q)
 	queue_flag_set(QUEUE_FLAG_ELVSWITCH, q);
 	spin_unlock_irq(q->queue_lock);
 
-	blk_drain_queue(q);
+	blk_drain_queue(q, false);
 }
 
 void elv_quiesce_end(struct request_queue *q)
@@ -780,8 +780,6 @@ int elv_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
 
 	if (e->type->ops.elevator_set_req_fn)
 		return e->type->ops.elevator_set_req_fn(q, rq, gfp_mask);
-
-	rq->elevator_private[0] = NULL;
 	return 0;
 }
 
@@ -827,10 +825,10 @@ void elv_completed_request(struct request_queue *q, struct request *rq)
 {
 	struct elevator_queue *e = q->elevator;
 
-	if (test_bit(REQ_ATOM_URGENT, &rq->atomic_flags)) {
+	if (rq->cmd_flags & REQ_URGENT) {
 		q->notified_urgent = false;
+		WARN_ON(!q->dispatched_urgent);
 		q->dispatched_urgent = false;
-		blk_clear_rq_urgent(rq);
 	}
 	/*
 	 * request is released from the driver, io must be done
@@ -928,15 +926,36 @@ void elv_unregister_queue(struct request_queue *q)
 }
 EXPORT_SYMBOL(elv_unregister_queue);
 
-void elv_register(struct elevator_type *e)
+int elv_register(struct elevator_type *e)
 {
 	char *def = "";
 
+	/* create icq_cache if requested */
+	if (e->icq_size) {
+		if (WARN_ON(e->icq_size < sizeof(struct io_cq)) ||
+		    WARN_ON(e->icq_align < __alignof__(struct io_cq)))
+			return -EINVAL;
+
+		snprintf(e->icq_cache_name, sizeof(e->icq_cache_name),
+			 "%s_io_cq", e->elevator_name);
+		e->icq_cache = kmem_cache_create(e->icq_cache_name, e->icq_size,
+						 e->icq_align, 0, NULL);
+		if (!e->icq_cache)
+			return -ENOMEM;
+	}
+
+	/* register, don't allow duplicate names */
 	spin_lock(&elv_list_lock);
-	BUG_ON(elevator_find(e->elevator_name));
+	if (elevator_find(e->elevator_name)) {
+		spin_unlock(&elv_list_lock);
+		if (e->icq_cache)
+			kmem_cache_destroy(e->icq_cache);
+		return -EBUSY;
+	}
 	list_add_tail(&e->list, &elv_list);
 	spin_unlock(&elv_list_lock);
 
+	/* print pretty message */
 	if (!strcmp(e->elevator_name, chosen_elevator) ||
 			(!*chosen_elevator &&
 			 !strcmp(e->elevator_name, CONFIG_DEFAULT_IOSCHED)))
@@ -944,30 +963,26 @@ void elv_register(struct elevator_type *e)
 
 	printk(KERN_INFO "io scheduler %s registered%s\n", e->elevator_name,
 								def);
+	return 0;
 }
 EXPORT_SYMBOL_GPL(elv_register);
 
 void elv_unregister(struct elevator_type *e)
 {
-	struct task_struct *g, *p;
-
-	/*
-	 * Iterate every thread in the process to remove the io contexts.
-	 */
-	if (e->ops.trim) {
-		read_lock(&tasklist_lock);
-		do_each_thread(g, p) {
-			task_lock(p);
-			if (p->io_context)
-				e->ops.trim(p->io_context);
-			task_unlock(p);
-		} while_each_thread(g, p);
-		read_unlock(&tasklist_lock);
-	}
-
+	/* unregister */
 	spin_lock(&elv_list_lock);
 	list_del_init(&e->list);
 	spin_unlock(&elv_list_lock);
+
+	/*
+	 * Destroy icq_cache if it exists.  icq's are RCU managed.  Make
+	 * sure all RCU operations are complete before proceeding.
+	 */
+	if (e->icq_cache) {
+		rcu_barrier();
+		kmem_cache_destroy(e->icq_cache);
+		e->icq_cache = NULL;
+	}
 }
 EXPORT_SYMBOL_GPL(elv_unregister);
 
@@ -1004,8 +1019,9 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
 			goto fail_register;
 	}
 
-	/* done, replace the old one with new one and turn off BYPASS */
+	/* done, clear io_cq's, switch elevators and turn off BYPASS */
 	spin_lock_irq(q->queue_lock);
+	ioc_clear_queue(q);
 	old_elevator = q->elevator;
 	q->elevator = e;
 	spin_unlock_irq(q->queue_lock);
