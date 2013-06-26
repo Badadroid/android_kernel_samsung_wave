@@ -32,7 +32,6 @@
 #define DEF_FREQUENCY_UP_THRESHOLD		(80)
 #define DEF_SAMPLING_DOWN_FACTOR		(4)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
-#define DEF_GRAD_UP_THRESHOLD			(50)
 #define DEF_SAMPLING_DOWN_MAX_MOMENTUM		(16)
 #define DEF_SAMPLING_DOWN_MOMENTUM_SENSITIVITY	(100)
 #define MAX_SAMPLING_DOWN_MOMENTUM_SENSITIVITY	(1000)
@@ -101,7 +100,6 @@ struct cpu_dbs_info_s {
 	unsigned int freq_hi_jiffies;
 	unsigned int rate_mult;
 	unsigned int momentum_adder;
-	unsigned int prev_load;
 	int cpu;
 	unsigned int sample_type:1;
 	/*
@@ -130,13 +128,11 @@ static struct dbs_tuners {
 	unsigned int sampling_down_max_mom;
 	unsigned int sampling_down_mom_sens;
 	unsigned int powersave_bias;
-	unsigned int grad_up_threshold;
 	unsigned int smooth_ui;
 	unsigned int io_is_busy;
 	unsigned int boosted;
 	unsigned int freq_boost_time;
 	unsigned int boostfreq;
-	unsigned int early_demand;
 } dbs_tuners_ins = {
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
@@ -144,13 +140,11 @@ static struct dbs_tuners {
 	.sampling_down_max_mom = DEF_SAMPLING_DOWN_MAX_MOMENTUM,
 		.sampling_down_mom_sens =
 		DEF_SAMPLING_DOWN_MOMENTUM_SENSITIVITY,
-	.grad_up_threshold = DEF_GRAD_UP_THRESHOLD,
 	.ignore_nice = 0,
 	.powersave_bias = 0,
 	.smooth_ui = DEF_SMOOTH_UI,
 	.freq_boost_time = DEFAULT_FREQ_BOOST_TIME,
 	.boostfreq = 0,
-	.early_demand = 0,
 };
 
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
@@ -295,8 +289,6 @@ show_one(powersave_bias, powersave_bias);
 show_one(smooth_ui, smooth_ui);
 show_one(boostpulse, boosted);
 show_one(boostfreq, boostfreq);
-show_one(grad_up_threshold, grad_up_threshold);
-show_one(early_demand, early_demand);
 
 static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
 				   const char *buf, size_t count)
@@ -504,35 +496,6 @@ static ssize_t store_boostfreq(struct kobject *a, struct attribute *b,
 	return count;
 }
 
-static ssize_t store_grad_up_threshold(struct kobject *a,
-			struct attribute *b, const char *buf, size_t count)
-{
-	unsigned int input;
-	int ret;
-	ret = sscanf(buf, "%u", &input);
-
-	if (ret != 1 || input > MAX_FREQUENCY_UP_THRESHOLD ||
-			input < MIN_FREQUENCY_UP_THRESHOLD) {
-		return -EINVAL;
-	}
-
-	dbs_tuners_ins.grad_up_threshold = input;
-	return count;
-}
-
-static ssize_t store_early_demand(struct kobject *a, struct attribute *b,
-				  const char *buf, size_t count)
-{
-	unsigned int input;
-	int ret;
-
-	ret = sscanf(buf, "%u", &input);
-	if (ret != 1)
-		return -EINVAL;
-	dbs_tuners_ins.early_demand = !!input;
-	return count;
-}
-
 define_one_global_rw(sampling_rate);
 define_one_global_rw(io_is_busy);
 define_one_global_rw(up_threshold);
@@ -544,8 +507,6 @@ define_one_global_rw(powersave_bias);
 define_one_global_rw(smooth_ui);
 define_one_global_rw(boostpulse);
 define_one_global_rw(boostfreq);
-define_one_global_rw(grad_up_threshold);
-define_one_global_rw(early_demand);
 
 static struct attribute *dbs_attributes[] = {
 	&sampling_rate_min.attr,
@@ -560,8 +521,6 @@ static struct attribute *dbs_attributes[] = {
 	&smooth_ui.attr,
 	&boostpulse.attr,
 	&boostfreq.attr,
-	&grad_up_threshold.attr,
-	&early_demand.attr,
 	NULL
 };
 
@@ -591,7 +550,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	unsigned int j;
 	unsigned int boostfreq;
 	unsigned int up_threshold = dbs_tuners_ins.up_threshold;
-	int boost_freq = 0;
 
 	this_dbs_info->freq_lo = 0;
 	policy = this_dbs_info->cur_policy;
@@ -681,22 +639,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			max_load = load;
 	}
 
-	/*
-	 * Calculate the gradient of load_freq. If it is too steep we assume
-	 * that the load will go over up_threshold in next iteration(s) and
-	 * we increase the frequency immediately
-	 */
-	if (dbs_tuners_ins.early_demand) {
-		if (max_load > this_dbs_info->prev_load &&
-		   (max_load - this_dbs_info->prev_load >
-		    dbs_tuners_ins.grad_up_threshold * policy->cur))
-			boost_freq = 1;
-
-		this_dbs_info->prev_load = max_load;
-	}
-
 	/* Check for frequency increase */
-	if ((dbs_tuners_ins.smooth_ui && touch_state_val) || boost_freq ||
+	if ((dbs_tuners_ins.smooth_ui && touch_state_val) ||
 	     max_load > up_threshold * policy->cur) {
 		/* If switching to max speed, apply sampling_down_factor */
 		if (policy->cur < policy->max)
@@ -904,7 +848,6 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		this_dbs_info->cpu = cpu;
 		this_dbs_info->rate_mult = 1;
 		this_dbs_info->momentum_adder = 0;
-		this_dbs_info->prev_load = 0;
 		ondemand_powersave_bias_init_cpu(cpu);
 		/*
 		 * Start the timerschedule work, when this governor
