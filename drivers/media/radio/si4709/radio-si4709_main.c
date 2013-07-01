@@ -36,7 +36,7 @@
 /*file operatons*/
 static int Si4709_open (struct inode *, struct file *);
 static int Si4709_release (struct inode *, struct file *);
-static int Si4709_ioctl(struct file *, unsigned int,  unsigned long);
+static long Si4709_ioctl(struct file *, unsigned int,  unsigned long);
 
 static DEFINE_MUTEX(Si4709_mutex);
 
@@ -85,7 +85,7 @@ static int Si4709_release (struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static int Si4709_ioctl(struct file *filp, unsigned int ioctl_cmd,  unsigned long arg)
+static long Si4709_ioctl(struct file *filp, unsigned int ioctl_cmd,  unsigned long arg)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;   
