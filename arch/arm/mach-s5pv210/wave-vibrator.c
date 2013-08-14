@@ -32,8 +32,6 @@
 #include <linux/device.h>
 #include <linux/miscdevice.h>
 
-#define GPD0_TOUT_1		2 << 4
-
 #define PWM_PERIOD		(89284 / 2)
 #define PWM_DUTY_MAX		(87280 / 2)
 #define MAX_TIMEOUT		10000 /* 10s */
@@ -151,9 +149,9 @@ static int __init wave_init_vibrator(void)
 	if (ret < 0)
 		return ret;
 
-	s3c_gpio_cfgpin(GPIO_VIBTONE_PWM, GPD0_TOUT_1);
+	s3c_gpio_cfgpin(GPIO_VIBTONE_PWM, S3C_GPIO_SFN(2));
 
-	vibdata.pwm_dev = pwm_request(1, "vibrator-pwm");
+	vibdata.pwm_dev = pwm_request(2, "vibrator-pwm");
 	if (IS_ERR(vibdata.pwm_dev)) {
 		ret = PTR_ERR(vibdata.pwm_dev);
 		goto err_pwm_req;
