@@ -84,6 +84,9 @@ struct max8998_charger_callbacks {
 		enum cable_type_t status);
 };
 
+struct max8998_power_callbacks {
+	void (*power_off)(struct max8998_power_callbacks *ptr);
+};
 /**
  * max8998_charger_data - charger data
  * @id: charger id
@@ -141,6 +144,7 @@ struct max8998_platform_data {
 	bool				wakeup;
 	bool				rtc_delay;
 	struct max8998_charger_data	*charger;
+	struct max8998_power_callbacks **power_callbacks;
 };
 
 #endif /*  __LINUX_MFD_MAX8998_H */
