@@ -4897,9 +4897,17 @@ static void __init onenand_init(void)
 	clk_enable(clk);
 }
 
+#defien S5PV210_TZPC3 0xE1C00800
+#defien S5PV210_TZPC_DECPROT0SET 0x4
+
 static void __init wave_machine_init(void)
 {
+	void* tzpc3_va;
 	arm_pm_restart = wave_pm_restart;
+
+	tzpc3_va = ioremap(S5PV210_TZPC3, 0x30);
+	writel(tzpc3_va + S5PV210_TZPC_DECPROT0SET, (1 << 3)); //Set Audio (including I2S) as non-secure
+	iounmap(tzpc3_va);
 
 	setup_ram_console_mem();
 	wave_inject_cmdline();
