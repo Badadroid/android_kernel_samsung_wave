@@ -4895,8 +4895,8 @@ static void __init onenand_init(void)
 	clk_enable(clk);
 }
 
-#defien S5PV210_TZPC3 0xE1C00800
-#defien S5PV210_TZPC_DECPROT0SET 0x4
+#define S5PV210_TZPC3 0xE1C00800
+#define S5PV210_TZPC_DECPROT0SET 0x4
 
 static void __init wave_machine_init(void)
 {
