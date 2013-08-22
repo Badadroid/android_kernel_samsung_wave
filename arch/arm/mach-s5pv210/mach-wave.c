@@ -4897,41 +4897,14 @@ static void __init onenand_init(void)
 	clk_enable(clk);
 }
 
-#define S5PV210_TZPC0 0xF1500000
-#define S5PV210_TZPC1 0xFAD00000
-#define S5PV210_TZPC2 0xE0600000
-#define S5PV210_TZPC3 0xE1C00000
-#define S5PV210_TZPC_DECPROT0SET 0x804
-#define S5PV210_TZPC_DECPROT1SET 0x810
-#define S5PV210_TZPC_DECPROT2SET 0x81C
+extern void setup_tzpc();
 
 static void __init wave_machine_init(void)
 {
-	void* tzpc_va;
 	arm_pm_restart = wave_pm_restart;
 
-	/* Set all TZPC regions as non secure */
-	tzpc_va = ioremap(S5PV210_TZPC0, 0x1000);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
-	iounmap(tzpc_va);
-	tzpc_va = ioremap(S5PV210_TZPC1, 0x1000);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
-	iounmap(tzpc_va);
-	tzpc_va = ioremap(S5PV210_TZPC2, 0x1000);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
-	iounmap(tzpc_va);
-	tzpc_va = ioremap(S5PV210_TZPC3, 0x1000);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT0SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT1SET);
-	writel(0xFF, tzpc_va + S5PV210_TZPC_DECPROT2SET);
-	iounmap(tzpc_va);
-
+	setup_tzpc();
+	
 	setup_ram_console_mem();
 	wave_inject_cmdline();
 	platform_add_devices(wave_devices, ARRAY_SIZE(wave_devices));
