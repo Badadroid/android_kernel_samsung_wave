@@ -4904,7 +4904,7 @@ static void __init wave_machine_init(void)
 	arm_pm_restart = wave_pm_restart;
 
 	tzpc3_va = ioremap(S5PV210_TZPC3, 0x30);
-	writel(tzpc3_va + S5PV210_TZPC_DECPROT0SET, (1 << 3)); //Set Audio (including I2S) as non-secure
+	writel((1 << 3), tzpc3_va + S5PV210_TZPC_DECPROT0SET); //Set Audio (including I2S) as non-secure
 	iounmap(tzpc3_va);
 
 	setup_ram_console_mem();
