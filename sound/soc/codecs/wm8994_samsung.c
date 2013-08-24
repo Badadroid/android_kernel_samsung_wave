@@ -199,7 +199,7 @@ int wm8994_write(struct snd_soc_codec *codec, unsigned int reg,
 	if (ret == 4)
 		return 0;
 	else {
-		pr_err("i2c write problem occured\n");
+		dev_err(codec->dev, "i2c write problem occured when writing R%d with value 0x%X\n", reg, value);
 		return ret;
 	}
 }
