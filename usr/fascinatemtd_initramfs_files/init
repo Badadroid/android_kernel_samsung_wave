@@ -41,7 +41,7 @@ elif ! busybox test -e /system/build.prop ; then
 
 	UPDATE=$(busybox cat /sdcard/cyanogenmod.cfg)
 
-	if busybox test -n "$UPDATE" && busybox test -e $UPDATE ; then
+	if busybox test -n "$UPDATE" ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
 	fi
 
