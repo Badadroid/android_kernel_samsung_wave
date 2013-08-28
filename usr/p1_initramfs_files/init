@@ -58,11 +58,11 @@ HW=$(busybox cat /proc/cpuinfo | busybox grep Hardware | busybox sed s/Hardware/
 if [ "$HW" != "p1" ] ; then
 	if [ "$image" == "/stage1/boot.cpio" ] ; then
 		busybox ln -s /init.p1.rc /init.$HW.rc
-		busybox ln -s /fstab.p1 /fstab.$HW
 	elif [ "$image" == "/stage1/recovery.cpio" ] ; then
 		busybox ln -s /init.recovery.p1.rc /init.recovery.$HW.rc
 	fi
 
+	busybox ln -s /fstab.p1 /fstab.$HW
 	busybox ln -s /ueventd.p1.rc /ueventd.$HW.rc
 fi
 
