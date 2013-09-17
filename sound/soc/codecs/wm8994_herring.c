@@ -2642,8 +2642,13 @@ static void wm8994_set_gsm_voicecall_common_setting(struct snd_soc_codec *codec)
 
 	wm8994_write(codec, WM8994_AIF2_BCLK, 0x70);
 	wm8994_write(codec, WM8994_AIF2_CONTROL_2, 0x0000);
+
+#ifdef CONFIG_MACH_WAVE
+	wm8994_write(codec, WM8994_AIF2_MASTER_SLAVE, 0x0000);
+#else
 	wm8994_write(codec, WM8994_AIF2_MASTER_SLAVE, WM8994_AIF2_MSTR |
 		WM8994_AIF2_CLK_FRC | WM8994_AIF2_LRCLK_FRC);
+#endif 
 
 	val = wm8994_read(codec, WM8994_POWER_MANAGEMENT_5);
 	val &= ~(WM8994_AIF2DACL_ENA_MASK | WM8994_AIF2DACR_ENA_MASK |
