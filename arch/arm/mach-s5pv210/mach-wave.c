@@ -501,6 +501,10 @@ static struct regulator_consumer_supply buck4_consumer[] = {
 	{	.supply	= "cam_isp_core", },
 };
 
+static struct regulator_consumer_supply esafeout2_consumer[] = {
+	{	.supply	= "usb_vbus_cp", },
+};
+
 static struct regulator_init_data wave_ldo2_data = {
 	.constraints	= {
 		.name		= "VALIVE_1.2V",
@@ -769,6 +773,28 @@ static struct regulator_init_data wave_buck4_data = {
 	.consumer_supplies	= buck4_consumer,
 };
 
+static struct regulator_init_data wave_esafeout1_data = {
+	.constraints	= {
+		.name		= "USB_VBUS_AP",
+		.apply_uV	= 0,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+		.always_on	= 1,
+	},
+};
+
+static struct regulator_init_data wave_esafeout2_data = {
+	.constraints	= {
+		.name		= "USB_VBUS_CP",
+		.apply_uV	= 0,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+		.state_mem	= {
+			.disabled = 1,
+		},
+	},
+	.num_consumer_supplies	= ARRAY_SIZE(esafeout2_consumer),
+	.consumer_supplies	= esafeout2_consumer,
+};
+
 static struct max8998_regulator_data wave_regulators[] = {
 	{ MAX8998_LDO2,  &wave_ldo2_data },
 	{ MAX8998_LDO3,  &wave_ldo3_data },
@@ -790,6 +816,8 @@ static struct max8998_regulator_data wave_regulators[] = {
 	{ MAX8998_BUCK2, &wave_buck2_data },
 	{ MAX8998_BUCK3, &wave_buck3_data },
 	{ MAX8998_BUCK4, &wave_buck4_data },
+	{ MAX8998_ESAFEOUT1, &wave_esafeout1_data },
+	{ MAX8998_ESAFEOUT2, &wave_esafeout2_data },
 };
 
 static struct max8998_adc_table_data temper_table[] =  {

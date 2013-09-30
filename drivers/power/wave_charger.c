@@ -452,10 +452,15 @@ static int max8998_charging_control(struct chg_data *chg)
 			pr_debug("%s : USB charging enabled\n", __func__);
 		}
 
-		ret = max8998_write_reg(i2c, MAX8998_REG_CHGR2,
-					(2 << MAX8998_SHIFT_ESAFEOUT) |
-					(2 << MAX8998_SHIFT_FT) |
-					(0 << MAX8998_SHIFT_CHGEN));
+		ret = max8998_update_reg(i2c, MAX8998_REG_CHGR2,
+			(2 << MAX8998_SHIFT_FT),  MAX8998_MASK_FT);
+
+		if (ret < 0)
+			goto err;
+
+		ret = max8998_update_reg(i2c, MAX8998_REG_CHGR2,
+			(0 << MAX8998_SHIFT_CHGEN), MAX8998_MASK_CHGEN);
+
 		if (ret < 0)
 			goto err;
 	}
