@@ -82,8 +82,7 @@ void s5pv210_setup_sdhci_cfg_card(struct platform_device *dev,
 		if ((ios->clock > range_start) && (ios->clock < range_end))
 			ctrl3 = S3C_SDHCI_CTRL3_FCSELTX_BASIC |
 				S3C_SDHCI_CTRL3_FCSELRX_BASIC;
-		else if (machine_is_herring() && herring_is_cdma_wimax_dev() &&
-								dev->id == 2) {
+		else if (((machine_is_wave() || machine_is_wave2())) && dev->id == 2) {
 			ctrl3 = S3C_SDHCI_CTRL3_FCSELTX_BASIC;
 			//if(card->type & MMC_TYPE_SDIO)
 				ctrl3 |= S3C_SDHCI_CTRL3_FCSELRX_BASIC;
@@ -146,9 +145,14 @@ void universal_sdhci2_cfg_ext_cd(void)
 {
 	printk(KERN_DEBUG "Universal :SD Detect configuration\n");
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_VIBRANT)
-    s3c_gpio_setpull(GPIO_T_FLASH_DETECT, S3C_GPIO_PULL_UP);
+    s3c_gpio_setpull(S5PV210_GPH3(4), S3C_GPIO_PULL_UP);
 #else
-    s3c_gpio_setpull(GPIO_T_FLASH_DETECT, S3C_GPIO_PULL_NONE);
+#if defined(CONFIG_PHONE_P1_GSM)
+	s3c_gpio_cfgpin(GPIO_T_FLASH_DETECT, S3C_GPIO_SFN(GPIO_T_FLASH_DETECT_AF));
+#elif defined(CONFIG_PHONE_P1_CDMA)
+	s3c_gpio_cfgpin(S5PV210_GPH3(4),S3C_GPIO_SFN(0xf));
+#endif
+    s3c_gpio_setpull(S5PV210_GPH3(4), S3C_GPIO_PULL_NONE);
 #endif
 	irq_set_irq_type(IRQ_EINT(28), IRQ_TYPE_EDGE_BOTH);
 }
@@ -242,13 +246,13 @@ EXPORT_SYMBOL_GPL(sdhci_s3c_force_presence_change);
 void s3c_sdhci_set_platdata(void)
 {
 #if defined(CONFIG_S3C_DEV_HSMMC)
-	if (machine_is_herring() || machine_is_aries() || machine_is_wave() || machine_is_wave2()) { /* TODO: move to mach-herring.c */
+	if (machine_is_wave() || machine_is_wave2()) { /* TODO: move to mach-herring.c */
 		hsmmc0_platdata.cd_type = S3C_SDHCI_CD_PERMANENT;
 	}
 	s3c_sdhci0_set_platdata(&hsmmc0_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC1)
-	if (machine_is_aries() || machine_is_wave() || machine_is_wave2()) {
+	if (machine_is_wave() || machine_is_wave2()) {
 		hsmmc1_platdata.cd_type = S3C_SDHCI_CD_EXTERNAL;
 		hsmmc1_platdata.ext_cd_init = ext_cd_init_hsmmc1;
 		hsmmc1_platdata.ext_cd_cleanup = ext_cd_cleanup_hsmmc1;
@@ -265,28 +269,25 @@ void s3c_sdhci_set_platdata(void)
 			hsmmc2_platdata.built_in = 1;
 			hsmmc2_platdata.must_maintain_clock = 1;
 			hsmmc2_platdata.enable_intr_on_resume = 1;
+		} else {
+			hsmmc2_platdata.cd_type = S3C_SDHCI_CD_GPIO;
+			hsmmc2_platdata.ext_cd_gpio = S5PV210_GPH3(4);
+			hsmmc2_platdata.ext_cd_gpio_invert = true;
+			universal_sdhci2_cfg_ext_cd();
 		}
 	}
-	else if (machine_is_aries() || (machine_is_herring() && !herring_is_cdma_wimax_dev())) {
+
+	if (machine_is_wave() || machine_is_wave2()) {
 		hsmmc2_platdata.cd_type = S3C_SDHCI_CD_GPIO;
-		hsmmc2_platdata.ext_cd_gpio = GPIO_T_FLASH_DETECT;
+		hsmmc2_platdata.ext_cd_gpio = S5PV210_GPH3(4);
 		hsmmc2_platdata.ext_cd_gpio_invert = true;
 		universal_sdhci2_cfg_ext_cd();
-	}
-	else if(machine_is_wave() || machine_is_wave2())
-	{
-		/* There is T-Flash detect GPIO on Wave board, 
-		 * but appears to be not working on some boards.
-		 * We don't know how to recognize faulty boards,
-		 * so let's force SDHCI_QUIRK_BROKEN_CARD_DETECTION
-		 * card will be polled by SDHCI driver.*/
-		hsmmc2_platdata.cd_type = S3C_SDHCI_CD_NONE;
 	}
 
 	s3c_sdhci2_set_platdata(&hsmmc2_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC3)
-	if (machine_is_herring() || machine_is_aries() || machine_is_wave() || machine_is_wave2()) {
+	if (machine_is_wave() || machine_is_wave2()) {
 		hsmmc3_platdata.cd_type = S3C_SDHCI_CD_EXTERNAL;
 		hsmmc3_platdata.ext_cd_init = ext_cd_init_hsmmc3;
 		hsmmc3_platdata.ext_cd_cleanup = ext_cd_cleanup_hsmmc3;
