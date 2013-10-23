@@ -2046,9 +2046,9 @@ static u8 t9_s8530_config[] = {TOUCH_MULTITOUCHSCREEN_T9, // for Wave2
 139,
 0, 0, //xorigin, yorigin
 19, 11, //xsize, ysize
-0, 33, 30, 2, 7, 0, 3, 1,
-46, MXT224_MAX_MT_FINGERS,
-5, 40,
+0, 16, 32, 3, 7, 0, 3, 1,
+0, MXT224_MAX_MT_FINGERS,
+32, 32,
 10, //amphyst
 0, 0, //xrange, yrange
 0, 0, 0, 0, 0, 0,
