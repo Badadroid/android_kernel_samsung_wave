@@ -42,7 +42,7 @@ void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 		for (gpio = S5PV210_GPG1(3); gpio <= S5PV210_GPG1(6); gpio++) {
 			s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(3));
 			s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-			s3c_gpio_set_drvstrength(gpio, DRVSTR);
+			s3c_gpio_set_drvstrength(gpio, S3C_GPIO_DRVSTR_3X);
 		}
 
 	case 0:
@@ -53,7 +53,7 @@ void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 			if (gpio != S5PV210_GPG0(2)) {
 				s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
 				s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-				s3c_gpio_set_drvstrength(gpio, DRVSTR);
+				s3c_gpio_set_drvstrength(gpio, S3C_GPIO_DRVSTR_3X);
 			}
 		}
 		break;
