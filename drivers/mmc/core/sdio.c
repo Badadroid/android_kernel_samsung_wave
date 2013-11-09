@@ -31,6 +31,10 @@
 #include <linux/mmc/sdio_ids.h>
 #endif
 
+#ifdef CONFIG_MACH_P1
+#define BRCM_PATCH
+#endif
+
 static int sdio_read_fbr(struct sdio_func *func)
 {
 	int ret;
