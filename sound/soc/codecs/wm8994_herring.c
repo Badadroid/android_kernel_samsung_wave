@@ -3506,9 +3506,16 @@ void wm8994_set_voicecall_speaker(struct snd_soc_codec *codec)
 
 void wm8994_set_voicecall_bluetooth(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_MACH_WAVE
+	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+#endif
 	int val;
 
 	DEBUG_LOG("");
+
+#ifdef CONFIG_MACH_WAVE
+	audio_ctrl_mic_bias_gpio(wm8994->pdata, 0);
+#endif
 
 	wm8994_set_voicecall_common_setting(codec);
 
