@@ -570,11 +570,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-#ifdef CONFIG_MACH_WAVE
-		.gain = WM8994_SPKOUT_VU | 0x3D    /* Left Speaker +4dB */
-#else
 		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
-#endif
 	}, {
 		.mode = PLAYBACK_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -638,11 +634,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-#ifdef CONFIG_MACH_WAVE
-		.gain = WM8994_SPKOUT_VU | 0x3D    /* Left Speaker +4dB */
-#else
 		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
-#endif
 	}, {
 		.mode = PLAYBACK_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -677,11 +669,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_RING_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-#ifdef CONFIG_MACH_WAVE
-		.gain = WM8994_SPKOUT_VU | 0x3D    /* Left Speaker +4dB */
-#else
 		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
-#endif
 	}, {
 		.mode = PLAYBACK_RING_SPK,
 		.reg  = WM8994_CLASSD,			/* 25h */
@@ -719,11 +707,7 @@ struct gain_info_t playback_gain_table[PLAYBACK_GAIN_NUM] = {
 		.mode = PLAYBACK_RING_SPK_HP,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-#ifdef CONFIG_MACH_WAVE
-		.gain = WM8994_SPKOUT_VU | 0x3D    /* Left Speaker +4dB */
-#else
 		.gain = WM8994_SPKOUT_VU | 0x3E    /* Left Speaker +5dB */
-#endif
 	}, {
 		.mode = PLAYBACK_RING_SPK_HP,
 		.reg  = WM8994_CLASSD,			/* 25h */
@@ -877,11 +861,7 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_LEFT,	/* 26h */
 		.mask = WM8994_SPKOUTL_VOL_MASK,
-#ifdef CONFIG_MACH_WAVE
-		.gain = WM8994_SPKOUT_VU | 0x39    /* Left Speaker 0dB */
-#else
 		.gain = WM8994_SPKOUT_VU | 0x3C    /* Left Speaker +3dB */
-#endif
 	}, {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_SPEAKER_VOLUME_RIGHT,	/* 27h */
@@ -891,11 +871,7 @@ struct gain_info_t voicecall_gain_table[VOICECALL_GAIN_NUM] = {
 		.mode = VOICECALL_SPK,
 		.reg  = WM8994_CLASSD,			/* 25h */
 		.mask = WM8994_SPKOUTL_BOOST_MASK,
-#ifdef CONFIG_MACH_WAVE
-		.gain = 0x4 << WM8994_SPKOUTL_BOOST_SHIFT /* Left speaker +6dB */
-#else
 		.gain = 0x7 << WM8994_SPKOUTL_BOOST_SHIFT /* Left speaker +12dB */
-#endif
 	}, { /* HP */
 		.mode = VOICECALL_HP,
 		.reg  = WM8994_RIGHT_LINE_INPUT_1_2_VOLUME,	/* 1Ah */
