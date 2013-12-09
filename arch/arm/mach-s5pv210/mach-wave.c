@@ -3734,6 +3734,7 @@ static void wave_power_off(void)
 
 	/* Tell the CP we're blacking out */
 	gpio_set_value(GPIO_PHONE_ON, 0);
+	s3c_gpio_cfgpin(GPIO_PHONE_ACTIVE, S3C_GPIO_INPUT);
 	while (1) {
 		if (gpio_get_value(GPIO_PHONE_ACTIVE)) {
 			if (phone_wait_cnt >= 5) {
@@ -3741,8 +3742,9 @@ static void wave_power_off(void)
 				   "%s: Try to Turn Phone Off by CP_RST\n",
 				   __func__);
 				gpio_set_value(GPIO_CP_RST, 0);
+				s3c_gpio_cfgpin(GPIO_CP_RST, S3C_GPIO_OUTPUT);
 			}
-			if (phone_wait_cnt > 7) {
+			if (phone_wait_cnt > 10) {
 				printk(KERN_EMERG "%s: PHONE OFF Failed\n",
 				   __func__);
 				break;
