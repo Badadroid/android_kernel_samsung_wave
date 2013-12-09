@@ -1896,7 +1896,6 @@ static int s5ka3dfx_power_off(void)
 {
 	int err;
 
-
 	err = camera_ldo_en(false);
 	if (err) {
 		pr_err("Failed camera_ldo_en\n");
@@ -3731,6 +3730,30 @@ void s3c_config_gpio_table(void)
 #define S5PV210_PS_HOLD_CONTROL_REG (S3C_VA_SYS+0xE81C)
 static void wave_power_off(void)
 {
+	int phone_wait_cnt = 0;
+
+	/* Tell the CP we're blacking out */
+	gpio_set_value(GPIO_PHONE_ON, 0);
+	while (1) {
+		if (gpio_get_value(GPIO_PHONE_ACTIVE)) {
+			if (phone_wait_cnt >= 5) {
+				printk(KERN_EMERG
+				   "%s: Try to Turn Phone Off by CP_RST\n",
+				   __func__);
+				gpio_set_value(GPIO_CP_RST, 0);
+			}
+			if (phone_wait_cnt > 7) {
+				printk(KERN_EMERG "%s: PHONE OFF Failed\n",
+				   __func__);
+				break;
+			}
+			phone_wait_cnt++;
+			msleep(1000);
+		} else {
+			printk(KERN_EMERG "%s: PHONE OFF Success\n", __func__);
+			break;
+		}
+	}
 	while (1) {
 		/* Check reboot charging */
 		if (set_cable_status) {

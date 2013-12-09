@@ -29,7 +29,6 @@ static struct modemctl_data mdmctl_data = {
 	.gpio_pda_active = GPIO_PDA_ACTIVE,
 	.gpio_cp_reset = GPIO_CP_RST,
 
-
 	.gpio_usim_boot = GPIO_USIM_BOOT,
 	.gpio_flm_sel = GPIO_FLM_SEL,
 	.gpio_phone_on = GPIO_PHONE_ON,

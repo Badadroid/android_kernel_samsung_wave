@@ -54,8 +54,6 @@ struct modemctl_data {
 	unsigned gpio_usim_boot;
 	unsigned gpio_flm_sel;
 	unsigned gpio_sim_ndetect;
-
-
 };
 
 #endif
