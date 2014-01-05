@@ -976,18 +976,6 @@ static struct max8998_platform_data max8998_pdata = {
 	.num_regulators = ARRAY_SIZE(aries_regulators),
 	.regulators     = aries_regulators,
 	.charger        = &aries_charger,
-	/* Preloads must be in increasing order of voltage value */
-	.buck1_voltage4	= 950000,
-	.buck1_voltage3	= 1050000,
-	.buck1_voltage2	= 1200000,
-	.buck1_voltage1	= 1275000,
-	.buck2_voltage2	= 1000000,
-	.buck2_voltage1	= 1100000,
-	.buck1_set1	= GPIO_BUCK_1_EN_A,
-	.buck1_set2	= GPIO_BUCK_1_EN_B,
-	.buck2_set3	= GPIO_BUCK_2_EN,
-	.buck1_default_idx = 1,
-	.buck2_default_idx = 0,
 };
 
 struct platform_device sec_device_dpram = {

@@ -99,9 +99,9 @@ struct max8998_charger_data {
 	struct max8998_adc_table_data *adc_table;
 	int adc_array_size;
 #else // CONFIG_MACH_P1
+	struct charger_device *chgdev;
 	int (*charger_dev_register)(struct charger_device *chgdev);
 	void (*charger_dev_unregister)(struct charger_device *chgdev);
-	struct charger_device *chgdev;
 #endif
 };
 
@@ -134,22 +134,8 @@ struct max8998_platform_data {
 	int				num_regulators;
 	int				irq_base;
 	int				ono;
-#ifdef CONFIG_MACH_ARIES
-	bool				buck_voltage_lock;
-	int				buck1_voltage1;
-	int				buck1_voltage2;
-	int				buck1_voltage3;
-	int				buck1_voltage4;
-	int				buck2_voltage1;
-	int				buck2_voltage2;
-	int				buck1_set1;
-	int				buck1_set2;
-	int				buck1_default_idx;
-	int				buck2_set3;
-	int				buck2_default_idx;
-	bool				wakeup;
-	bool				rtc_delay;
-#endif
+	bool			wakeup;
+	bool			rtc_delay;
 	struct max8998_charger_data	*charger;
 };
 
