@@ -1,6 +1,6 @@
 BUILDING THE KERNEL
 
-  In CyanogenMod 9, kernel building is now integrated into the Android Build
+  In OnmiROM, kernel building is now integrated into the Android Build
   System and building through the Android Build System is the only supported
   method of building the kernel.
 
@@ -24,4 +24,4 @@ BUILDING THE KERNEL
 
   For more info, please see
 
-        http://wiki.cyanogenmod.com/wiki/Integrated_kernel_building
+        http://docs.omnirom.org/Compiling_For_Your_Device

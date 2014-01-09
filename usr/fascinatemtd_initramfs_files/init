@@ -39,7 +39,7 @@ elif ! busybox test -e /system/build.prop ; then
 
 	busybox mount -t vfat /dev/block/mmcblk1p1 /sdcard
 
-	UPDATE=$(busybox cat /sdcard/cyanogenmod.cfg)
+	UPDATE=$(busybox cat /sdcard/omni.cfg)
 
 	if busybox test -n "$UPDATE" ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
