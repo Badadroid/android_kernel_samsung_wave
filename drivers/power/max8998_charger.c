@@ -19,7 +19,7 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/power_supply.h>
-#include <linux/sec_battery.h>
+#include <linux/power/sec_battery.h>
 #include <linux/mfd/max8998.h>
 #include <linux/mfd/max8998-private.h>
 #include <linux/regulator/driver.h>

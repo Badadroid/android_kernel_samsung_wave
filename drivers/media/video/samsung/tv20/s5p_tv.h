@@ -1095,6 +1095,5 @@ extern bool __s5p_start_hdcp(void);
 extern bool __s5p_stop_hdcp(void);
 
 #if defined(CONFIG_MACH_P1)
-extern unsigned int HWREV;
 void TVout_LDO_ctrl(int enable);
 #endif

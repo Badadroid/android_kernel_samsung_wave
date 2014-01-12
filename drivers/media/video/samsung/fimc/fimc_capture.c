@@ -750,11 +750,13 @@ int fimc_s_input(struct file *file, void *fh, unsigned int i)
 	struct fimc_global *fimc = get_fimc_dev();
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
 	int ret = 0;
+#ifdef CONFIG_MACH_P1
+	int err = 0;
+#endif
 
 	fimc_dbg("%s: index %d\n", __func__, i);
 
 #ifdef CONFIG_MACH_P1
-	int err = 0;
 #if defined(CONFIG_VIDEO_NM6XX)
 	if( i == 0 && camera_back_check && camera_active_type == 4 )
 #else
@@ -1750,12 +1752,6 @@ static void fimc_reset_capture(struct fimc_control *ctrl)
 int fimc_streamon_capture(void *fh)
 {
 	struct fimc_control *ctrl = ((struct fimc_prv_data *)fh)->ctrl;
-#ifdef CONFIG_MACH_P1
-	if (!ctrl->cap || !ctrl->cap->nr_bufs) {
-		fimc_err("%s: Invalid capture setting.\n", __func__);
-		return -EINVAL;
-	}
-#endif
 	struct fimc_capinfo *cap = ctrl->cap;
 	struct v4l2_frmsizeenum cam_frmsize;
 #ifdef CONFIG_MACH_P1
@@ -1764,11 +1760,19 @@ int fimc_streamon_capture(void *fh)
 	int rot;
 	int ret;
 
-	fimc_dbg("%s\n", __func__);
 #ifdef CONFIG_MACH_ARIES
 	char *ce147 = "CE147 0-003c";
 	device_id = strcmp(ctrl->cam->sd->name, ce147);
 	fimc_dbg("%s, name(%s), device_id(%d), vtmode(%d)\n", __func__, ctrl->cam->sd->name , device_id, vtmode);
+#endif
+
+	fimc_dbg("%s\n", __func__);
+
+#ifdef CONFIG_MACH_P1
+	if (!ctrl->cap || !ctrl->cap->nr_bufs) {
+		fimc_err("%s: Invalid capture setting.\n", __func__);
+		return -EINVAL;
+	}
 #endif
 	if (!ctrl->cam || !ctrl->cam->sd) {
 		fimc_err("%s: No capture device.\n", __func__);

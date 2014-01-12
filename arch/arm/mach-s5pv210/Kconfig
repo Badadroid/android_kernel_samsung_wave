@@ -339,48 +339,38 @@ endif
 if MACH_P1
 choice
 prompt "Select device type"
-config PHONE_P1_GSM
-	bool "select p1 gsm"
-	depends on MACH_P1
-	help
-	 Select P1 GSM
-
-config PHONE_P1_CDMA
-	bool "select p1 cdma"
-	depends on MACH_P1
-	help
-	 Select P1 CDMA
-
-endchoice
-endif
-
-if PHONE_P1_CDMA
-choice
-prompt "Select device model"
-config SAMSUNG_P1C
-	bool "P1C"
-	depends on PHONE_P1_CDMA
-	help
-	 Select Samsung Galaxy Tab CDMA SCH-I800/SPH-P100
-
-endchoice
-endif
-
-if PHONE_P1_GSM
-choice
-prompt "Select device model"
 config SAMSUNG_P1
 	bool "P1"
-	depends on PHONE_P1_GSM
+	select PHONE_P1_GSM
 	help
 	 Select Samsung Galaxy Tab GT-P1000
 
+config SAMSUNG_P1C
+	bool "P1C"
+	select PHONE_P1_CDMA
+	help
+	 Select Samsung Galaxy Tab CDMA SCH-I800/SPH-P100
+
 config SAMSUNG_P1LN
-	bool "P1L"
-	depends on PHONE_P1_GSM
+	bool "P1LN"
+	select PHONE_P1_GSM
 	help
 	 Select Samsung Galaxy Tab GT-P1000L and GT-P1000N
+
 endchoice
+
+config PHONE_P1_CDMA
+	bool "select p1 cdma"
+	depends on MACH_P1 && SAMSUNG_P1C
+	help
+	 Select P1 CDMA
+
+config PHONE_P1_GSM
+	bool "select p1 gsm"
+	depends on MACH_P1 && (SAMSUNG_P1 || SAMSUNG_P1LN)
+	help
+	 Select P1 GSM
+
 endif
 
 config S5PV210_SETUP_FB

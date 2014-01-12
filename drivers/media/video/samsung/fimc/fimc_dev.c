@@ -380,12 +380,14 @@ static inline void fimc_irq_out(struct fimc_control *ctrl)
 	/* Interrupt pendding clear */
 	fimc_hwset_clear_irq(ctrl);
 
+#ifdef CONFIG_MACH_ARIES
 	/* check context num */
 	if (ctx_num < 0 || ctx_num >= FIMC_MAX_CTXS) {
 		fimc_err("fimc_irq_out: invalid ctx (ctx=%d)\n", ctx_num);
 		wake_up(&ctrl->wq);
 		return;
 	}
+#endif
 
 	ctx = &ctrl->out->ctx[ctx_num];
 
@@ -754,11 +756,9 @@ static u32 fimc_poll(struct file *filp, poll_table *wait)
 static
 ssize_t fimc_read(struct file *filp, char *buf, size_t count, loff_t *pos)
 {
-
 	int err = 0;
 #ifdef CONFIG_MACH_P1
 	printk("%s, for factory test\n", __func__);
-
 
 	gpio_direction_output(S5PV210_MP04(2), 0);
 	gpio_direction_output(S5PV210_MP04(3), 0);
@@ -1633,8 +1633,11 @@ int fimc_suspend(struct platform_device *pdev, pm_message_t state)
 		fimc_suspend_cap(ctrl);
 	else
 		ctrl->status = FIMC_OFF_SLEEP;
-
+#ifdef CONFIG_MACH_ARIES
 	if (atomic_read(&ctrl->in_use) && ctrl->status != FIMC_OFF_SLEEP)
+#else // CONFIG_MACH_P1
+	if (atomic_read(&ctrl->in_use))
+#endif
 		fimc_clk_en(ctrl, false);
 
 	return 0;
@@ -1748,8 +1751,11 @@ int fimc_resume(struct platform_device *pdev)
 
 	ctrl = get_fimc_ctrl(id);
 	pdata = to_fimc_plat(ctrl->dev);
-
+#ifdef CONFIG_MACH_ARIES
 	if (atomic_read(&ctrl->in_use) && ctrl->status != FIMC_OFF_SLEEP)
+#else // CONFIG_MACH_P1
+	if (atomic_read(&ctrl->in_use))
+#endif
 		fimc_clk_en(ctrl, true);
 
 	if (ctrl->out)

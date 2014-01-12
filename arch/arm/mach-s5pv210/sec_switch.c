@@ -20,22 +20,30 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/switch.h>
-#include <linux/fsa9480.h>
-#include <linux/mfd/max8998.h>
-#include <linux/regulator/consumer.h>
-#include <linux/moduleparam.h>
-#include <asm/mach/arch.h>
 #include <mach/param.h>
+#include <linux/fsa9480.h>
+#include <asm/mach/arch.h>
+#include <linux/regulator/consumer.h>
 #include <mach/gpio.h>
+
+#ifdef CONFIG_MACH_ARIES
+#include <linux/mfd/max8998.h>
+#include <mach/gpio-aries.h>
+#else
+#include <linux/power/sec_battery.h>
 #include <mach/gpio-p1.h>
+#endif
+
 #include <mach/sec_switch.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-gpio.h>
 #include <plat/gpio-cfg.h>
+#include <linux/moduleparam.h>
 
 struct sec_switch_struct {
 	struct sec_switch_platform_data *pdata;
 	int switch_sel;
+	int uart_owner;
 };
 
 struct sec_switch_wq {
@@ -46,19 +54,33 @@ struct sec_switch_wq {
 
 /* for sysfs control (/sys/class/sec/switch/) */
 extern struct device *switch_dev;
+static int switchsel;
+static struct kernel_param_ops param_ops_switchsel = {
+	.set = param_set_int,
+	.get = param_get_int,
+};
 
-static void usb_switch_mode(struct sec_switch_struct *secsw, int mode)
+// Get SWITCH_SEL param value from kernel CMDLINE parameter.
+__module_param_call("", switchsel, &param_ops_switchsel, &switchsel, 0, 0444);
+MODULE_PARM_DESC(switchsel, "Switch select parameter value.");
+
+
+static void usb_switch_mode(struct sec_switch_struct *secsw, int mode)
 {
-	if (mode == SWITCH_PDA)	{
-		if (secsw->pdata && secsw->pdata->set_vbus_status)
-			secsw->pdata->set_vbus_status((u8)USB_VBUS_AP_ON);
+	if (mode == SWITCH_PDA) {
+		if (secsw->pdata && secsw->pdata->set_regulator)
+			secsw->pdata->set_regulator(AP_VBUS_ON);
 		mdelay(10);
-		fsa9480_manual_switching(SWITCH_PORT_AUTO);
+		fsa9480_manual_switching(AUTO_SWITCH);
 	} else {
-		if (secsw->pdata && secsw->pdata->set_vbus_status)
-			secsw->pdata->set_vbus_status((u8)USB_VBUS_CP_ON);
+		if(secsw->pdata && secsw->pdata->set_regulator)
+			secsw->pdata->set_regulator(CP_VBUS_ON);
 		mdelay(10);
-		fsa9480_manual_switching(SWITCH_PORT_AUDIO);
+#if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_FASCINATE)
+		fsa9480_manual_switching(SWITCH_Audio_Port);
+#else
+		fsa9480_manual_switching(SWITCH_V_Audio_Port);
+#endif
 	}
 }
 
@@ -124,6 +146,10 @@ static ssize_t usb_sel_store(struct device *dev, struct device_attribute *attr,
 	if (sec_set_param_value)
 		sec_set_param_value(__SWITCH_SEL, &secsw->switch_sel);
 
+	// update shared variable.
+	if(secsw->pdata && secsw->pdata->set_switch_status)
+		secsw->pdata->set_switch_status(secsw->switch_sel);
+
 	return size;
 }
 
@@ -155,16 +181,9 @@ static ssize_t disable_vbus_store(struct device *dev, struct device_attribute *a
 				  const char *buf, size_t size)
 {
 	struct sec_switch_struct *secsw = dev_get_drvdata(dev);
-
-	if (IS_ERR_OR_NULL(secsw->pdata) ||
-	    IS_ERR_OR_NULL(secsw->pdata->set_vbus_status) ||
-	    IS_ERR_OR_NULL(secsw->pdata->set_usb_gadget_vbus))
-		return size;
-
-	secsw->pdata->set_usb_gadget_vbus(false);
-	secsw->pdata->set_vbus_status((u8)USB_VBUS_ALL_OFF);
-	msleep(10);
-	secsw->pdata->set_usb_gadget_vbus(true);
+	printk("%s\n", __func__);
+	if(secsw->pdata && secsw->pdata->set_regulator)
+		secsw->pdata->set_regulator(AP_VBUS_OFF);
 
 	return size;
 }
@@ -181,20 +200,26 @@ static void sec_switch_init_work(struct work_struct *work)
 	struct sec_switch_struct *secsw = wq->sdata;
 	int usb_sel = 0;
 	int uart_sel = 0;
+	int ret = 0;
 
-	if (sec_get_param_value &&
-	    secsw->pdata &&
-	    secsw->pdata->set_vbus_status &&
-	    secsw->pdata->get_phy_init_status &&
-	    secsw->pdata->get_phy_init_status()) {
-		sec_get_param_value(__SWITCH_SEL, &secsw->switch_sel);
+	if (!regulator_get(NULL, "vbus_ap")  || !(secsw->pdata->get_phy_init_status())) {
+		schedule_delayed_work(&wq->work_q, msecs_to_jiffies(100));
+		return ;
+	}
+	else
 		cancel_delayed_work(&wq->work_q);
-	} else {
-		schedule_delayed_work(&wq->work_q, msecs_to_jiffies(1000));
-		return;
+
+	if(secsw->pdata && secsw->pdata->get_regulator) {
+		ret = secsw->pdata->get_regulator();
+		if(ret != 0) {
+			pr_err("%s : failed to get regulators\n", __func__);
+			return ;
+		}
 	}
 
-	pr_debug("%s : initial sec switch value = 0x%X\n", __func__, secsw->switch_sel);
+	// init shared variable.
+	if(secsw->pdata && secsw->pdata->set_switch_status)
+		secsw->pdata->set_switch_status(secsw->switch_sel);
 
 	usb_sel = secsw->switch_sel & USB_SEL_MASK;
 	uart_sel = secsw->switch_sel & UART_SEL_MASK;
@@ -205,10 +230,14 @@ static void sec_switch_init_work(struct work_struct *work)
 	else
 		usb_switch_mode(secsw, SWITCH_MODEM);
 
-	if (uart_sel)
+	if (uart_sel) {
 		gpio_set_value(GPIO_UART_SEL, 1);
-	else
+		secsw->uart_owner = 1;
+	}
+	else {
 		gpio_set_value(GPIO_UART_SEL, 0);
+		secsw->uart_owner = 0;
+	}
 }
 
 static int sec_switch_probe(struct platform_device *pdev)
@@ -230,7 +259,7 @@ static int sec_switch_probe(struct platform_device *pdev)
 	}
 
 	secsw->pdata = pdata;
-	secsw->switch_sel = 1;
+	secsw->switch_sel = switchsel;
 
 	dev_set_drvdata(switch_dev, secsw);
 

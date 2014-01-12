@@ -2422,11 +2422,11 @@ static int s5k5ccgx_s_crystal_freq(struct v4l2_subdev *sd, u32 freq, u32 flags)
 	return err;
 }
 
-static int s5k5ccgx_g_fmt(struct v4l2_subdev *sd, struct v4l2_format *fmt)
+static int s5k5ccgx_g_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt)
 {
 	int err = 0;
 
-	printk(KERN_DEBUG "s5k5ccgx_g_fmt is called... \n");
+	printk(KERN_DEBUG "s5k5ccgx_g_mbus_fmt is called... \n");
 
 	return err;
 }
@@ -2564,7 +2564,7 @@ static int s5k5ccgx_try_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framef
 	int num_entries;
 	int i;
 
-	num_entries = ARRAY_SIZE(capture_fmts);
+	num_entries = sizeof(capture_fmts)/sizeof(struct v4l2_mbus_framefmt);
 
 	for(i = 0; i < num_entries; i++){
 		if(capture_fmts[i].code == fmt->code &&
@@ -3297,7 +3297,7 @@ static const struct v4l2_subdev_core_ops s5k5ccgx_core_ops = {
 
 static const struct v4l2_subdev_video_ops s5k5ccgx_video_ops = {
 	.s_crystal_freq = s5k5ccgx_s_crystal_freq,
-	.g_fmt = s5k5ccgx_g_fmt,
+	.g_mbus_fmt = s5k5ccgx_g_mbus_fmt,
 	.s_mbus_fmt = s5k5ccgx_s_mbus_fmt,
 	.enum_framesizes = s5k5ccgx_enum_framesizes,
 	.enum_frameintervals = s5k5ccgx_enum_frameintervals,
@@ -3373,14 +3373,20 @@ static int s5k5ccgx_probe(struct i2c_client *client,
 	state->pix.height = pdata->default_height;
 
 	if (!pdata->pixelformat)
-	  state->pix.pixelformat = DEFAULT_PIX_FMT;
+		state->pix.pixelformat = DEFAULT_PIX_FMT;
 	else
-	  state->pix.pixelformat = pdata->pixelformat;
+		state->pix.pixelformat = pdata->pixelformat;
 
 	if (!pdata->freq)
-	  state->freq = DEFAULT_MCLK;/* 24MHz default */
+		state->freq = DEFAULT_MCLK;/* 24MHz default */
 	else
-	  state->freq = pdata->freq;
+		state->freq = pdata->freq;
+
+	if (!pdata->is_mipi) {
+		state->is_mipi = 0;
+		dev_dbg(&client->dev, "parallel mode\n");
+	} else
+		state->is_mipi = pdata->is_mipi;
 
 	/* Registering subdev */
 	v4l2_i2c_subdev_init(sd, client, &s5k5ccgx_ops);

@@ -17,17 +17,17 @@
  *
  */
 
-static int MYDRV_MAJOR;
+//static int MYDRV_MAJOR;
 
-static int MHDDRV_MAJOR;
+//static int MHDDRV_MAJOR;
 
-static bool tclkStable;
-static bool mobileHdCableConnected;
+//static bool tclkStable;
+//static bool mobileHdCableConnected;
 static bool hdmiCableConnected;
 static bool dsRxPoweredUp;
 static byte tmdsPoweredUp;
 static byte txPowerState;
-static bool checkTclkStable;
+//static bool checkTclkStable;
 
 
 /*=======================================================================================*/
@@ -49,7 +49,7 @@ byte ReadByteTPI(byte Offset);
 void WriteByteTPI(byte Offset, byte Data);
 void ReadModifyWriteTPI(byte Offset, byte Mask, byte Data);
 void WriteIndexedRegister (byte PageNum, byte Offset, byte Data);
-static void sii9234_initializeStateVariables (void);
+//static void sii9234_initializeStateVariables (void);
 
 void sii9234_initial_registers_set(void);
 void sii9234_enable_interrupts(void);
@@ -64,11 +64,11 @@ static void TxPowerStateD0 (void);
 static void EnableInterrupts (void);
 void CheckTxFifoStable (void);
 void HotPlugService (void) ;
-static void WakeUpFromD3 (void) ;
+//static void WakeUpFromD3 (void) ;
 void ReadModifyWriteCBUS(byte Offset, byte Mask, byte Value) ;
-static void OnMHDCableConnected (void) ;
+//static void OnMHDCableConnected (void) ;
 void ForceUsbIdSwitchOpen (void) ;
-static void ReleaseUsbIdSwitchOpen (void) ;
+//static void ReleaseUsbIdSwitchOpen (void) ;
 void DisableTMDS (void) ;
 void OnDownstreamRxPoweredDown (void) ;
 void OnHdmiCableDisconnected (void) ;
@@ -263,7 +263,7 @@ void WriteIndexedRegister (byte PageNum, byte Offset, byte Data)
 	WriteByteTPI(TPI_INDEXED_VALUE_REG, Data);			// Write value
 }
 
-
+/*
 static void sii9234_initializeStateVariables (void)
 {
 
@@ -274,6 +274,7 @@ static void sii9234_initializeStateVariables (void)
 	hdmiCableConnected = FALSE;
 	dsRxPoweredUp = FALSE;
 }
+*/
 
 void InitCBusRegs(void)
 {
@@ -621,13 +622,14 @@ void HotPlugService (void)
 	CheckTxFifoStable();
 }
 
-
+/*
 static void WakeUpFromD3 (void)
 {
 
 	TPI_DEBUG_PRINT(("[SIMG] Waking up...\n"));
   sii9234_tpi_init();
 }
+*/
 
 
 void ReadModifyWriteCBUS(byte Offset, byte Mask, byte Value)
@@ -640,6 +642,7 @@ void ReadModifyWriteCBUS(byte Offset, byte Mask, byte Value)
   WriteByteCBUS(Offset, Temp);
 }
 
+/*
 void OnMHDCableConnected (void)
 {
 
@@ -663,7 +666,7 @@ void OnMHDCableConnected (void)
 	WriteByteCBUS(0x21, 0x01); // Heartbeat Disable
 
 }
-
+*/
 
 void ForceUsbIdSwitchOpen (void)
 {
@@ -673,7 +676,7 @@ void ForceUsbIdSwitchOpen (void)
 	ReadModifyWriteIndexedRegister(INDEXED_PAGE_0, 0x79, SI_BIT_5 | SI_BIT_4, SI_BIT_4);		// Force HPD to 0 when not in MHD mode.
 }
 
-
+/*
 static void ReleaseUsbIdSwitchOpen (void)
 {
 	delay_ms(25);
@@ -689,13 +692,13 @@ static void InitForceUsbIdSwitchOpen (void)
   WriteByteTPI(0x92, 0x46);						// Force MHD mode
 }
 
-
 static void InitReleaseUsbIdSwitchOpen (void)
 {
 	delay_ms(25);
 	ReadModifyWriteTPI(0x95, SI_BIT_6, 0x00);				// Release USB ID switch
 	ReadModifyWriteTPI(0x90, SI_BIT_0, SI_BIT_0);				// Enable CBUS discovery
 }
+*/
 
 void DisableTMDS (void)
 {

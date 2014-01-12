@@ -22,6 +22,8 @@
 struct bh1721_platform_data
 {
 	void (*reset)(void);
+	int light_adc_max;
+	int light_adc_fuzz;
 };
 #endif /* __KERNEL__ */
 

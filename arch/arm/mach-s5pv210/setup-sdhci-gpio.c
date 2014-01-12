@@ -23,6 +23,11 @@
 #include <plat/regs-sdhci.h>
 #include <plat/sdhci.h>
 
+#ifdef CONFIG_MACH_P1
+#include <mach/gpio.h>
+#include <mach/gpio-p1.h>
+#endif
+
 #include "herring.h"
 
 #if defined (CONFIG_SAMSUNG_GALAXYS) || defined(CONFIG_SAMSUNG_FASCINATE)
@@ -61,7 +66,7 @@ void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
 		printk(KERN_ERR "Wrong SD/MMC bus width : %d\n", width);
 	}
 
-	if (machine_is_herring() || machine_is_aries() || machine_is_p1()) {
+	if (machine_is_herring() || machine_is_aries()) {
 		s3c_gpio_cfgpin(S5PV210_GPJ2(7), S3C_GPIO_OUTPUT);
 		s3c_gpio_setpull(S5PV210_GPJ2(7), S3C_GPIO_PULL_NONE);
 		gpio_set_value(S5PV210_GPJ2(7), 1);
@@ -128,6 +133,13 @@ void s5pv210_setup_sdhci2_cfg_gpio(struct platform_device *dev, int width)
 	default:
 		printk(KERN_ERR "Wrong SD/MMC bus width : %d\n", width);
 	}
+
+#if defined(CONFIG_PHONE_P1_CDMA)
+	s3c_gpio_cfgpin(S5PV210_GPJ1(1), S3C_GPIO_OUTPUT);
+	s3c_gpio_setpull(S5PV210_GPJ1(1), S3C_GPIO_PULL_NONE);
+	gpio_set_value(S5PV210_GPJ1(1), 1);
+#endif
+
 }
 
 void s5pv210_setup_sdhci3_cfg_gpio(struct platform_device *dev, int width)

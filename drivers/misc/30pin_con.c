@@ -1,5 +1,18 @@
+/*
+ * Copyright (C) 2008 Samsung Electronics, Inc.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
+
 #include <linux/module.h>
-#include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -8,86 +21,54 @@
 #include <linux/interrupt.h>
 #include <linux/i2c.h>
 #include <linux/device.h>
-#include <plat/gpio-cfg.h>
+#include <linux/slab.h>
+#include <linux/wakelock.h>
+#include <linux/earlysuspend.h>
+#include <linux/30pin_con.h>
 #include <asm/irq.h>
 #include <mach/regs-gpio.h>
 #include <mach/regs-clock.h>
 #include <mach/gpio-p1.h>
 
-#define SUBJECT "CONNECTOR_DRIVER"
+#define IRQ_ACCESSORY_INT    IRQ_EINT5
+#define IRQ_DOCK_INT         IRQ_EINT(29)
+#define ACCESSORY_ID         4
 
-#define ACC_CONDEV_DBG(format,...)\
-	printk ("[ "SUBJECT " (%s,%d) ] " format "\n", __func__, __LINE__, ## __VA_ARGS__);
-
-#define ACCESSORY_ID 4
-#define DETECTION_INTR_DELAY	 	get_jiffies_64() + (HZ*(1/10))// 20s
-#define IRQ_ACCESSORY_INT	IRQ_EINT5
-#define IRQ_DOCK_INT	IRQ_EINT(29)
-#define IRQ_MHL_INT		IRQ_EINT10
-
-#define ACC_TVOUT       1
-#define ACC_LINEOUT     2
-#define ACC_CARMOUNT    3
-
-#define DOCK_DESK       1
-#define DOCK_KEYBD      2
-
-#define TRUE            1
-#define FALSE           0
-
-int DOCK_STATE        = 3;
-int ACC_STATE         = 1;
-int CONNECTED_ACC     = 0;
-int CONNECTED_DOCK    = 0;
-
-#ifdef CONFIG_USB_S3C_OTG_HOST
-// workaround for wrong interrupt at boot time :(
-static unsigned int intr_count = 0;
-#endif
-
-extern int s3c_adc_get_adc_data(int channel);
-
-#if defined(CONFIG_KEYBOARD_P1)
-extern int check_keyboard_dock(int val);
-#endif
-
-extern unsigned int HWREV;
-
-#ifdef CONFIG_MHL_SII9234
-extern void sii9234_tpi_init(void);
-extern void MHD_GPIO_INIT(void);
-extern void MHD_HW_Reset(void);
-extern void MHD_HW_Off(void);
-extern int MHD_HW_IsOn(void);
-extern int MHD_Read_deviceID(void);
-extern void MHD_INT_clear(void);
-extern void MHD_OUT_EN(void);
-
-//I2C driver add 20100614  kyungrok
 extern struct i2c_driver SII9234_i2c_driver;
 extern struct i2c_driver SII9234A_i2c_driver;
 extern struct i2c_driver SII9234B_i2c_driver;
 extern struct i2c_driver SII9234C_i2c_driver;
 
+extern int check_keyboard_dock(int val);
 extern void TVout_LDO_ctrl(int enable);
+extern void sii9234_tpi_init(void);
+extern void MHD_HW_Off(void);
+extern int MHD_HW_IsOn(void);
+extern int MHD_Read_deviceID(void);
+extern void MHD_GPIO_INIT(void);
+extern int s3c_adc_get_adc_data(int channel);
+
+#if defined CONFIG_USB_S3C_OTG_HOST || defined CONFIG_USB_DWC_OTG
+extern void set_otghost_mode(int mode);
 #endif
 
-static struct device *acc_dev;
+bool enable_audio_usb = false;
 
-static struct platform_driver acc_con_driver;
-static struct workqueue_struct *acc_con_workqueue;
-static struct work_struct acc_con_work;
+struct acc_con_info {
+	struct device *acc_dev;
+	struct wake_lock wake_lock;
+	struct work_struct dwork;
+	struct work_struct awork;
+	struct workqueue_struct *con_workqueue;
+	struct workqueue_struct *id_workqueue;
+	enum accessory_type current_accessory;
+	enum dock_type current_dock;
+	int dock_state;
+	int acc_state;
+};
 
-static struct workqueue_struct *acc_ID_workqueue;
-static struct work_struct acc_ID_work;
-
-static struct workqueue_struct *acc_MHD_workqueue;
-static struct work_struct acc_MHD_work;
-
-void acc_con_interrupt_init(void);
-static int connector_detect_change(void);
-
-static ssize_t MHD_check_read(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t MHD_check_read(struct device *dev,
+	struct device_attribute *attr, char *buf)
 {
 	int count;
 	int res;
@@ -95,81 +76,80 @@ static ssize_t MHD_check_read(struct device *dev, struct device_attribute *attr,
 	if (!MHD_HW_IsOn()) {
 		sii9234_tpi_init();
 		res = MHD_Read_deviceID();
-		MHD_HW_Off();
+		MHD_HW_Off();		
 	} else {
 		sii9234_tpi_init();
 		res = MHD_Read_deviceID();
 	}
-
-	count = sprintf(buf,"%d\n", res );
+	count = sprintf(buf,"%d\n", res);
 	TVout_LDO_ctrl(false);
 	return count;
 }
 
-static ssize_t MHD_check_write(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+static ssize_t MHD_check_write(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
 {
-	printk("input data --> %s\n", buf);
+	pr_info("[30pin] input data: %s\n", buf);
 	return size;
 }
 
-static DEVICE_ATTR(MHD_file, S_IRUGO | S_IWUSR | S_IWGRP, MHD_check_read, MHD_check_write);
+static DEVICE_ATTR(MHD_file, S_IRUGO , MHD_check_read, MHD_check_write);
 
-
-static ssize_t acc_check_read(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t acc_check_read(struct device *dev,
+	struct device_attribute *attr, char *buf)
 {
 	int count;
 	int connected = 0;
-	if (0 == DOCK_STATE) {
-		if (CONNECTED_DOCK == DOCK_DESK)
-			connected |= (0x1<<0);
-		else if (CONNECTED_DOCK == DOCK_KEYBD)
-			connected |= (0x1<<1);
+	struct acc_con_info *acc = dev_get_drvdata(dev);
+
+	if (0 == acc->dock_state) {
+		if(acc->current_dock == DOCK_DESK)
+			connected |= (0x1 << 0);
+		else if (acc->current_dock == DOCK_KEYBOARD)
+			connected |= (0x1 << 1);
 	}
-	if (0 == ACC_STATE) {
-		if (CONNECTED_ACC == ACC_CARMOUNT)
-			connected |= (0x1<<2);
-		else if (CONNECTED_ACC == ACC_TVOUT)
-			connected |= (0x1<<3);
-		else if (CONNECTED_ACC == ACC_LINEOUT)
-			connected |= (0x1<<4);
+
+	if (0 == acc->acc_state) {
+		if (acc->current_accessory == ACCESSORY_CARMOUNT)
+			connected |= (0x1 << 2);
+		else if (acc->current_accessory == ACCESSORY_TVOUT)
+			connected |= (0x1 << 3);
+		else if (acc->current_accessory == ACCESSORY_LINEOUT)
+			connected |= (0x1 << 4);
 	}
 
 	if (gpio_get_value(GPIO_HDMI_HPD) && MHD_HW_IsOn())
-		connected |= (0x1<<5);
+		connected |= (0x1 << 5);
 
-	count = sprintf(buf,"%d\n", connected );
-	ACC_CONDEV_DBG("%x",connected);
+	count = sprintf(buf,"%d\n", connected);
+	pr_info("[30pin] connected: %x\n", connected);
 	return count;
 }
 
-static ssize_t acc_check_write(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+static ssize_t acc_check_write(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
 {
-	printk("input data --> %s\n", buf);
+	pr_info("[30pin] input data: %s\n", buf);
 	return size;
 }
 
 static DEVICE_ATTR(acc_file, S_IRUGO , acc_check_read, acc_check_write);
 
-void acc_TA_check(int On)
-{
-	if (!gpio_get_value(GPIO_ACCESSORY_INT)) {
-		if (On == FALSE)
-			MHD_HW_Off();
-		else if ((On == TRUE) && (CONNECTED_DOCK == DOCK_DESK) )
-			sii9234_tpi_init();
-	}
-}
-EXPORT_SYMBOL(acc_TA_check);
-
 static int connector_detect_change(void)
 {
-	int adc = 0,i,adc_sum=0;
-	int adc_buff[5]={0};
-	int adc_min=0;
-	int adc_max=0;
-	for(i = 0; i < 5; i++) {
-		adc_buff[i] = s3c_adc_get_adc_data(ACCESSORY_ID);
-		adc_sum +=adc_buff[i];
+	int i;
+	s16 adc_sum = 0;
+	s16 adc_buff[5];
+	s16 mili_volt;
+	s16 adc_min = 0;
+	s16 adc_max = 0;
+	int adc_res = 0;
+
+	for (i = 0; i < 5; i++) {
+		/*change this reading ADC function  */
+		mili_volt = s3c_adc_get_adc_data(ACCESSORY_ID);
+		adc_buff[i] = mili_volt;
+		adc_sum += adc_buff[i];
 		if (i == 0) {
 			adc_min = adc_buff[0];
 			adc_max = adc_buff[0];
@@ -181,367 +161,461 @@ static int connector_detect_change(void)
 		}
 		msleep(20);
 	}
-	adc = (adc_sum - adc_max - adc_min)/3;
-	ACC_CONDEV_DBG("ACCESSORY_ID : ADC value = %d\n", adc);
-	return adc;
+	adc_res = (adc_sum - adc_max - adc_min) / 3;
+	return adc_res;
 }
 
-void acc_dock_check(int dock, int state)
+static void _detected(struct acc_con_info *acc, int device, bool connected)
 {
-	char env_buf[60];
-	char stat_buf[60];
-    char *envp[3];
-    int env_offset = 0;
-	memset(env_buf, 0, sizeof(env_buf));
-	memset(stat_buf, 0, sizeof(stat_buf));
 
-	//DOCK check
-	if (dock == DOCK_KEYBD)
-		sprintf(env_buf, "DOCK=keyboard");
-	else if (dock == DOCK_DESK)
-		sprintf(env_buf, "DOCK=desk");
-	else
-		sprintf(env_buf, "DOCK=unknown");
+	enable_audio_usb = false;
 
-	//state check
-	if (state == 1)
-		sprintf(stat_buf, "STATE=offline");
-	else if (state == 0)
-		sprintf(stat_buf, "STATE=online");
-	else
-		sprintf(stat_buf, "STATE=unknown");
-
-	envp[env_offset++] = env_buf;
-	envp[env_offset++] = stat_buf;
-	envp[env_offset] = NULL;
-	kobject_uevent_env(&acc_dev->kobj, KOBJ_CHANGE, envp);
-	ACC_CONDEV_DBG("%s : %s",env_buf,stat_buf);
-}
-
-void acc_con_intr_handle(struct work_struct *_work)
-{
-	//check the flag MHL or keyboard
-	int cur_state = gpio_get_value(GPIO_ACCESSORY_INT);
-
-	if (cur_state !=DOCK_STATE) {
-		if (1==cur_state) {
-			ACC_CONDEV_DBG("docking station detatched!!!");
-			DOCK_STATE = cur_state;
-
-#if defined(CONFIG_KEYBOARD_P1)
-			check_keyboard_dock(cur_state);
+	if (connected) {
+		switch(device) {
+#if defined(CONFIG_USB_S3C_OTG_HOST) || defined(CONFIG_USB_DWC_OTG)
+		case P30_OTG:
+			pr_info("[30pin] OTG cable detected: id=%d\n", device);
+			set_otghost_mode(2);
+			break;
 #endif
-
-#ifdef CONFIG_MHL_SII9234
-			MHD_HW_Off();
-			TVout_LDO_ctrl(false);
-#endif
-
-			acc_dock_check(CONNECTED_DOCK , DOCK_STATE);
-			CONNECTED_DOCK = 0;
-		} else if (0==cur_state) {
-			ACC_CONDEV_DBG("docking station attatched!!!");
-			DOCK_STATE = cur_state;
-
-#if defined(CONFIG_KEYBOARD_P1)
-			if (check_keyboard_dock(cur_state))
-				CONNECTED_DOCK = DOCK_KEYBD;
-			else
-#endif
-
-			{
-
-#ifdef CONFIG_MHL_SII9234
-				CONNECTED_DOCK = DOCK_DESK;
-				TVout_LDO_ctrl(true);
-				sii9234_tpi_init();
-#endif
-
-			}
-			acc_dock_check(CONNECTED_DOCK , DOCK_STATE);
+		case P30_EARJACK_WITH_DOCK:
+			pr_info("[30pin] Earjack with Dock detected: id=%d\n", device);
+			enable_audio_usb = true;
+			break;
+		case P30_ANAL_TV_OUT:
+			pr_info("[30pin] TVOut cable detected: id=%d\n", device);
+			TVout_LDO_ctrl(true);
+			enable_audio_usb = true;
+			break;
+		case P30_KEYBOARDDOCK:
+			pr_info("[30pin] Keyboard dock detected: id=%d\n", device);
+			acc->current_dock = DOCK_KEYBOARD;
+			break;
+		case P30_CARDOCK:
+			pr_info("[30pin] Car dock detected: id=%d\n", device);
+			//to do
+			break;
+		case P30_DESKDOCK:
+			pr_info("[30pin] Deskdock cable detected: id=%d\n", device);
+			acc->current_dock = DOCK_DESK;
+			TVout_LDO_ctrl(true);
+			sii9234_tpi_init();
+			break;
 		}
 	} else {
-		ACC_CONDEV_DBG("Ignored");
+		switch(device) {
+#if defined(CONFIG_USB_S3C_OTG_HOST) || defined(CONFIG_USB_DWC_OTG)
+		case P30_OTG:
+			set_otghost_mode(0);
+			break;
+#endif
+		case P30_EARJACK_WITH_DOCK:
+			//to do
+			break;
+		case P30_ANAL_TV_OUT:
+			TVout_LDO_ctrl(false);
+			break;
+		case P30_KEYBOARDDOCK:
+			check_keyboard_dock(1);
+			break;
+		case P30_DESKDOCK:
+			MHD_HW_Off();
+			TVout_LDO_ctrl(false);
+			break;
+		}
 	}
-	enable_irq(IRQ_ACCESSORY_INT);
 }
 
-irqreturn_t acc_con_interrupt(int irq, void *ptr)
+static void acc_dock_check(struct acc_con_info *acc, bool connected)
 {
-	ACC_CONDEV_DBG("");
+	char *envp[3];
+	char *env_ptr  = "DOCK=none";
+	char *stat_ptr = "STATE=offline";
+
+	if (connected)
+		stat_ptr = "STATE=online";
+
+	if (acc->current_dock == DOCK_KEYBOARD)
+		env_ptr = "DOCK=keyboard";
+	else if (acc->current_dock == DOCK_DESK)
+		env_ptr = "DOCK=desk";
+
+	pr_info("[30pin] %s: %s - %s\n", __func__, env_ptr, stat_ptr);
+
+	envp[0] = env_ptr;
+	envp[1] = stat_ptr;
+	envp[2] = NULL;
+	kobject_uevent_env(&acc->acc_dev->kobj, KOBJ_CHANGE, envp);
+}
+
+static irqreturn_t acc_con_interrupt(int irq, void *ptr)
+{
+	struct acc_con_info *acc = ptr;
+	pr_info("[30pin] %s\n", __func__);
 	disable_irq_nosync(IRQ_ACCESSORY_INT);
-	queue_work(acc_con_workqueue, &acc_con_work);
+	queue_work(acc->con_workqueue, &acc->dwork);
 	return IRQ_HANDLED;
 }
 
-void acc_con_interrupt_init(void)
+static int acc_con_interrupt_init(struct acc_con_info *acc)
 {
 	int ret;
+	pr_info("[30pin] %s\n", __func__);
+
 	s3c_gpio_cfgpin(GPIO_ACCESSORY_INT, S3C_GPIO_SFN(GPIO_ACCESSORY_INT_AF));
 	s3c_gpio_setpull(GPIO_ACCESSORY_INT, S3C_GPIO_PULL_UP);
 	irq_set_irq_type(IRQ_ACCESSORY_INT, IRQ_TYPE_EDGE_BOTH);
 
-	ret = request_irq(IRQ_ACCESSORY_INT, acc_con_interrupt, IRQF_DISABLED, "Docking Detected", NULL);
-	if (ret)
-		ACC_CONDEV_DBG("Fail to register IRQ : GPIO_ACCESSORY_INT return : %d\n",ret);
+	ret = request_threaded_irq(IRQ_ACCESSORY_INT, NULL, acc_con_interrupt,
+		IRQF_DISABLED, "Docking Detected", acc);
+
+	if (unlikely(ret < 0)) {
+		pr_err("[30pin] fail to register irq : GPIO_ACCESSORY_INT\n");
+		return ret;
+	}
+
+	return 0;
 }
 
-void acc_notified(int acc_adc)
+static void acc_notified(struct acc_con_info *acc, s16 acc_adc)
 {
-	char env_buf[60];
-	char stat_buf[60];
-    char *envp[3];
-    int env_offset = 0;
-	memset(env_buf, 0, sizeof(env_buf));
-	memset(stat_buf, 0, sizeof(stat_buf));
+	char *envp[3];
+	char *env_ptr  = "ACCESSORY=unknown";
+	char *stat_ptr = "STATE=offline";
+	acc->current_accessory = ACCESSORY_NONE;
+
+	pr_info("[30pin] adc change notified: acc_adc = %d\n", acc_adc);
 
 	/*
 	 * P30 Standard
 	 * -------------------------------------------------------------
-	 * Accessory        Vacc [V]            adc
+	 * Accessory		Vacc [V]		adc
 	 * -------------------------------------------------------------
-	 * OTG              2.2 (2.1~2.3)       2731 (2606~2855)
-	 * Analog TV Cable  1.8 (1.7~1.9)       2234 (2100~2359)
-	 * Car Mount        1.38 (1.28~1.48)    1715 (1590~1839)
-	 * 3-pole Earjack   0.99 (0.89~1.09)    1232 (1107~1356)
+	 * OTG			2.2 (2.1~2.3)		2731 (2606~2855)
+	 * Analog TV Cable	1.8 (1.7~1.9)		2234 (2100~2360)
+	 * Car Mount		1.38 (1.28~1.48)	1715 (1590~1839)
+	 * 3-pole Earjack	0.99 (0.89~1.09)	1232 (1107~1356)
 	 * -------------------------------------------------------------
 	 */
 
-	if (acc_adc != false) {
-
-		if ((2100<acc_adc) && (2360>acc_adc)) {
-			sprintf(env_buf, "ACCESSORY=TV");
-			CONNECTED_ACC = ACC_TVOUT;
-		} else if ((1100<acc_adc) && (1360>acc_adc)) {
-			sprintf(env_buf, "ACCESSORY=lineout");
-			CONNECTED_ACC = ACC_LINEOUT;
-		} else if ((1590<acc_adc) && (1840>acc_adc)) {
-			sprintf(env_buf, "ACCESSORY=carmount");
-			CONNECTED_ACC = ACC_CARMOUNT;
+	if (acc_adc) {
+		if ((2600 < acc_adc) && (acc_adc < 2860)) {
+			/* Camera Connection Kit */
+			env_ptr = "ACCESSORY=OTG";
+			acc->current_accessory = ACCESSORY_OTG;
+			_detected(acc, P30_OTG, true);
+		} else if ((2100 < acc_adc) && (acc_adc < 2360)) {
+			/* Analog TV Out Cable */
+			env_ptr = "ACCESSORY=TV";
+			acc->current_accessory = ACCESSORY_TVOUT;
+			_detected(acc, P30_ANAL_TV_OUT, true);
+		} else if ((1590 < acc_adc) && (acc_adc < 1840)) {
+			/* Car Mount (charge 5V/2A) */
+			env_ptr = "ACCESSORY=carmount";
+			acc->current_accessory = ACCESSORY_CARMOUNT;
+			_detected(acc, P30_CARDOCK, true);
+		} else if ((1100 < acc_adc) && (acc_adc < 1360)) {
+			/* 3-Pole Ear-Jack with Deskdock*/
+			env_ptr = "ACCESSORY=lineout";
+			acc->current_accessory = ACCESSORY_LINEOUT;
+			_detected(acc, P30_EARJACK_WITH_DOCK, true);
 		} else {
-			sprintf(env_buf, "ACCESSORY=unknown");
-			CONNECTED_ACC = 0;
+			pr_warning("[30pin] adc range filter not found.\n");
+			return;
 		}
 
-		sprintf(stat_buf, "STATE=online");
-		envp[env_offset++] = env_buf;
-		envp[env_offset++] = stat_buf;
-		envp[env_offset] = NULL;
+		stat_ptr = "STATE=online";
 
-		if(CONNECTED_ACC == ACC_TVOUT)
-			TVout_LDO_ctrl(true);
+		if (acc->current_accessory == ACCESSORY_OTG)
+			msleep(100);
 
-		kobject_uevent_env(&acc_dev->kobj, KOBJ_CHANGE, envp);
-		ACC_CONDEV_DBG("%s : %s",env_buf,stat_buf);
 	} else {
-		if (CONNECTED_ACC == ACC_TVOUT)
-			sprintf(env_buf, "ACCESSORY=TV");
-		else if (CONNECTED_ACC == ACC_LINEOUT)
-			sprintf(env_buf, "ACCESSORY=lineout");
-		else if (CONNECTED_ACC == ACC_CARMOUNT)
-			sprintf(env_buf, "ACCESSORY=carmount");
-		else
-			sprintf(env_buf, "ACCESSORY=unknown");
-
-		sprintf(stat_buf, "STATE=offline");
-		envp[env_offset++] = env_buf;
-		envp[env_offset++] = stat_buf;
-		envp[env_offset] = NULL;
-		kobject_uevent_env(&acc_dev->kobj, KOBJ_CHANGE, envp);
-
-		if (CONNECTED_ACC == ACC_TVOUT)
-			TVout_LDO_ctrl(false);
-
-		ACC_CONDEV_DBG("%s : %s",env_buf,stat_buf);
+		if (acc->current_accessory == ACCESSORY_OTG) {
+			env_ptr = "ACCESSORY=OTG";
+			_detected(acc, P30_OTG, false);
+		} else if (acc->current_accessory == ACCESSORY_TVOUT) {
+			env_ptr = "ACCESSORY=TV";
+			_detected(acc, P30_ANAL_TV_OUT, false);
+		} else if (acc->current_accessory == ACCESSORY_LINEOUT) {
+			env_ptr = "ACCESSORY=lineout";
+			_detected(acc, P30_EARJACK_WITH_DOCK, false);
+		} else if (acc->current_accessory == ACCESSORY_CARMOUNT) {
+			env_ptr = "ACCESSORY=carmount";
+			_detected(acc, P30_CARDOCK, false);
+		}
 	}
 
+	pr_info("[30pin] %s: %s - %s\n", __func__, env_ptr, stat_ptr);
+
+	envp[0] = env_ptr;
+	envp[1] = stat_ptr;
+	envp[2] = NULL;
+	kobject_uevent_env(&acc->acc_dev->kobj, KOBJ_CHANGE, envp);
 }
-void acc_ID_intr_handle(struct work_struct *_work)
+
+static void acc_con_worker(struct work_struct *work)
 {
-	//ACC_CONDEV_DBG("");
-	int acc_ID_val = 0, adc_val;
-	acc_ID_val = gpio_get_value(GPIO_DOCK_INT);
-	ACC_CONDEV_DBG("GPIO_DOCK_INT is %d",acc_ID_val);
+	int cur_state;
+	int delay = 10;
+	struct acc_con_info *acc = container_of(work, struct acc_con_info, dwork);
 
-	if (acc_ID_val!=ACC_STATE) {
-		if (1==acc_ID_val) {
-			ACC_CONDEV_DBG("Accessory detatched");
-			ACC_STATE = acc_ID_val;
-			acc_notified(false);
-			irq_set_irq_type(IRQ_DOCK_INT, IRQ_TYPE_EDGE_FALLING);
+	cur_state = gpio_get_value(GPIO_ACCESSORY_INT);
+	pr_info("[30pin] accessory_id irq handler: dock_irq gpio val = %d\n", cur_state);
 
-#ifdef CONFIG_USB_S3C_OTG_HOST
-			if(intr_count++)
-				s3c_usb_cable(USB_OTGHOST_DETACHED);
-#endif
-
-		} else if (0==acc_ID_val) {
-			msleep(420); //workaround for jack
-			ACC_CONDEV_DBG("Accessory attached");
-			ACC_STATE = acc_ID_val;
-			adc_val = connector_detect_change();
-			acc_notified(adc_val);
-			irq_set_irq_type(IRQ_DOCK_INT, IRQ_TYPE_EDGE_RISING);
-
-#ifdef CONFIG_USB_S3C_OTG_HOST
-			// check USB OTG Host ADC range...
-			if(adc_val > 2600 && adc_val < 2860)
-				s3c_usb_cable(USB_OTGHOST_ATTACHED);
-#endif
-		}
-	} else {
-		ACC_CONDEV_DBG("Ignored");
+	while (delay > 0) {
+		if (cur_state != gpio_get_value(GPIO_ACCESSORY_INT))
+			return;
+		usleep_range(10000, 11000);
+		delay--;
 	}
 
+	if (cur_state != acc->dock_state) {
+		if (1 == cur_state) {
+			pr_info("[30pin] Docking station detatched");
+			acc->dock_state = cur_state;
+
+			if (acc->current_dock == DOCK_KEYBOARD)
+				_detected(acc, P30_KEYBOARDDOCK, false);
+
+			if (acc->current_dock == DOCK_DESK)
+				_detected(acc, P30_DESKDOCK, false);
+
+			acc->current_dock = DOCK_NONE;
+			acc_dock_check(acc, false);
+		} else if (0 == cur_state) {
+			pr_info("[30pin] Docking station attatched\n");
+			acc->dock_state = cur_state;
+
+			if (check_keyboard_dock(cur_state))
+				_detected(acc, P30_KEYBOARDDOCK, true);
+			else
+				_detected(acc, P30_DESKDOCK, true);
+
+			acc_dock_check(acc, true);
+		}
+	}
+	enable_irq(IRQ_ACCESSORY_INT);
+}
+
+static void acc_id_worker(struct work_struct *work)
+{
+	struct acc_con_info *acc = container_of(work, struct acc_con_info, awork);
+	int acc_id_val;
+	int adc_val = 0;
+
+	acc_id_val = gpio_get_value(GPIO_DOCK_INT);
+	pr_info("[30pin] accessorry_id irq handler: dock_irq gpio val = %d\n", acc_id_val);
+
+	if (acc_id_val != acc->acc_state) {
+		if (1 == acc_id_val) {
+			pr_info("[30pin] Accessory detached");
+			acc->acc_state = acc_id_val;
+			acc_notified(acc, false);
+			irq_set_irq_type(IRQ_DOCK_INT, IRQ_TYPE_EDGE_FALLING);
+		} else if (0 == acc_id_val) {
+			acc->acc_state = acc_id_val;
+			msleep(420); /* workaround for jack */
+			wake_lock(&acc->wake_lock);
+			adc_val = connector_detect_change();
+			pr_info("[30pin] Accessory attached, adc=%d\n", adc_val);
+
+			acc_notified(acc, adc_val);
+			irq_set_irq_type(IRQ_DOCK_INT, IRQ_TYPE_EDGE_RISING);
+			wake_unlock(&acc->wake_lock);
+		}
+	}
 	enable_irq(IRQ_DOCK_INT);
 }
 
-irqreturn_t acc_ID_interrupt(int irq, void *ptr)
+static irqreturn_t acc_id_interrupt(int irq, void *ptr)
 {
-	//ACC_CONDEV_DBG("");
+	struct acc_con_info *acc = ptr;
+	pr_info("[30pin] %s\n", __func__);
 	disable_irq_nosync(IRQ_DOCK_INT);
-	queue_work(acc_ID_workqueue, &acc_ID_work);
+	queue_work(acc->id_workqueue, &acc->awork);
 	return IRQ_HANDLED;
 }
 
-void acc_ID_interrupt_init(void)
+static int acc_id_interrupt_init(struct acc_con_info *acc)
 {
 	int ret;
+	pr_info("[30pin] %s\n", __func__);
+
 	s3c_gpio_cfgpin(GPIO_DOCK_INT, S3C_GPIO_SFN(GPIO_DOCK_INT_AF));
 	s3c_gpio_setpull(GPIO_DOCK_INT, S3C_GPIO_PULL_NONE);
 	irq_set_irq_type(IRQ_DOCK_INT, IRQ_TYPE_EDGE_BOTH);
 
-	ret = request_irq(IRQ_DOCK_INT, acc_ID_interrupt, IRQF_DISABLED, "Accessory Detected", NULL);
-	if (ret)
-		ACC_CONDEV_DBG("Fail to register IRQ : GPIO_DOCK_INT return : %d\n",ret);
+	ret = request_threaded_irq(IRQ_DOCK_INT, NULL, acc_id_interrupt,
+		IRQF_DISABLED, "Accessory Detected", acc);
+
+	if (unlikely(ret < 0)) {
+		pr_err("[30pin] request dock_irq failed.\n");
+		return ret;
+	}
+	return 0;
 }
 
-void acc_MHD_intr_handle(struct work_struct *_work)
+static void initial_connection_check(struct acc_con_info *acc)
 {
-	int val = gpio_get_value(GPIO_MHL_INT);
-	ACC_CONDEV_DBG("++GPIO_MHL_INT =  %x",val);
-	if (val && (!gpio_get_value(GPIO_ACCESSORY_INT)))
-		MHD_OUT_EN();
-	enable_irq(IRQ_MHL_INT);
-}
+	int adc_val = 0;
 
-irqreturn_t acc_MHD_interrupt(int irq, void *ptr)
-{
-	disable_irq_nosync(IRQ_MHL_INT);
-	queue_work(acc_MHD_workqueue, &acc_MHD_work);
-	return IRQ_HANDLED;
-}
+	/* checks dock connectivity before registers dock irq */
+	acc->dock_state = gpio_get_value(GPIO_ACCESSORY_INT);
 
-void acc_MHD_interrupt_init(void)
-{
-	int ret;
-	s3c_gpio_cfgpin(GPIO_MHL_INT, S3C_GPIO_SFN(0xF));
-	s3c_gpio_setpull(GPIO_MHL_INT, S3C_GPIO_PULL_DOWN);
-	irq_set_irq_type(IRQ_MHL_INT, IRQ_TYPE_EDGE_RISING);
-	ret = request_irq(IRQ_MHL_INT, acc_MHD_interrupt, IRQF_DISABLED, "MHL recovery", NULL);
-	if (ret)
-		ACC_CONDEV_DBG("Fail to register IRQ : GPIO_MHL_INT return : %d\n",ret);
+	if (!acc->dock_state)
+		acc_dock_check(acc, true);
+
+	/* checks otg connectivity before registers otg irq */
+	acc->acc_state = gpio_get_value(GPIO_DOCK_INT);
+	if (!acc->acc_state) {
+		wake_lock(&acc->wake_lock);
+		msleep(420); /* workaround for jack */
+		adc_val = connector_detect_change();
+		acc_notified(acc, adc_val);
+		wake_unlock(&acc->wake_lock);
+	}
 }
 
 static int acc_con_probe(struct platform_device *pdev)
 {
-	int 	retval;
-	ACC_CONDEV_DBG("");
-	acc_dev = &pdev->dev;
+	struct acc_con_info *acc;
+	int retval = 0;
+	pr_info("[30pin] %s\n", __func__);
 
-#ifdef CONFIG_MHL_SII9234
-		retval = i2c_add_driver(&SII9234A_i2c_driver);
-		if (retval != 0)
-			printk("[MHL SII9234A] can't add i2c driver\n");
-		else
-			printk("[MHL SII9234A] add i2c driver\n");
+	acc = kzalloc(sizeof(*acc), GFP_KERNEL);
+	if (!acc)
+		return -ENOMEM;
 
-		retval = i2c_add_driver(&SII9234B_i2c_driver);
-		if (retval != 0)
-			printk("[MHL SII9234B] can't add i2c driver\n");
-		else
-			printk("[MHL SII9234B] add i2c driver\n");
+	acc->current_dock      = DOCK_NONE;
+	acc->current_accessory = ACCESSORY_NONE;
+	dev_set_drvdata(&pdev->dev, acc);
+	acc->acc_dev = &pdev->dev;
 
-		retval = i2c_add_driver(&SII9234C_i2c_driver);
-		if (retval != 0)
-			printk("[MHL SII9234C] can't add i2c driver\n");
-		else
-			printk("[MHL SII9234C] add i2c driver\n");
+	retval = i2c_add_driver(&SII9234A_i2c_driver);
+	if (retval != 0)
+		pr_info("[30pin] MHL SII9234A can't add i2c driver\n");
 
-		retval = i2c_add_driver(&SII9234_i2c_driver);
-		if (retval != 0)
-			printk("[MHL SII9234] can't add i2c driver\n");
-		else
-			printk("[MHL SII9234] add i2c driver\n");
+	retval = i2c_add_driver(&SII9234B_i2c_driver);
+	if (retval != 0)
+		pr_info("[30pin] MHL SII9234B can't add i2c driver\n");
+
+	retval = i2c_add_driver(&SII9234C_i2c_driver);
+	if (retval != 0)
+		pr_info("[30pin] MHL SII9234C can't add i2c driver\n");
+
+	retval = i2c_add_driver(&SII9234_i2c_driver);
+	if (retval != 0)
+		pr_info("[30pin] MHL SII9234 can't add i2c driver\n");
 
 	MHD_GPIO_INIT();
 	MHD_HW_Off();
-#endif
 
-	INIT_WORK(&acc_con_work, acc_con_intr_handle);
-	acc_con_workqueue = create_singlethread_workqueue("acc_con_workqueue");
-	acc_con_interrupt_init();
+	wake_lock_init(&acc->wake_lock, WAKE_LOCK_SUSPEND, "30pin_con");
 
-	INIT_WORK(&acc_ID_work, acc_ID_intr_handle);
-	acc_ID_workqueue = create_singlethread_workqueue("acc_ID_workqueue");
-	acc_ID_interrupt_init();
+	initial_connection_check(acc);
+	msleep(200);
 
-	if (device_create_file(acc_dev, &dev_attr_MHD_file) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_MHD_file.attr.name);
+	INIT_WORK(&acc->dwork, acc_con_worker);
+	acc->con_workqueue = create_singlethread_workqueue("acc_con_workqueue");
+	retval = acc_con_interrupt_init(acc);
+	if (retval != 0) {
+		pr_err("[30pin] acc_con_interrupt_init failed.\n");
+		return retval;
+	}
 
-	if (device_create_file(acc_dev, &dev_attr_acc_file) < 0)
-		printk("Failed to create device file(%s)!\n", dev_attr_acc_file.attr.name);
+	INIT_WORK(&acc->awork, acc_id_worker);
+	acc->id_workqueue = create_singlethread_workqueue("acc_id_workqueue");
+	retval = acc_id_interrupt_init(acc);
+	if (retval != 0) {
+		pr_err("[30pin] acc_id_interrupt_init failed.\n");
+		return retval;
+	}
 
-        enable_irq_wake(IRQ_ACCESSORY_INT);
-        enable_irq_wake(IRQ_DOCK_INT);
+	if (device_create_file(acc->acc_dev, &dev_attr_MHD_file) < 0)
+		pr_err("[30pin] Failed to create device file(%s)!\n",
+			dev_attr_MHD_file.attr.name);
 
-	return 0;
+	if (device_create_file(acc->acc_dev, &dev_attr_acc_file) < 0)
+		pr_err("[30pin] Failed to create device file(%s)!\n",
+			dev_attr_acc_file.attr.name);
+
+	retval = enable_irq_wake(IRQ_ACCESSORY_INT);
+	if (unlikely(retval < 0)) {
+		pr_err("[30pin] enable accessory_irq failed.\n");
+		return retval;
+	}
+
+	retval = enable_irq_wake(IRQ_DOCK_INT);
+	if (unlikely(retval < 0)) {
+		pr_err("[30pin]  enable dock_irq failed.\n");
+		return retval;
+	}
+
+	return retval;
 }
 
 static int acc_con_remove(struct platform_device *pdev)
 {
-	ACC_CONDEV_DBG("");
+	struct acc_con_info *acc = platform_get_drvdata(pdev);
+	pr_info("[30pin] %s\n", __func__);
 
-#ifdef CONFIG_MHL_SII9234
 	i2c_del_driver(&SII9234A_i2c_driver);
 	i2c_del_driver(&SII9234B_i2c_driver);
 	i2c_del_driver(&SII9234C_i2c_driver);
 	i2c_del_driver(&SII9234_i2c_driver);
-#endif
 
-    disable_irq_wake(IRQ_ACCESSORY_INT);
-    disable_irq_wake(IRQ_DOCK_INT);
+	disable_irq_wake(IRQ_ACCESSORY_INT);
+	disable_irq_wake(IRQ_DOCK_INT);
+	kfree(acc);
+
 	return 0;
 }
 
-static int acc_con_suspend(struct platform_device *pdev, pm_message_t state)
+#ifdef CONFIG_PM
+static int acc_con_suspend(struct device *dev)
 {
-	ACC_CONDEV_DBG("");
-
-#ifdef CONFIG_MHL_SII9234
+	pr_info("[30pin] %s\n", __func__);
 	MHD_HW_Off();
-#endif
 
 	return 0;
 }
 
-static int acc_con_resume(struct platform_device *pdev)
+static int acc_con_resume(struct device *dev)
 {
-	ACC_CONDEV_DBG("");
+	struct acc_con_info *acc = dev_get_drvdata(dev);
+	int dock_state;
+	pr_info("[30pin] %s\n", __func__);
 
-#ifdef CONFIG_MHL_SII9234
-	if (0 == gpio_get_value(GPIO_ACCESSORY_INT))
-		if (CONNECTED_DOCK == DOCK_DESK)
+	dock_state = gpio_get_value(GPIO_ACCESSORY_INT);
+
+	if (!dock_state)
+		if (acc->current_dock == DOCK_DESK)
 			sii9234_tpi_init();
-#endif
 
 	return 0;
 }
 
+static const struct dev_pm_ops acc_con_pm_ops = {
+	.suspend	= acc_con_suspend,
+	.resume		= acc_con_resume,
+};
+#endif
+
+static struct platform_driver acc_con_driver = {
+	.probe		= acc_con_probe,
+	.remove		= acc_con_remove,
+	.driver		= {
+		.name		= "acc_con",
+		.owner		= THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm         = &acc_con_pm_ops,
+#endif
+	},
+};
 
 static int __init acc_con_init(void)
 {
-	ACC_CONDEV_DBG("");
+	pr_info("[30pin] %s\n", __func__);
 	return platform_driver_register(&acc_con_driver);
 }
 
@@ -550,21 +624,9 @@ static void __exit acc_con_exit(void)
 	platform_driver_unregister(&acc_con_driver);
 }
 
-static struct platform_driver acc_con_driver = {
-	.probe		= acc_con_probe,
-	.remove		= acc_con_remove,
-	.suspend	= acc_con_suspend,
-	.resume		= acc_con_resume,
-	.driver		= {
-		.name		= "acc_con",
-		.owner		= THIS_MODULE,
-	},
-};
-
-
 late_initcall(acc_con_init);
 module_exit(acc_con_exit);
 
-MODULE_AUTHOR("Kyungrok Min <gyoungrok.min@samsung.com>");
+MODULE_AUTHOR("Humberto Borba <kernel@humberos.com.br>");
 MODULE_DESCRIPTION("acc connector driver");
 MODULE_LICENSE("GPL");

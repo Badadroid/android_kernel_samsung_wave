@@ -46,10 +46,18 @@
 #define GPIO_LEVEL_LOW				0
 #define GPIO_LEVEL_HIGH				1
 
+#ifdef CONFIG_PHONE_P1_CDMA
+#define GPIO_AP_RXD					S5PV210_GPA1(0)
+#else
 #define GPIO_AP_RXD					S5PV210_GPA1(2)
+#endif
 #define GPIO_AP_RXD_AF				0x2 // UART_2_RXD
 
+#ifdef CONFIG_PHONE_P1_CDMA
+#define GPIO_AP_TXD					S5PV210_GPA1(1)
+#else
 #define GPIO_AP_TXD					S5PV210_GPA1(3)
+#endif
 #define GPIO_AP_TXD_AF				0x2 // UART_2_TXD
 
 #define GPIO_PHONE_ON				S5PV210_GPJ1(0)
@@ -58,7 +66,11 @@
 #define GPIO_PHONE_RST_N					S5PV210_GPH3(7)
 #define GPIO_PHONE_RST_N_AF				0x1
 
+#ifdef CONFIG_PHONE_P1_CDMA
+#define GPIO_PDA_ACTIVE				S5PV210_MP03(3)
+#else
 #define GPIO_PDA_ACTIVE				S5PV210_GPH1(0)
+#endif
 #define GPIO_PDA_ACTIVE_AF			0x1
 
 #define GPIO_PHONE_ACTIVE			S5PV210_GPH1(7)

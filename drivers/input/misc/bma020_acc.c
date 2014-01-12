@@ -71,8 +71,8 @@ static ssize_t bma020_fs_write(struct device *dev, struct device_attribute *attr
 
 static ssize_t bma020_calibration(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-	int err;
-	bma020acc_t data, offset;
+	int err, offset;
+	bma020acc_t data;
 	/* iteration time 20 */
 	int i = 0;
 
@@ -218,9 +218,9 @@ int bma020_ioctl(struct inode *inode, struct file *filp, unsigned int ioctl_num,
 #endif
 
 
-int bma020_ioctl(struct file *filp, unsigned int cmd,  unsigned long arg)
+long bma020_ioctl(struct file *filp, unsigned int cmd,  unsigned long arg)
 {
-	int err = 0;
+	long err = 0;
 	unsigned char data[6];
 	int temp;
 	bma020acc_t accels;
@@ -330,7 +330,7 @@ int bma020_ioctl(struct file *filp, unsigned int cmd,  unsigned long arg)
 			/* iteration time 20 */
 			temp = 20;
 			err = bma020_calibrate(*(bma020acc_t*)data, &temp);
-			printk( "BMA020_CALIBRATION status: %d\n", err);
+			//printk( "BMA020_CALIBRATION status: %d\n", err);
 		default:
 			err = 0;
 	}
@@ -341,9 +341,9 @@ int bma020_ioctl(struct file *filp, unsigned int cmd,  unsigned long arg)
 struct file_operations acc_fops =
 {
 	.owner   = THIS_MODULE,
+	.open    = bma020_open,
 	.read    = bma020_read,
 	.write   = bma020_write,
-	.open    = bma020_open,
 	.unlocked_ioctl = bma020_ioctl,
 	.release = bma020_release,
 };
@@ -538,8 +538,8 @@ static int bma020_accelerometer_probe( struct platform_device* pdev )
 	return bma020_acc_start();
 }
 
-
-static int bma020_accelerometer_suspend( struct platform_device* pdev, pm_message_t state )
+#ifdef CONFIG_PM
+static int bma020_accelerometer_suspend( struct device *dev )
 {
 	printk(" %s \n",__func__);
 	bma020_set_mode( BMA020_MODE_SLEEP );
@@ -547,22 +547,28 @@ static int bma020_accelerometer_suspend( struct platform_device* pdev, pm_messag
 }
 
 
-static int bma020_accelerometer_resume( struct platform_device* pdev )
+static int bma020_accelerometer_resume( struct device *dev )
 {
 	printk(" %s \n",__func__);
 	bma020_set_mode( BMA020_MODE_NORMAL );
 	return 0;
 }
 
+static const struct dev_pm_ops bma020_accelerometer_pm_ops = {
+	.suspend	= bma020_accelerometer_suspend,
+	.resume		= bma020_accelerometer_resume,
+};
+#endif
 
 static struct platform_device *bma020_accelerometer_device;
 
 static struct platform_driver bma020_accelerometer_driver = {
 	.probe 	 = bma020_accelerometer_probe,
-	.suspend = bma020_accelerometer_suspend,
-	.resume  = bma020_accelerometer_resume,
 	.driver  = {
 		.name = "bma020-accelerometer",
+#ifdef CONFIG_PM
+		.pm	= &bma020_accelerometer_pm_ops,
+#endif
 	}
 };
 

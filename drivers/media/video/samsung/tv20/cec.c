@@ -166,8 +166,8 @@ ssize_t s5p_cec_write(struct file *file, const char __user *buffer,
 	return count;
 }
 
-int s5p_cec_ioctl(struct inode *inode, struct file *file, u32 cmd,
-	unsigned long arg)
+static long s5p_cec_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg)
 {
 	u32 laddr;
 
@@ -208,8 +208,8 @@ static const struct file_operations cec_fops = {
 	.release = s5p_cec_release,
 	.read    = s5p_cec_read,
 	.write   = s5p_cec_write,
-	.ioctl   = s5p_cec_ioctl,
 	.poll    = s5p_cec_poll,
+	.unlocked_ioctl = s5p_cec_ioctl,
 };
 
 static struct miscdevice cec_misc_device = {
@@ -225,7 +225,7 @@ static struct miscdevice cec_misc_device = {
  * Handles interrupt requests from CEC hardware. \n
  * Action depends on current state of CEC hardware.
  */
-irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
+static irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 {
 
 	u32 status = 0;
@@ -317,8 +317,10 @@ static int __init s5p_cec_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	ret = request_irq(irq_num, s5p_cec_irq_handler, IRQF_DISABLED,
-		pdev->name, &pdev->id);
+	ret = request_threaded_irq(irq_num, NULL,
+		s5p_cec_irq_handler, IRQF_DISABLED,
+		"s5p_cec_irq", pdev);
+
 	if (ret != 0) {
 		printk(KERN_ERR  "failed to install %s irq (%d)\n", "cec", ret);
 		return ret;
@@ -356,7 +358,7 @@ static int s5p_cec_remove(struct platform_device *pdev)
 /*
  *  Suspend
  */
-int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
+int s5p_cec_suspend(struct device* dev)
 {
 	if (hdmi_on)
 		s5p_tv_clk_gate(false);
@@ -367,26 +369,29 @@ int s5p_cec_suspend(struct platform_device *dev, pm_message_t state)
 /*
  *  Resume
  */
-int s5p_cec_resume(struct platform_device *dev)
+int s5p_cec_resume(struct device* dev)
 {
 	if (hdmi_on)
 		s5p_tv_clk_gate(true);
 
 	return 0;
 }
-#else
-#define s5p_cec_suspend NULL
-#define s5p_cec_resume NULL
+
+static const struct dev_pm_ops s5p_cec_pm_ops = {
+	.suspend = s5p_cec_suspend,
+	.resume = s5p_cec_resume,
+};
 #endif
 
 static struct platform_driver s5p_cec_driver = {
 	.probe		= s5p_cec_probe,
 	.remove		= s5p_cec_remove,
-	.suspend	= s5p_cec_suspend,
-	.resume		= s5p_cec_resume,
 	.driver		= {
 		.name	= "s5p-cec",
 		.owner	= THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm     = &s5p_cec_pm_ops,
+#endif
 	},
 };
 

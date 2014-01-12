@@ -41,11 +41,11 @@
 #include <mach/sec_jack.h>
 
 #define CONFIG_DEBUG_SEC_JACK
-#define SUBJECT "JACK_DRIVER"
+#define SUBJECT "[SEC JACK]"
 
 #ifdef CONFIG_DEBUG_SEC_JACK
 #define SEC_JACKDEV_DBG(format,...)\
-	printk ("[ "SUBJECT " (%s,%d) ] " format "\n", __func__, __LINE__, ## __VA_ARGS__);
+	printk (SUBJECT " (%s,%d) " format "\n", __func__, __LINE__, ## __VA_ARGS__);
 
 #else
 #define DEBUG_LOG(format,...)
@@ -541,7 +541,10 @@ static int sec_jack_probe(struct platform_device *pdev)
 	s3c_gpio_setpull(send_end->gpio, S3C_GPIO_PULL_NONE);
 	irq_set_irq_type(send_end->eint, IRQ_TYPE_EDGE_BOTH);
 
-	ret = request_irq(send_end->eint, send_end_irq_handler, IRQF_DISABLED, "sec_headset_send_end", NULL);
+	ret = request_threaded_irq(send_end->eint, NULL,
+		send_end_irq_handler,
+		IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
+		IRQF_ONESHOT, "sec_headset_send_end", send_end);
 
 	SEC_JACKDEV_DBG("sended isr send=0X%x, ret =%d", send_end->eint, ret);
 	if (ret < 0)
@@ -561,7 +564,10 @@ static int sec_jack_probe(struct platform_device *pdev)
 	s3c_gpio_setpull(det_jack->gpio, S3C_GPIO_PULL_NONE);
 	irq_set_irq_type(det_jack->eint, IRQ_TYPE_EDGE_BOTH);
 
-	ret = request_irq(det_jack->eint, detect_irq_handler, IRQF_DISABLED, "sec_headset_detect", NULL);
+	ret = request_threaded_irq(det_jack->eint, NULL,
+	   detect_irq_handler,
+	   IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
+	   IRQF_ONESHOT, "sec_headset_detect", det_jack);
 
 	SEC_JACKDEV_DBG("det isr det=0X%x, ret =%d", det_jack->eint, ret);
 	if (ret < 0)
@@ -627,22 +633,25 @@ static int sec_jack_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-static int sec_jack_suspend(struct platform_device *pdev, pm_message_t state)
+static int sec_jack_suspend(struct device *dev)
 {
 	SEC_JACKDEV_DBG("");
 	flush_scheduled_work();
 	return 0;
 }
-static int sec_jack_resume(struct platform_device *pdev)
+
+static int sec_jack_resume(struct device *dev)
 {
 	SEC_JACKDEV_DBG("");
 	schedule_work(&jack_detect_work);
 	schedule_work(&sendend_switch_work);
 	return 0;
 }
-#else
-#define s3c_headset_resume	NULL
-#define s3c_headset_suspend	NULL
+
+static const struct dev_pm_ops sec_jack_pm_ops = {
+	.suspend	= sec_jack_suspend,
+	.resume		= sec_jack_resume,
+};
 #endif
 
 static int __init sec_jack_init(void)
@@ -659,11 +668,12 @@ static void __exit sec_jack_exit(void)
 static struct platform_driver sec_jack_driver = {
 	.probe = sec_jack_probe,
 	.remove = sec_jack_remove,
-	.suspend = sec_jack_suspend,
-	.resume = sec_jack_resume,
 	.driver = {
 		.name = "sec_jack",
 		.owner = THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm	= &sec_jack_pm_ops,
+#endif
 	},
 };
 

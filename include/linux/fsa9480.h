@@ -36,15 +36,12 @@ struct fsa9480_platform_data {
 	void (*deskdock_cb) (bool attached);
 	void (*cardock_cb) (bool attached);
 	void (*reset_cb) (void);
-#ifdef CONFIG_MACH_P1
-	void (*set_init_flag) (void);
-	void (*set_usb_switch) (void);
-#endif
 };
 
+#ifdef CONFIG_MACH_ARIES
 extern int fsa9480_get_dock_status(void);
+#endif
 
-#ifdef CONFIG_MACH_P1
 enum {
 	AUTO_SWITCH = 0,
 	SWITCH_USB_Port,
@@ -54,5 +51,4 @@ enum {
 };
 
 void fsa9480_manual_switching(int path);
-#endif
 #endif /* _FSA9480_H_ */

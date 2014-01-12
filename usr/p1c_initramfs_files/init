@@ -1,0 +1,107 @@
+#!/stage1/sh
+export _PATH="$PATH"
+export PATH="/stage1"
+
+date >>/boot.txt
+exec >>/boot.txt 2>&1
+cd /
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
+rm /init
+
+bml_over_mtd dump boot 72 reservoir 2004 /stage1/boot.bin
+
+load_image=/stage1/boot.cpio
+
+# defaults
+CACHE='mmcblk0p1'
+DATA='mmcblk0p2'
+SDCARD='mmcblk1p1'
+NO_EMMC='false'
+BOOTSTRAP='false'
+
+# find the sdcard
+if test `cat /sys/devices/platform/s3c-sdhci.0/mmc_host/mmc0/mmc0:0001/type` != "MMC" ; then
+	# user has removed the eMMC
+	CACHE='mmcblk0p3'
+	SDCARD='mmcblk0p1'
+	NO_EMMC='true'
+fi
+mount -t vfat /dev/block/"$SDCARD" /sdcard
+
+# check for bootstrap flag
+if test -e /sdcard/activate_data_on_sdcard ; then
+	BOOTSTRAP='true'
+	if ! $NO_EMMC ; then
+		CACHE='mmcblk1p3'
+		DATA='mmcblk1p2'
+	fi
+fi
+
+mount -t yaffs2 /dev/block/mtdblock2 /system
+mount -t ext4 /dev/block/"$CACHE" /cache
+
+if test -e /cache/.startrecovery || grep -q bootmode=2 /proc/cmdline ; then
+	# recovery boot
+	rm -fr /cache/.startrecovery
+
+	load_image=/stage1/recovery.cpio
+
+	# disable lpm
+	echo 0 > /sys/class/power_supply/battery/charging_mode_booting
+elif ! test -e /system/build.prop ; then
+	# emergency boot
+        umount /cache
+        make_ext4fs -b 4096 -g 32768 -i 8192 -I 256 -a /cache /dev/block/"$CACHE"
+        mount -t ext4 /dev/block/"$CACHE" /cache
+        mkdir /cache/recovery
+
+	UPDATE=$(cat /sdcard/omni.cfg)
+
+	if test -e $UPDATE ; then
+		echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
+  	fi
+
+	load_image=/stage1/recovery.cpio
+
+	# disable lpm
+	echo 0 > /sys/class/power_supply/battery/charging_mode_booting
+fi
+
+umount /cache
+umount /system
+umount /sdcard
+rm -rf /sdcard
+
+cpio -i < ${load_image}
+
+if grep -q 1 /sys/class/power_supply/battery/charging_mode_booting ; then
+	# low power mode
+	cp lpm.rc init.rc
+	rm init.p1c.rc
+fi
+
+if $BOOTSTRAP ; then
+	sed -i s/mmcblk0p1/"$CACHE"/ /fstab.p1c
+	sed -i s/mmcblk0p2/"$DATA"/ /fstab.p1c
+
+	sed -i s/mmcblk0p1/"$CACHE"/ /etc/recovery.fstab
+	sed -i s/mmcblk0p2/"$DATA"/ /etc/recovery.fstab
+	sed -i s/mmcblk1p1/"$SDCARD"/ /etc/recovery.fstab
+
+	sed -i s/mmcblk0p1/"$CACHE"/ /etc/twrp.fstab
+	sed -i s/mmcblk0p2/"$DATA"/ /etc/twrp.fstab
+	sed -i s/mmcblk1p1/"$SDCARD"/ /etc/twrp.fstab
+fi
+
+umount /sys
+umount /proc
+date >> /boot.txt
+
+rm -rf /dev/*
+rm -rf /stage1
+
+export PATH="${_PATH}"
+
+exec /init

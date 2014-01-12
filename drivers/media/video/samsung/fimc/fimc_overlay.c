@@ -318,7 +318,6 @@ int fimc_s_fbuf(struct file *filp, void *fh, struct v4l2_framebuffer *fb)
 
 		ctx->overlay.mode = FIMC_OVLY_NOT_FIXED;
 #ifdef CONFIG_MACH_P1
-
 		switch (ctx->rotate) {
 		case 0:
 		case 180:

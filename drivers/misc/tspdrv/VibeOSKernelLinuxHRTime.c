@@ -34,11 +34,9 @@
 ** the 5ms required rate.
 */
 
-/*
 #ifndef CONFIG_HIGH_RES_TIMERS
 #warning "The Kernel does not have high resolution timers enabled. Either provide a non hr-timer implementation of VibeOSKernelLinuxTime.c or re-compile your kernel with CONFIG_HIGH_RES_TIMERS=y"
 #endif
-*/
 
 #include <linux/hrtimer.h>
 #include <linux/mutex.h>

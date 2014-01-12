@@ -19,7 +19,7 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/power_supply.h>
-#include <linux/max17042_battery.h>
+#include <linux/power/max17042_battery.h>
 #include <linux/slab.h>
 #include <linux/time.h>
 #include <linux/irq.h>

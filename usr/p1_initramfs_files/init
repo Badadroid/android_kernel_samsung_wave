@@ -11,9 +11,14 @@ busybox mount -t sysfs sysfs /sys
 busybox mount -t yaffs2 /dev/block/mtdblock2 /system
 busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
 
+while ! busybox test -d /sys/dev/block/179:0 ; do
+	echo "Waiting for internal mmc..."
+	busybox sleep 1
+done
+
 image=/stage1/boot.cpio
 
-if busybox test -e /cache/.startrecovery || [ `busybox cat /proc/cmdline | busybox grep bootmode | busybox awk '{print $2}'` == bootmode=2 ] ; then
+if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox rm -fr /cache/.startrecovery
 	image=/stage1/recovery.cpio
@@ -31,7 +36,7 @@ elif ! busybox test -e /system/build.prop ; then
 
 	UPDATE=$(busybox cat /sdcard/omni.cfg)
 
-	if busybox test -e $UPDATE ; then
+	if busybox test -n "$UPDATE" ; then
 		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
 	fi
 
@@ -52,18 +57,6 @@ if busybox grep -q 1 /sys/class/power_supply/battery/charging_mode_booting ; the
 	# low power mode
 	busybox cp lpm.rc init.rc
 	busybox rm init.p1.rc
-fi
-
-HW=$(busybox cat /proc/cpuinfo | busybox grep Hardware | busybox sed s/Hardware// | busybox tr '[A-Z]' '[a-z]' | busybox tr -d ' ' | busybox tr -d ':' | busybox tr -d '\t')
-if [ "$HW" != "p1" ] ; then
-	if [ "$image" == "/stage1/boot.cpio" ] ; then
-		busybox ln -s /init.p1.rc /init.$HW.rc
-	elif [ "$image" == "/stage1/recovery.cpio" ] ; then
-		busybox ln -s /init.recovery.p1.rc /init.recovery.$HW.rc
-	fi
-
-	busybox ln -s /fstab.p1 /fstab.$HW
-	busybox ln -s /ueventd.p1.rc /ueventd.$HW.rc
 fi
 
 busybox umount /sys

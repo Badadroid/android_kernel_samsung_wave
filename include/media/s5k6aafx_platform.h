@@ -15,8 +15,4 @@ struct s5k6aafx_platform_data {
 	unsigned int default_width;
 	unsigned int default_height;
 	unsigned int pixelformat;
-	int freq;	/* MCLK in Hz */
-
-	/* This SoC supports Parallel & CSI-2 */
-	int is_mipi;
 };

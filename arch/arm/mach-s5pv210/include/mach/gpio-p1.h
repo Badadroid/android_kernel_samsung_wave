@@ -34,20 +34,28 @@
 #define GPIO_BT_UART_RTS_AF     2
 #define GPIO_BT_RTS             S5PV210_GPA0(3)
 #define GPIO_BT_RTS_AF          2
+#if defined(CONFIG_PHONE_P1_GSM)
 #define GPIO_GPS_UART_RXD       S5PV210_GPA0(4)
 #define GPIO_GPS_UART_RXD_AF    2
+#endif
 #define GPIO_GPS_RXD            S5PV210_GPA0(4)
 #define GPIO_GPS_RXD_AF         2
+#if defined(CONFIG_PHONE_P1_GSM)
 #define GPIO_GPS_UART_TXD       S5PV210_GPA0(5)
 #define GPIO_GPS_UART_TXD_AF    2
+#endif
 #define GPIO_GPS_TXD            S5PV210_GPA0(5)
 #define GPIO_GPS_TXD_AF         2
+#if defined(CONFIG_PHONE_P1_GSM)
 #define GPIO_GPS_UART_CTS       S5PV210_GPA0(6)
 #define GPIO_GPS_UART_CTS_AF    2
+#endif
 #define GPIO_GPS_CTS            S5PV210_GPA0(6)
 #define GPIO_GPS_CTS_AF         2
+#if defined(CONFIG_PHONE_P1_GSM)
 #define GPIO_GPS_UART_RTS       S5PV210_GPA0(7)
 #define GPIO_GPS_UART_RTS_AF    2
+#endif
 #define GPIO_GPS_RTS            S5PV210_GPA0(7)
 #define GPIO_GPS_RTS_AF         2
 
@@ -57,12 +65,16 @@
 #define GPIO_AP_RXD_AF          2
 #define GPIO_AP_TXD             S5PV210_GPA1(1)
 #define GPIO_AP_TXD_AF          2
+#if defined(CONFIG_PHONE_P1_GSM)
 #define GPIO_AP_FLM_RXD         S5PV210_GPA1(2)
 #define GPIO_AP_FLM_RXD_AF      2
+#endif
 #define GPIO_FLM_RXD            S5PV210_GPA1(2)
 #define GPIO_FLM_RXD_AF         2
+#if defined(CONFIG_PHONE_P1_GSM)
 #define GPIO_AP_FLM_TXD         S5PV210_GPA1(3)
 #define GPIO_AP_FLM_TXD_AF      2
+#endif
 #define GPIO_FLM_TXD            S5PV210_GPA1(3)
 #define GPIO_FLM_TXD_AF         2
 

@@ -79,7 +79,9 @@
 #define MAX_ENTRY	1
 #define MAX_DELAY	(MAX_ENTRY * 9523809LL)
 
-
+#define REL_STATUS                      (REL_RX)
+#define REL_WAKE                        (REL_RY)
+#define REL_CONTROL_REPORT              (REL_RZ)
 
 /*#define SHIFT_ADJ_2G		4
 #define SHIFT_ADJ_4G		3
@@ -748,10 +750,10 @@ static int l3g4200d_close(struct inode *inode, struct file *file)
 
 
 /*  ioctl command for l3g4200d device file */
-static int l3g4200d_ioctl(struct file *file,
+static long l3g4200d_ioctl(struct file *file,
 			       unsigned int cmd, unsigned long arg)
 {
-	int err = 0;
+	long err = 0;
 	unsigned char data[6];
 	mutex_lock(&l3g4200d_mutex);
 	/* check l3g4200d_client */
@@ -820,11 +822,11 @@ static int l3g4200d_ioctl(struct file *file,
 
 static const struct file_operations l3g4200d_fops = {
 	.owner = THIS_MODULE,
+	.open = l3g4200d_open,
 	.read = l3g4200d_read,
 	.write = l3g4200d_write,
-	.open = l3g4200d_open,
-	.release = l3g4200d_close,
 	.unlocked_ioctl = l3g4200d_ioctl,
+	.release = l3g4200d_close,
 };
 
 
@@ -986,6 +988,15 @@ static int l3g4200d_probe(struct i2c_client *client,
 	/* Z */
 	input_set_capability(input_dev, EV_REL, REL_RZ);
 	input_set_abs_params(input_dev, REL_RZ, -32768, 32768, 0, 0);
+	/* status */
+	input_set_capability(input_dev, EV_REL, REL_STATUS);
+	input_set_abs_params(input_dev, REL_STATUS, -32768, 32768, 0, 0);
+	/* wake */
+	input_set_capability(input_dev, EV_REL, REL_WAKE);
+	input_set_abs_params(input_dev, REL_WAKE, -32768, 32768, 0, 0);
+	/* enabled/delay */
+	input_set_capability(input_dev, EV_REL, REL_CONTROL_REPORT);
+	input_set_abs_params(input_dev, REL_CONTROL_REPORT, -32768, 32768, 0, 0);
 
 	err = input_register_device(input_dev);
 	if (err < 0) {
@@ -1093,7 +1104,7 @@ static int l3g4200d_remove(struct i2c_client *client)
 	return 0;
 }
 #ifdef CONFIG_PM
-static int l3g4200d_suspend(struct i2c_client *client, pm_message_t state)
+static int l3g4200d_suspend(struct device* dev)
 {
 	int i;
 	#if DEBUG
@@ -1122,7 +1133,7 @@ static int l3g4200d_suspend(struct i2c_client *client, pm_message_t state)
 	return 0;
 }
 
-static int l3g4200d_resume(struct i2c_client *client)
+static int l3g4200d_resume(struct device* dev)
 {
 	int i;
 	#if DEBUG
@@ -1148,6 +1159,11 @@ static int l3g4200d_resume(struct i2c_client *client)
 
 	return 0;
 }
+
+static const struct dev_pm_ops l3g4200d_pm_ops = {
+	.suspend = l3g4200d_suspend,
+	.resume = l3g4200d_resume,
+};
 #endif
 
 static const struct i2c_device_id l3g4200d_id[] = {
@@ -1158,26 +1174,21 @@ static const struct i2c_device_id l3g4200d_id[] = {
 MODULE_DEVICE_TABLE(i2c, l3g4200d_id);
 
 static struct i2c_driver l3g4200d_driver = {
+	.driver = {
+		.owner = THIS_MODULE,
+		.name = "l3g4200d",
+#ifdef CONFIG_PM
+		.pm = &l3g4200d_pm_ops,
+#endif
+	},
 	.class = I2C_CLASS_HWMON,
 	.probe = l3g4200d_probe,
 	.remove = __devexit_p(l3g4200d_remove),
 	.id_table = l3g4200d_id,
-	#ifdef CONFIG_PM
-	.suspend = l3g4200d_suspend,
-	.resume = l3g4200d_resume,
-	#endif
-	.driver = {
-	.owner = THIS_MODULE,
-	.name = "l3g4200d",
-	},
-	/*
-	.detect = l3g4200d_detect,
-	*/
 };
 
 static int __init l3g4200d_init(void)
 {
-
 	printk("%s \n",__func__);
 
 	printk(KERN_INFO "L3G4200D init driver\n");

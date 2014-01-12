@@ -100,7 +100,6 @@ void s5pv210_setup_sdhci_cfg_card(struct platform_device *dev,
 				S3C_SDHCI_CTRL3_FCSELRX_INVERT;
 	}
 
-
 	writel(ctrl2, r + S3C_SDHCI_CONTROL2);
 	writel(ctrl3, r + S3C_SDHCI_CONTROL3);
 }
@@ -154,10 +153,8 @@ void universal_sdhci2_cfg_ext_cd(void)
 #if defined(CONFIG_SAMSUNG_CAPTIVATE) || defined(CONFIG_SAMSUNG_VIBRANT)
     s3c_gpio_setpull(S5PV210_GPH3(4), S3C_GPIO_PULL_UP);
 #else
-#if defined(CONFIG_PHONE_P1_GSM)
+#if defined(CONFIG_MACH_P1)
 	s3c_gpio_cfgpin(GPIO_T_FLASH_DETECT, S3C_GPIO_SFN(GPIO_T_FLASH_DETECT_AF));
-#elif defined(CONFIG_PHONE_P1_CDMA)
-	s3c_gpio_cfgpin(S5PV210_GPH3(4),S3C_GPIO_SFN(0xf));
 #endif
     s3c_gpio_setpull(S5PV210_GPH3(4), S3C_GPIO_PULL_NONE);
 #endif
@@ -195,6 +192,7 @@ void s5pv210_sdhci0_translate_vdd(struct platform_device *pdev,
 void s5pv210_sdhci2_translate_vdd(struct platform_device *pdev, unsigned int vdd)
 {
 	unsigned int flag = 0;
+	bool is_reg_enabled = false;
 	struct regulator *vcc_vtf;
 
 	if (pdev->id != 2) /* T-FLSH */
@@ -210,16 +208,22 @@ void s5pv210_sdhci2_translate_vdd(struct platform_device *pdev, unsigned int vdd
 
 	if (vdd == 0) {
 		if (vreg_sts & flag) {
-			printk(KERN_DEBUG "%s.%d: ldo down\n", pdev->name, pdev->id);
-			regulator_disable(vcc_vtf);
-			vreg_sts &= ~flag;
+			if (is_reg_enabled) {
+				printk(KERN_DEBUG "%s.%d: ldo down\n", pdev->name, pdev->id);
+				regulator_force_disable(vcc_vtf);
+				vreg_sts &= ~flag;
+				is_reg_enabled = false;
+			}
 		}
 	}
 	else {
 		if (!(vreg_sts & flag)) {
-			printk(KERN_DEBUG "%s.%d: ldo on\n", pdev->name, pdev->id);
-			regulator_enable(vcc_vtf);
-			vreg_sts |= flag;
+			if (!is_reg_enabled) {
+				printk(KERN_DEBUG "%s.%d: ldo on\n", pdev->name, pdev->id);
+				regulator_enable(vcc_vtf);
+				vreg_sts |= flag;
+				is_reg_enabled = true;
+			}
 		}
 	}
 
@@ -327,7 +331,7 @@ void s3c_sdhci_set_platdata(void)
 	s3c_sdhci0_set_platdata(&hsmmc0_platdata);
 #endif
 #if defined(CONFIG_S3C_DEV_HSMMC1)
-	if (machine_is_aries() || machine_is_p1()) {
+	if (machine_is_aries()) {
 		hsmmc1_platdata.cd_type = S3C_SDHCI_CD_EXTERNAL;
 		hsmmc1_platdata.ext_cd_init = ext_cd_init_hsmmc1;
 		hsmmc1_platdata.ext_cd_cleanup = ext_cd_cleanup_hsmmc1;

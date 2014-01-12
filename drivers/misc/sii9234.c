@@ -72,7 +72,7 @@ struct SII9234_state {
 	struct i2c_client *client;
 };
 
-static struct timer_list MHL_reg_check;
+//static struct timer_list MHL_reg_check;
 
 static u8 SII9234_i2c_read(struct i2c_client *client, u8 reg)
 {
@@ -159,6 +159,7 @@ void sii_9234_monitor(unsigned long arg)
 	//add_timer(&MHL_reg_check);
 }
 
+/*
 static void check_HDMI_signal(unsigned long arg)
 {
 	SII_DEV_DBG("");
@@ -177,6 +178,7 @@ static void check_HDMI_signal(unsigned long arg)
 	//data=ReadIndexedRegister(INDEXED_PAGE_0, 0x81);
 	//printk("SII9234_i2c_read  INDEXED_PAGE_0: 0x%02x\n", data);
 }
+*/
 
 
 
@@ -185,12 +187,10 @@ static void check_HDMI_signal(unsigned long arg)
 
 static int SII9234_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	SII_DEV_DBG("");
-	//int retval;
-
 	struct SII9234_state *state;
-
 	state = kzalloc(sizeof(struct SII9234_state), GFP_KERNEL);
+	SII_DEV_DBG("");
+
 	if (state == NULL) {
 		printk("failed to allocate memory \n");
 		return -ENOMEM;
@@ -234,11 +234,10 @@ static int __devexit SII9234_remove(struct i2c_client *client)
 
 static int SII9234A_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+	struct SII9234_state *state;
+	state = kzalloc(sizeof(struct SII9234_state), GFP_KERNEL);
 	SII_DEV_DBG("");
 
-	struct SII9234_state *state;
-
-	state = kzalloc(sizeof(struct SII9234_state), GFP_KERNEL);
 	if (state == NULL) {
 		printk("failed to allocate memory \n");
 		return -ENOMEM;
@@ -268,11 +267,10 @@ static int __devexit SII9234A_remove(struct i2c_client *client)
 
 static int SII9234B_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	SII_DEV_DBG("");
-
 	struct SII9234_state *state;
-
 	state = kzalloc(sizeof(struct SII9234_state), GFP_KERNEL);
+	SII_DEV_DBG("");
+	
 	if (state == NULL) {
 		printk("failed to allocate memory \n");
 		return -ENOMEM;
@@ -303,11 +301,10 @@ static int __devexit SII9234B_remove(struct i2c_client *client)
 
 static int SII9234C_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+	struct SII9234_state *state;
+	state = kzalloc(sizeof(struct SII9234_state), GFP_KERNEL);
 	SII_DEV_DBG("");
 
-	struct SII9234_state *state;
-
-	state = kzalloc(sizeof(struct SII9234_state), GFP_KERNEL);
 	if (state == NULL) {
 		printk("failed to allocate memory \n");
 		return -ENOMEM;

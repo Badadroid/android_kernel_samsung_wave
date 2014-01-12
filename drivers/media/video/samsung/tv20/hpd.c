@@ -277,7 +277,7 @@ static void hpd_irq_check_timer_func(unsigned long dummy);
 
 static DEFINE_TIMER(hpd_irq_check_timer, hpd_irq_check_timer_func, 0, 0);
 
-irqreturn_t s5p_hpd_irq_handler(int irq)
+irqreturn_t s5p_hpd_irq_handler(int irq, void *ptr)
 {
 	int ret = IRQ_HANDLED;
 	unsigned long flags;
@@ -313,20 +313,15 @@ irqreturn_t s5p_hpd_irq_handler(int irq)
 
 static void hpd_irq_check_timer_func(unsigned long dummy)
 {
-	unsigned long flags;
-
-	//printk("[TVOUT][%s:called]\n",__func__);
-
 	if (irq_event ==EVENT_RISING && !gpio_get_value(S5PV210_GPH1(5))) {
 		printk("[TVOUT][%s:re-call irq handler]\n",__func__);
-		//local_irq_save(flags);
-		s5p_hpd_irq_handler(IRQ_EINT13);
-		//local_irq_restore(flags);
+		s5p_hpd_irq_handler(IRQ_EINT13, 0);
 	}
 }
 
 static int __init s5p_hpd_probe(struct platform_device *pdev)
 {
+	int ret = 0;
 	if (misc_register(&hpd_misc_device)) {
 		printk(KERN_WARNING " Couldn't register device 10, %d.\n",
 			HPD_MINOR);
@@ -357,8 +352,10 @@ static int __init s5p_hpd_probe(struct platform_device *pdev)
 
 	irq_set_irq_type(IRQ_EINT13, IRQ_TYPE_EDGE_BOTH);
 
-	if (request_irq(IRQ_EINT13, s5p_hpd_irq_handler, IRQF_DISABLED,
-		"hpd", s5p_hpd_irq_handler)) {
+	ret = request_threaded_irq(IRQ_EINT13, NULL, s5p_hpd_irq_handler,
+		IRQF_DISABLED, "s5p_hpd_irq", pdev);
+
+	if (unlikely(ret < 0)) {
 		printk(KERN_ERR  "failed to install %s irq\n", "hpd");
 		misc_deregister(&hpd_misc_device);
 		return -EIO;
@@ -383,7 +380,7 @@ static int s5p_hpd_remove(struct platform_device *pdev)
 /*
  *  Suspend
  */
-int s5p_hpd_suspend(struct platform_device *dev, pm_message_t state)
+int s5p_hpd_suspend(struct device* dev)
 {
 	return 0;
 }
@@ -391,23 +388,25 @@ int s5p_hpd_suspend(struct platform_device *dev, pm_message_t state)
 /*
  *  Resume
  */
-int s5p_hpd_resume(struct platform_device *dev)
+int s5p_hpd_resume(struct device* dev)
 {
 	return 0;
 }
-#else
-#define s5p_hpd_suspend NULL
-#define s5p_hpd_resume NULL
+static const struct dev_pm_ops s5p_hpd_pm_ops = {
+	.suspend = s5p_hpd_suspend,
+	.resume = s5p_hpd_resume,
+};
 #endif
 
 static struct platform_driver s5p_hpd_driver = {
 	.probe		= s5p_hpd_probe,
 	.remove		= s5p_hpd_remove,
-	.suspend	= s5p_hpd_suspend,
-	.resume		= s5p_hpd_resume,
 	.driver		= {
 		.name	= "s5p-hpd",
 		.owner	= THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm     = &s5p_hpd_pm_ops,
+#endif
 	},
 };
 

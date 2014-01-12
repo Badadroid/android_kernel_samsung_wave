@@ -719,9 +719,9 @@ EXPORT_SYMBOL(mDNIe_Mode_Set);
 static ssize_t mdnieset_ui_file_cmd_show(struct device *dev,
         struct device_attribute *attr, char *buf)
 {
-	printk("called %s \n",__func__);
-
 	int mdnie_ui = 0;
+
+	printk("called %s \n",__func__);
 
 	switch(current_mDNIe_UI)
 	{

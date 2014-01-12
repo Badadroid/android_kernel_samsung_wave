@@ -44,6 +44,7 @@ static int gFirmware_Update_State = FW_UPDATE_READY;
 static bool buttons_enabled = true;
 static int cpufreq_lock = 1;
 static int key_led_brightness = 1;
+static int pivot = 90;
 
 static bool leds_on = true;
 static int leds_timeout = 1600;
@@ -251,13 +252,18 @@ static void release_all_fingers(struct input_dev *input_dev)
 	        continue;
 
 	    fingerInfo[i].pressure = 0;
-#ifdef CONFIG_TOUCHSCREEN_QT602240_ROT90
-	    input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].y);
-	    input_report_abs(input_dev, ABS_MT_POSITION_Y, QT602240_MAX_XC - 1 - fingerInfo[i].x);
-#else
-	    input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].x);
-	    input_report_abs(input_dev, ABS_MT_POSITION_Y, fingerInfo[i].y);
-#endif
+
+		switch (pivot) {
+			case 90:
+				input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].y);
+				input_report_abs(input_dev, ABS_MT_POSITION_Y, QT602240_MAX_XC - 1 - fingerInfo[i].x);
+				break;
+
+			default:
+				input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].x);
+				input_report_abs(input_dev, ABS_MT_POSITION_Y, fingerInfo[i].y);
+		}
+
 	    input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, fingerInfo[i].pressure);
 	    input_report_abs(input_dev, ABS_MT_WIDTH_MAJOR, fingerInfo[i].id);
 	    input_report_abs(input_dev, ABS_PRESSURE, fingerInfo[i].pressure);
@@ -1162,13 +1168,15 @@ static void qt602240_input_read(struct qt602240_data *data)
 				if (fingerInfo[i].pressure == -1 )
 					continue;
 				if (fingerInfo[i].pressure > 0) {
-#ifdef CONFIG_TOUCHSCREEN_QT602240_ROT90
-					input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].y);
-					input_report_abs(input_dev, ABS_MT_POSITION_Y, QT602240_MAX_XC - 1 - fingerInfo[i].x);
-#else
-					input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].x);
-					input_report_abs(input_dev, ABS_MT_POSITION_Y, fingerInfo[i].y);
-#endif
+					switch (pivot) {
+						case 90:
+							input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].y);
+							input_report_abs(input_dev, ABS_MT_POSITION_Y, QT602240_MAX_XC - 1 - fingerInfo[i].x);
+							break;
+						default:
+							input_report_abs(input_dev, ABS_MT_POSITION_X, fingerInfo[i].x);
+							input_report_abs(input_dev, ABS_MT_POSITION_Y, fingerInfo[i].y);
+					}
 					input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, fingerInfo[i].pressure);
 					input_report_abs(input_dev, ABS_MT_WIDTH_MAJOR, fingerInfo[i].size);
 					input_report_abs(input_dev, ABS_MT_TRACKING_ID, fingerInfo[i].id);
@@ -1804,9 +1812,59 @@ static ssize_t leds_timeout_write(struct device *dev, struct device_attribute *a
 	return size;
 }
 
+static ssize_t pivot_write(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t size)
+{
+	unsigned int value;
+	struct qt602240_data *data = dev_get_drvdata(dev);
+
+	if (sscanf(buf,"%du", &value) == 1) {
+
+		switch (value) {
+			case 90:
+		        pivot = 90;
+				input_set_abs_params(data->input_dev, ABS_MT_POSITION_X,
+						0, QT602240_MAX_YC, 0, 0);
+				input_set_abs_params(data->input_dev, ABS_MT_POSITION_Y,
+						0, QT602240_MAX_XC, 0, 0);
+				break;
+			case 180:
+				//to do
+		        pivot = 180;
+				break;
+			case 270:
+				//to do
+		        pivot = 270;
+				break;
+			default:
+		        pivot = 0;
+				input_set_abs_params(data->input_dev, ABS_MT_POSITION_X,
+						0, QT602240_MAX_XC, 0, 0);
+				input_set_abs_params(data->input_dev, ABS_MT_POSITION_Y,
+						0, QT602240_MAX_YC, 0, 0);
+				break;
+		}
+
+		qt602240_initialize(data);
+
+		pr_info( "[TSP] rotate - value: %d\n", pivot );
+
+	} else {
+		pr_info( "%s: invalid rotate input: \n", __FUNCTION__ );
+	}
+	return size;
+}
+
+static ssize_t pivot_read( struct device *dev,
+	struct device_attribute *attr, char *buf )
+{
+	return sprintf( buf, "%d\n", pivot );
+}
+
 static DEVICE_ATTR(buttons_enabled, S_IRUGO | S_IWUGO , buttons_enabled_status_read, buttons_enabled_status_write);
 static DEVICE_ATTR(cpufreq_lock, S_IRUGO | S_IWUGO , cpufreq_lock_read, cpufreq_lock_write);
 static DEVICE_ATTR(key_led_brightness, S_IRUGO | S_IWUGO , key_led_brightness_read, key_led_brightness_write);
+static DEVICE_ATTR(pivot, S_IRUGO | S_IWUGO , pivot_read, pivot_write);
 static DEVICE_ATTR(info, 0444, qt602240_info_show, NULL);
 static DEVICE_ATTR(object_table, 0444, qt602240_object_table_show, NULL);
 static DEVICE_ATTR(object, 0664, qt602240_object_show, qt602240_object_store);
@@ -1818,6 +1876,7 @@ static struct attribute *qt602240_attrs[] = {
 	&dev_attr_buttons_enabled.attr,
 	&dev_attr_cpufreq_lock.attr,
 	&dev_attr_key_led_brightness.attr,
+	&dev_attr_pivot.attr,
 	&dev_attr_info.attr,
 	&dev_attr_object_table.attr,
 	&dev_attr_object.attr,
@@ -2109,19 +2168,23 @@ static int __devinit qt602240_probe(struct i2c_client *client,
     set_bit(BTN_TOUCH, input_dev->keybit);
     set_bit(EV_ABS, input_dev->evbit);
 
-#ifdef CONFIG_TOUCHSCREEN_QT602240_ROT90
-    input_set_abs_params(input_dev, ABS_MT_POSITION_X,
-            0, QT602240_MAX_YC, 0, 0);
+	switch (pivot) {
+		case 90:
+			input_set_abs_params(input_dev, ABS_MT_POSITION_X,
+				    0, QT602240_MAX_YC, 0, 0);
 
-    input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
-            0, QT602240_MAX_XC, 0, 0);
-#else
-    input_set_abs_params(input_dev, ABS_MT_POSITION_X,
-            0, QT602240_MAX_XC, 0, 0);
+			input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
+				    0, QT602240_MAX_XC, 0, 0);
+			break;
 
-    input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
-            0, QT602240_MAX_YC, 0, 0);
-#endif
+		default:
+			input_set_abs_params(input_dev, ABS_MT_POSITION_X,
+				    0, QT602240_MAX_XC, 0, 0);
+
+			input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
+				    0, QT602240_MAX_YC, 0, 0);
+	}
+
     input_set_abs_params(input_dev, ABS_MT_TOUCH_MAJOR,
             0, QT602240_MAX_PRESSURE, 0, 0);
 

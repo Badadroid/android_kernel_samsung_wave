@@ -205,7 +205,11 @@ int s3cfb_set_clock(struct s3cfb_global *ctrl)
 	}
 
 	div = src_clk / vclk;
+#ifdef CONFIG_MACH_ARIES
 	if (src_clk % vclk)
+#else // CONFIG_MACH_P1
+	if (src_clk % vclk > vclk / 2)
+#endif
 		div++;
 
 	if ((src_clk/div) > maxclk)
@@ -618,7 +622,7 @@ int s3cfb_set_buffer_address(struct s3cfb_global *ctrl, int id)
 	return 0;
 }
 
-int s3cfb_set_alpha_value_width(struct s3cfb_global *ctrl, int id)
+void s3cfb_set_alpha_value_width(struct s3cfb_global *ctrl, int id)
 {
        struct fb_info *fb = ctrl->fb[id];
        struct fb_var_screeninfo *var = &fb->var;

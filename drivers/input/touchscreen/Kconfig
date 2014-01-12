@@ -756,9 +756,4 @@ config TOUCHSCREEN_QT602240
           To compile this driver as a module, choose M here: the
           module will be called melfas_ts.
 
-config TOUCHSCREEN_QT602240_ROT90
-	bool "Rotate QT602240 ts events by 90 degrees"
-	depends on TOUCHSCREEN_QT602240
-	default N
-
 endif

@@ -692,16 +692,6 @@ static int s5k6aafx_set_preview_stop(struct v4l2_subdev *sd)
 	return err;
 }
 
-#if 0
-static int s5k6aafx_s_crystal_freq(struct v4l2_subdev *sd, u32 freq, u32 flags)
-{
-	int err = -EINVAL;
-
-	FUNC_ENTR();
-	return err;
-}
-#endif
-
 static int s5k6aafx_g_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt)
 {
 	FUNC_ENTR();
@@ -730,30 +720,10 @@ static int s5k6aafx_enum_framesizes(struct v4l2_subdev *sd, \
 		fsize->discrete.width = state->set_fmt.width;
 		fsize->discrete.height = state->set_fmt.height;
 	}
-	printk("%s : width - %d , height - %d\n", __func__, fsize->discrete.width, fsize->discrete.height);
+	printk("%s : width(%d) height(%d)\n", __func__, fsize->discrete.width, fsize->discrete.height);
 
 	return 0;
 }
-
-#if 0
-static int s5k6aafx_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned int index,
-				  enum v4l2_mbus_pixelcode *code)
-{
-	int err = 0;
-
-	FUNC_ENTR();
-	return err;
-}
-
-static int s5k6aafx_enum_frameintervals(struct v4l2_subdev *sd,
-					struct v4l2_frmivalenum *fival)
-{
-	int err = 0;
-
-	FUNC_ENTR();
-	return err;
-}
-#endif
 
 static int s5k6aafx_try_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt)
 {
@@ -766,24 +736,38 @@ static int s5k6aafx_try_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framef
 
 static int s5k6aafx_s_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *fmt)
 {
-	struct s5k6aafx_state *state = to_state(sd);
+	struct s5k6aafx_state *state =
+		container_of(sd, struct s5k6aafx_state, sd);
+	struct i2c_client *client = v4l2_get_subdevdata(sd);
 
 	FUNC_ENTR();
+
+	if (fmt->code == V4L2_MBUS_FMT_FIXED &&
+			fmt->colorspace != V4L2_COLORSPACE_JPEG) {
+		dev_dbg(&client->dev,
+				"%s: mismatch in pixelformat and colorspace\n",
+				__func__);
+		return -EINVAL;
+	}
 
 	/*
 	 * Just copying the requested format as of now.
 	 * We need to check here what are the formats the camera support, and
 	 * set the most appropriate one according to the request from FIMC
 	 */
-	state->req_fmt.width = fmt->width;
-	state->req_fmt.height = fmt->height;
-	state->set_fmt.width = fmt->width;
-	state->set_fmt.height = fmt->height;
+	state->pix.width       = fmt->width;
+	state->pix.height      = fmt->height;
+	state->set_fmt.width   = fmt->width;
+	state->set_fmt.height  = fmt->height;
+	state->pix.colorspace  = fmt->colorspace;
 
-	state->req_fmt.pixelformat = V4L2_PIX_FMT_JPEG;
-	state->req_fmt.colorspace = V4L2_COLORSPACE_JPEG;
+	if (fmt->colorspace == V4L2_COLORSPACE_JPEG)
+		state->pix.pixelformat = V4L2_PIX_FMT_JPEG;
+	else
+		state->pix.pixelformat = 0; /* is this used anywhere? */
 
-	printk("%s : width - %d , height - %d\n", __func__, state->req_fmt.width, state->req_fmt.height);
+	printk("%s : width(%d) height(%d)\n", __func__,
+		state->pix.width, state->pix.height);
 
 	return 0;
 }
@@ -810,29 +794,27 @@ static int s5k6aafx_s_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *parms
 //latin_cam VT CAM Antibanding
 static int s5k6aafx_set_60hz_antibanding(struct v4l2_subdev *sd)
 {
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct s5k6aafx_state *state = to_state(sd);
 	int err = -EINVAL;
+	unsigned long s5k6aafx_antibanding60hz[] = {
+		0xFCFCD000,
+		0x00287000,
+		// Anti-Flicker //
+		// End user init script
+		0x002A0400,
+		0x0F12005F,  //REG_TC_DBG_AutoAlgEnBits //Auto Anti-Flicker is enabled bit[5] = 1.
+		0x002A03DC,
+		0x0F120002,  //02 REG_SF_USER_FlickerQuant //Set flicker quantization(0: no AFC, 1: 50Hz, 2: 60 Hz)
+		0x0F120001,
+	};
 
 	FUNC_ENTR();
 
-	unsigned long s5k6aafx_antibanding60hz[] = {
-	0xFCFCD000,
-	0x00287000,
-	// Anti-Flicker //
-	// End user init script
-	0x002A0400,
-	0x0F12005F,  //REG_TC_DBG_AutoAlgEnBits //Auto Anti-Flicker is enabled bit[5] = 1.
-	0x002A03DC,
-	0x0F120002,  //02 REG_SF_USER_FlickerQuant //Set flicker quantization(0: no AFC, 1: 50Hz, 2: 60 Hz)
-	0x0F120001,
-	};
-
 	err = s5k6aafx_write_regs(sd, s5k6aafx_antibanding60hz,
-					sizeof(s5k6aafx_antibanding60hz) / sizeof(s5k6aafx_antibanding60hz[0]));
+		sizeof(s5k6aafx_antibanding60hz) / sizeof(s5k6aafx_antibanding60hz[0]));
+
 	printk("%s:  setting 60hz antibanding \n", __func__);
-	if (unlikely(err))
-	{
+
+	if (unlikely(err)) {
 		printk("%s: failed to set 60hz antibanding \n", __func__);
 		return err;
 	}
@@ -906,20 +888,6 @@ static int s5k6aafx_init(struct v4l2_subdev *sd, u32 val)
 	return 0;
 }
 
-#if 0
-static int s5k6aafx_queryctrl(struct v4l2_subdev *sd, struct v4l2_queryctrl *qc)
-{
-	FUNC_ENTR();
-	return 0;
-}
-
-static int s5k6aafx_querymenu(struct v4l2_subdev *sd, struct v4l2_querymenu *qm)
-{
-	FUNC_ENTR();
-	return 0;
-}
-#endif
-
 static int s5k6aafx_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct s5k6aafx_state *state = to_state(sd);
@@ -930,7 +898,7 @@ static int s5k6aafx_s_stream(struct v4l2_subdev *sd, int enable)
 	if (!enable)
 		return 0;
 
-	if (state->req_fmt.colorspace != V4L2_COLORSPACE_JPEG) {
+	if (state->pix.colorspace != V4L2_COLORSPACE_JPEG) {
 		err = s5k6aafx_set_preview_start(sd);
 		printk("s5k6aafx_set_preview_start~~~~~ \n");
 		if (err < 0) {
@@ -1552,7 +1520,6 @@ static int s5k6aafx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 		case V4L2_CID_CAMERA_FRAME_RATE:
 			err = s5k6aafx_set_frame_rate(sd, ctrl);
-			state->fps = ctrl->value;
 			break;
 
 		case V4L2_CID_CAMERA_APP_CHECK:
@@ -1590,22 +1557,15 @@ static int s5k6aafx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 static const struct v4l2_subdev_core_ops s5k6aafx_core_ops = {
 	.init = s5k6aafx_init,		/* initializing API */
-#if 0
-	.queryctrl = s5k6aafx_queryctrl,
-	.querymenu = s5k6aafx_querymenu,
-#endif
 	.g_ctrl = s5k6aafx_g_ctrl,
 	.s_ctrl = s5k6aafx_s_ctrl,
 };
 
 static const struct v4l2_subdev_video_ops s5k6aafx_video_ops = {
-	/*.s_crystal_freq = s5k6aafx_s_crystal_freq,*/
-	.g_mbus_fmt  = s5k6aafx_g_mbus_fmt,
-	.s_mbus_fmt  = s5k6aafx_s_mbus_fmt,
+	.g_mbus_fmt = s5k6aafx_g_mbus_fmt,
+	.s_mbus_fmt = s5k6aafx_s_mbus_fmt,
 	.s_stream = s5k6aafx_s_stream,
 	.enum_framesizes = s5k6aafx_enum_framesizes,
-	/*.enum_frameintervals = s5k6aafx_enum_frameintervals,*/
-	/*.enum_mbus_fmt = s5k6aafx_enum_mbus_fmt,*/
 	.try_mbus_fmt = s5k6aafx_try_mbus_fmt,
 	.g_parm	= s5k6aafx_g_parm,
 	.s_parm	= s5k6aafx_s_parm,
@@ -1646,27 +1606,17 @@ static int s5k6aafx_probe(struct i2c_client *client,
 	 * or without them, use default information in driver
 	 */
 	if (!(pdata->default_width && pdata->default_height)) {
-	  /* TODO: assign driver default resolution */
+		state->pix.width = DEFAULT_WIDTH;
+		state->pix.height = DEFAULT_HEIGHT;
 	} else {
-	  state->pix.width = pdata->default_width;
-	  state->pix.height = pdata->default_height;
+		state->pix.width = pdata->default_width;
+		state->pix.height = pdata->default_height;
 	}
 
 	if (!pdata->pixelformat)
-	  state->pix.pixelformat = DEFAULT_FMT;
+		state->pix.pixelformat = DEFAULT_FMT;
 	else
-	  state->pix.pixelformat = pdata->pixelformat;
-
-	if (pdata->freq == 0)
-	  state->freq = DEFUALT_MCLK;
-	else
-	  state->freq = pdata->freq;
-
-	if (!pdata->is_mipi) {
-	  state->is_mipi = 0;
-	  dev_dbg(&client->dev, "parallel mode\n");
-	} else
-	  state->is_mipi = pdata->is_mipi;
+		state->pix.pixelformat = pdata->pixelformat;
 
 	/* Registering subdev */
 	v4l2_i2c_subdev_init(sd, client, &s5k6aafx_ops);

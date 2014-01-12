@@ -807,8 +807,10 @@ static void fimc_outdev_set_dst_dma_offset(struct fimc_control *ctrl,
 
 	switch (ctx->overlay.mode) {
 	case FIMC_OVLY_DMA_AUTO: // fall through for aries
+#if defined(CONFIG_MACH_P1)
 #if defined(CONFIG_VIDEO_NM6XX)
 		if(fimc->active_camera != CAMERA_ID_MOBILETV)
+#endif
 		{
 			win.left = 0;
 			win.top = 0;
@@ -1312,7 +1314,6 @@ int fimc_reqbufs_output(void *fh, struct v4l2_requestbuffers *b)
 				}
 			}
 #ifdef CONFIG_MACH_P1
-
 			/* clear destination buffer address */
 			ctrl->mem.curr = ctx->dst[0].base[FIMC_ADDR_Y];
 			for (i = 0; i < FIMC_OUTBUFS; i++) {
@@ -2267,7 +2268,9 @@ int fimc_dqbuf_output(void *fh, struct v4l2_buffer *b)
 		if (ret == 0) {
 			fimc_dump_context(ctrl, ctx);
 			fimc_err("[0] out_queue is empty\n");
+#ifdef CONFIG_MACH_ARIES
 			ctx->status = FIMC_STREAMON_IDLE;
+#endif
 			return -EAGAIN;
 		} else if (ret == -ERESTARTSYS) {
 			fimc_print_signal(ctrl);
@@ -2314,11 +2317,13 @@ int fimc_g_fmt_vid_out(struct file *filp, void *fh, struct v4l2_format *f)
 
 	fimc_info1("%s: called\n", __func__);
 
+#ifdef CONFIG_MACH_ARIES
 	if (ctrl->cap) {
 		fimc_err("%s: fimc is already used for capture mode\n",
 			 __func__);
 		return -EINVAL;
 	}
+#endif
 
 	if (!out) {
 		out = kzalloc(sizeof(*out), GFP_KERNEL);
