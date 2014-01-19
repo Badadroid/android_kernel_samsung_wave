@@ -592,7 +592,7 @@ const unsigned short LG4573_SEQ_SETTING_TYPE_3[] = {
 const unsigned short LG4573_SEQ_SLEEP_OFF[] = {
 	0x11,
 	SLEEPMSEC, 120,
-	0x29,
+	//0x29,
 	SLEEPMSEC, 100,
 	ENDDEF, 0x0000
 };
@@ -600,7 +600,7 @@ const unsigned short LG4573_SEQ_SLEEP_OFF[] = {
 const unsigned short LG4573_SEQ_SLEEP_ON[] = {
 	0x10,
 	SLEEPMSEC, 120,
-	0x28,
+	//0x28,
 	SLEEPMSEC, 100,
 	ENDDEF, 0x0000
 };
