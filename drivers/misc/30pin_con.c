@@ -39,7 +39,10 @@ extern struct i2c_driver SII9234A_i2c_driver;
 extern struct i2c_driver SII9234B_i2c_driver;
 extern struct i2c_driver SII9234C_i2c_driver;
 
+#ifdef CONFIG_KEYBOARD_P1
 extern int check_keyboard_dock(int val);
+#endif
+
 extern void TVout_LDO_ctrl(int enable);
 extern void sii9234_tpi_init(void);
 extern void MHD_HW_Off(void);
@@ -105,8 +108,10 @@ static ssize_t acc_check_read(struct device *dev,
 	if (0 == acc->dock_state) {
 		if(acc->current_dock == DOCK_DESK)
 			connected |= (0x1 << 0);
+#ifdef CONFIG_KEYBOARD_P1
 		else if (acc->current_dock == DOCK_KEYBOARD)
 			connected |= (0x1 << 1);
+#endif
 	}
 
 	if (0 == acc->acc_state) {
@@ -187,10 +192,12 @@ static void _detected(struct acc_con_info *acc, int device, bool connected)
 			TVout_LDO_ctrl(true);
 			enable_audio_usb = true;
 			break;
+#ifdef CONFIG_KEYBOARD_P1
 		case P30_KEYBOARDDOCK:
 			pr_info("[30pin] Keyboard dock detected: id=%d\n", device);
 			acc->current_dock = DOCK_KEYBOARD;
 			break;
+#endif
 		case P30_CARDOCK:
 			pr_info("[30pin] Car dock detected: id=%d\n", device);
 			//to do
@@ -215,9 +222,11 @@ static void _detected(struct acc_con_info *acc, int device, bool connected)
 		case P30_ANAL_TV_OUT:
 			TVout_LDO_ctrl(false);
 			break;
+#ifdef CONFIG_KEYBOARD_P1
 		case P30_KEYBOARDDOCK:
 			check_keyboard_dock(1);
 			break;
+#endif
 		case P30_DESKDOCK:
 			MHD_HW_Off();
 			TVout_LDO_ctrl(false);
@@ -226,19 +235,37 @@ static void _detected(struct acc_con_info *acc, int device, bool connected)
 	}
 }
 
-static void acc_dock_check(struct acc_con_info *acc, bool connected)
+static void acc_dock_check(struct acc_con_info *acc, bool is_connected)
 {
 	char *envp[3];
 	char *env_ptr  = "DOCK=none";
 	char *stat_ptr = "STATE=offline";
 
-	if (connected)
+	if (is_connected) {
+
 		stat_ptr = "STATE=online";
 
-	if (acc->current_dock == DOCK_KEYBOARD)
-		env_ptr = "DOCK=keyboard";
-	else if (acc->current_dock == DOCK_DESK)
-		env_ptr = "DOCK=desk";
+#ifdef CONFIG_KEYBOARD_P1
+		if (check_keyboard_dock(0)) {
+			_detected(acc, P30_KEYBOARDDOCK, is_connected);
+			env_ptr = "DOCK=keyboard";
+		} else
+#endif
+		{
+			env_ptr = "DOCK=desk";
+			_detected(acc, P30_DESKDOCK, is_connected);
+		}
+	} else {
+
+#ifdef CONFIG_KEYBOARD_P1
+		if (acc->current_dock == DOCK_KEYBOARD)
+			_detected(acc, P30_KEYBOARDDOCK, is_connected);
+#endif
+		if (acc->current_dock == DOCK_DESK)
+			_detected(acc, P30_DESKDOCK, is_connected);
+
+		acc->current_dock = DOCK_NONE;
+	}
 
 	pr_info("[30pin] %s: %s - %s\n", __func__, env_ptr, stat_ptr);
 
@@ -373,24 +400,10 @@ static void acc_con_worker(struct work_struct *work)
 		if (1 == cur_state) {
 			pr_info("[30pin] Docking station detatched");
 			acc->dock_state = cur_state;
-
-			if (acc->current_dock == DOCK_KEYBOARD)
-				_detected(acc, P30_KEYBOARDDOCK, false);
-
-			if (acc->current_dock == DOCK_DESK)
-				_detected(acc, P30_DESKDOCK, false);
-
-			acc->current_dock = DOCK_NONE;
 			acc_dock_check(acc, false);
 		} else if (0 == cur_state) {
 			pr_info("[30pin] Docking station attatched\n");
 			acc->dock_state = cur_state;
-
-			if (check_keyboard_dock(cur_state))
-				_detected(acc, P30_KEYBOARDDOCK, true);
-			else
-				_detected(acc, P30_DESKDOCK, true);
-
 			acc_dock_check(acc, true);
 		}
 	}
@@ -464,6 +477,8 @@ static void initial_connection_check(struct acc_con_info *acc)
 
 	if (!acc->dock_state)
 		acc_dock_check(acc, true);
+	else
+		acc_dock_check(acc, false);
 
 	/* checks otg connectivity before registers otg irq */
 	acc->acc_state = gpio_get_value(GPIO_DOCK_INT);
@@ -486,7 +501,7 @@ static int acc_con_probe(struct platform_device *pdev)
 	if (!acc)
 		return -ENOMEM;
 
-	acc->current_dock      = DOCK_NONE;
+	acc->current_dock = DOCK_NONE;
 	acc->current_accessory = ACCESSORY_NONE;
 	dev_set_drvdata(&pdev->dev, acc);
 	acc->acc_dev = &pdev->dev;

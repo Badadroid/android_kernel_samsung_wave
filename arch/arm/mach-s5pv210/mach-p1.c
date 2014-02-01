@@ -163,7 +163,10 @@ struct max17042_callbacks *max17042_cb;
 static enum cable_type_t set_cable_status;
 static enum charging_status_type_t charging_status;
 void otg_phy_init(void);
+
+#ifdef CONFIG_KEYBOARD_P1
 extern bool keyboard_enable;
+#endif
 
 static int p1_notifier_call(struct notifier_block *this,
 					unsigned long code, void *_cmd)
@@ -6426,10 +6429,12 @@ static unsigned int p1_lcd_tft_sleep_gpio_table[][3] = {
 			S3C_GPIO_SLP_OUT0, S3C_GPIO_PULL_NONE},
 };
 
+#if defined(CONFIG_KEYBOARD_P1)
 static unsigned int p1_keyboard_sleep_gpio_table[][3] = {
 	{S5PV210_GPJ1(4),  // ACCESSORY_EN
 		S3C_GPIO_SLP_PREV, S3C_GPIO_PULL_UP},
 };
+#endif
 
 void s3c_config_sleep_gpio_table(int array_size, unsigned int (*gpio_table)[3])
 {
@@ -6587,11 +6592,13 @@ void s3c_config_sleep_gpio(void)
 			s3c_config_sleep_gpio_table(ARRAY_SIZE(p1_r18_sleep_gpio_table),
 				p1_r18_sleep_gpio_table);
 		}
+#if defined(CONFIG_KEYBOARD_P1)
         if(keyboard_enable)
         {
             s3c_config_sleep_gpio_table(ARRAY_SIZE(p1_keyboard_sleep_gpio_table),
                 p1_keyboard_sleep_gpio_table);
         }
+#endif
 	}
 	else if(HWREV >= 8) {  // Above P1000 Rev0.2 (0.8)
 		s3c_config_sleep_gpio_table(ARRAY_SIZE(p1_r09_sleep_gpio_table),
@@ -6900,10 +6907,12 @@ static struct platform_device watchdog_device = {
 	.id = -1,
 };
 
+#if defined(CONFIG_KEYBOARD_P1)
 static struct platform_device p1_keyboard = {
         .name  = "p1_keyboard",
         .id    = -1,
 };
+#endif
 
 static struct platform_device *p1_devices[] __initdata = {
 	&watchdog_device,
@@ -6921,9 +6930,9 @@ static struct platform_device *p1_devices[] __initdata = {
 #ifdef CONFIG_FB_S3C
 	&s3c_device_fb,
 #endif
-
+#ifdef CONFIG_KEYBOARD_P1
 	&p1_keyboard,
-
+#endif
 #ifdef CONFIG_VIDEO_MFC50
 	&s3c_device_mfc,
 #endif
