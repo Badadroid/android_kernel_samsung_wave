@@ -21,7 +21,7 @@ extern int change_console_baud_rate(int baud);
 static void keyboard_timer(unsigned long _data)
 {
     struct dock_keyboard_data *data = (struct dock_keyboard_data *)_data;
-    if(data->kl == UNKOWN_KEYLAYOUT )
+    if(data->kl == UNKOWN_KEYLAYOUT)
     {
         s3c_gpio_cfgpin(ACCESSORY_EN, S3C_GPIO_OUTPUT);
         s3c_gpio_setpull(ACCESSORY_EN, S3C_GPIO_PULL_UP);
@@ -379,7 +379,7 @@ void send_keyevent(unsigned int key_code)
 
 EXPORT_SYMBOL(send_keyevent);
 
-static ssize_t caps_lock_led(struct device *dev, struct device_attribute *attr, char *buf, size_t size)
+static ssize_t caps_lock_led(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 //    struct dock_keyboard_data *data = dev->platform_data;
     int i=0;
@@ -574,7 +574,6 @@ static void keyboard_late_resume(struct early_suspend *early_sus)
     }
 }
 #endif	// End of CONFIG_HAS_EARLYSUSPEND
-
 
 #if defined(CONFIG_PM)
 static int dock_keyboard_suspend(struct device *dev)
