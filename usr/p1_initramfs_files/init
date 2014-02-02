@@ -1,5 +1,5 @@
 #!/stage1/busybox sh
-export _PATH="$PATH"
+_PATH="$PATH"
 export PATH=/stage1
 
 busybox cd /
@@ -8,56 +8,15 @@ exec >>boot.txt 2>&1
 busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
-busybox mount -t yaffs2 /dev/block/mtdblock2 /system
-busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
 
-while ! busybox test -d /sys/dev/block/179:0 ; do
-	echo "Waiting for internal mmc..."
-	busybox sleep 1
-done
+load_image=/stage1/boot.cpio
 
-image=/stage1/boot.cpio
-
-if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline ; then
+if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
-	busybox rm -fr /cache/.startrecovery
-	image=/stage1/recovery.cpio
-
-	# disable lpm
-	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
-elif ! busybox test -e /system/build.prop ; then
-	# emergency boot
-	busybox umount /cache
-	make_ext4fs -b 4096 -g 32768 -i 8192 -I 256 -a /cache /dev/block/mmcblk0p3
-	busybox mount -t ext4 /dev/block/mmcblk0p3 /cache
-	busybox mkdir /cache/recovery
-
-	busybox mount -t vfat /dev/block/mmcblk0p1 /sdcard
-
-	UPDATE=$(busybox cat /sdcard/omni.cfg)
-
-	if busybox test -n "$UPDATE" ; then
-		busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
-	fi
-
-	image=/stage1/recovery.cpio
-
-	# disable lpm
-	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
+	load_image=/stage1/recovery.cpio
 fi
 
-busybox umount /cache
-busybox umount /system
-busybox umount /sdcard
-busybox rmdir /sdcard
-
-cpio -i < ${image}
-
-if busybox grep -q 1 /sys/class/power_supply/battery/charging_mode_booting ; then
-	# low power mode
-	busybox cp lpm.rc init.rc
-	busybox rm init.p1.rc
-fi
+busybox cpio -i < ${load_image}
 
 busybox umount /sys
 busybox umount /proc
