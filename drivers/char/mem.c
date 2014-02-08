@@ -34,6 +34,10 @@
 # include <linux/efi.h>
 #endif
 
+#ifdef CONFIG_S3C_MEM
+# include "s3c_mem.h"
+#endif
+
 static inline unsigned long size_inside_page(unsigned long start,
 					     unsigned long size)
 {
@@ -821,6 +825,17 @@ static const struct file_operations oldmem_fops = {
 };
 #endif
 
+#ifdef CONFIG_S3C_MEM
+extern int s3c_mem_mmap(struct file* filp, struct vm_area_struct *vma);
+extern long s3c_mem_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
+
+static const struct file_operations s3c_mem_fops = {
+	.unlocked_ioctl	= s3c_mem_ioctl,
+	.mmap   = s3c_mem_mmap,
+};
+
+#endif
+
 static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
 			   unsigned long count, loff_t pos)
 {
@@ -882,6 +897,11 @@ static const struct memdev {
 	[11] = { "kmsg", 0, &kmsg_fops, NULL },
 #ifdef CONFIG_CRASH_DUMP
 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
+#endif
+#ifdef CONFIG_S3C_MEM
+	[13] = { "s3c-mem", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
+			 | S_IROTH | S_IWOTH, &s3c_mem_fops
+		},
 #endif
 };
 
