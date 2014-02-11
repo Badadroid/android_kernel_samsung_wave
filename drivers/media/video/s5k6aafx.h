@@ -34,12 +34,7 @@ struct s5k6aafx_state {
 	enum s5k6aafx_runmode runmode;
 	int vt_mode;
 	int fps;
-
-	//latin_cam VT Cam Antibanding
-#if defined (CONFIG_SAMSUNG_P1LN)
 	int anti_banding;
-#endif
-	//hmin84.park -  10.07.06
 	int check_dataline;
 	int set_vhflip;
 };

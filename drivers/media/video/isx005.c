@@ -3539,34 +3539,35 @@ static int isx005_get_framesize_index(struct v4l2_subdev *sd)
 	struct isx005_enum_framesize *frmsize;
 
 	int i = 0;
-	int previewcapture_ratio = 0;
+	int previewcapture_ratio = (state->pix.width * 10) / state->pix.height;
 
-	isx005_msg(&client->dev, "%s: Requested Res: %dx%d\n", __func__, state->pix.width, state->pix.height);
+	isx005_msg(&client->dev, "%s: Requested Res: %dx%d\n",
+			__func__, state->pix.width, state->pix.height);
 
-	previewcapture_ratio = (state->pix.width * 10) / state->pix.height;
 	/* Check for video/image mode */
-	for(i = 0; i < (sizeof(isx005_framesize_list)/sizeof(struct isx005_enum_framesize)); i++){
+	for (i = 0; i < (sizeof(isx005_framesize_list)
+				/ sizeof(struct isx005_enum_framesize)); i++) {
 		frmsize = &isx005_framesize_list[i];
 
-		if(frmsize->mode != state->oprmode)
-		{
+		if (frmsize->mode != state->oprmode)
 			continue;
-		}
 
 		/* In case of image capture mode, if the given image resolution is not supported,
 		 * return the next higher image resolution. */
 			//must search wide
-		if(frmsize->width == state->pix.width && frmsize->height == state->pix.height)
+		if (frmsize->width == state->pix.width
+				&& frmsize->height == state->pix.height)
 			return frmsize->index;
 	}
 
 	/* If it fails, return the default value. */
 	if (state->oprmode == ISX005_OPRMODE_IMAGE) {
-		return (previewcapture_ratio > 15) ? ISX005_CAPTURE_W2MP : ISX005_CAPTURE_3MP;
+		return (previewcapture_ratio > 15)
+			? ISX005_CAPTURE_W2MP : ISX005_CAPTURE_3MP;
 	} else {
-		return (previewcapture_ratio > 15) ? ISX005_PREVIEW_WSVGA : ISX005_PREVIEW_SVGA;
+		return (previewcapture_ratio > 15)
+			? ISX005_PREVIEW_WSVGA : ISX005_PREVIEW_SVGA;
 	}
-
 }
 
 static int isx005_set_flip(struct v4l2_subdev *sd,  struct v4l2_control *ctrl)
@@ -3603,17 +3604,17 @@ static int isx005_set_framesize_index(struct v4l2_subdev *sd, unsigned int index
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
 	struct isx005_state *state = to_state(sd);
-
 	int i = 0;
 
-	for(i = 0; i < (sizeof(isx005_framesize_list)/sizeof(struct isx005_enum_framesize)); i++)
-	{
-		if(isx005_framesize_list[i].index == index && isx005_framesize_list[i].mode == state->oprmode)
-		{
-			state->framesize_index 	= isx005_framesize_list[i].index;
-			state->pix.width 		= isx005_framesize_list[i].width;
-			state->pix.height		 = isx005_framesize_list[i].height;
-			isx005_msg(&client->dev, "%s: Camera Res: %dx%d\n", __func__, state->pix.width, state->pix.height);
+	for (i = 0; i < (sizeof(isx005_framesize_list)
+				/ sizeof(struct isx005_enum_framesize)); i++) {
+		if (isx005_framesize_list[i].index == index
+			&& isx005_framesize_list[i].mode == state->oprmode) {
+			state->framesize_index = isx005_framesize_list[i].index;
+			state->pix.width = isx005_framesize_list[i].width;
+			state->pix.height = isx005_framesize_list[i].height;
+			isx005_msg(&client->dev, "%s: Camera Res: %dx%d\n",
+					__func__, state->pix.width, state->pix.height);
 			return 0;
 		}
 	}
@@ -3679,35 +3680,31 @@ static int isx005_enum_framesizes(struct v4l2_subdev *sd, \
 					struct v4l2_frmsizeenum *fsize)
 {
 	struct isx005_state *state = to_state(sd);
+	int num_entries = sizeof(isx005_framesize_list)
+				/ sizeof(struct isx005_enum_framesize);
 	struct isx005_enum_framesize *elem;
-
-	int num_entries = sizeof(isx005_framesize_list)/sizeof(struct isx005_enum_framesize);
 	int index = 0;
 	int i = 0;
 
-	/* The camera interface should read this value, this is the resolution
+	/* The camera interface	should read this value, this is the resolution
 	 * at which the sensor would provide framedata to the camera i/f
-	 *
-	 * In case of image capture, this returns the default camera resolution (SVGA)
+	 * In case of image capture,
+	 * this returns	the default camera resolution (SVGA)
 	 */
 	fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
 
-	if(state->pix.pixelformat == V4L2_PIX_FMT_JPEG)
-	{
+	if (state->pix.pixelformat == V4L2_PIX_FMT_JPEG)
 		index = ISX005_PREVIEW_SVGA;
-	}
 	else
-	{
 		index = state->framesize_index;
-	}
 
-	for(i = 0; i < num_entries; i++)
-	{
+	for (i = 0; i < num_entries; i++) {
 		elem = &isx005_framesize_list[i];
-		if(elem->index == index)
-		{
-			fsize->discrete.width = isx005_framesize_list[index].width;
-			fsize->discrete.height = isx005_framesize_list[index].height;
+		if (elem->index == index) {
+			fsize->discrete.width =
+				isx005_framesize_list[index].width;
+			fsize->discrete.height =
+				isx005_framesize_list[index].height;
 			return 0;
 		}
 	}
@@ -3728,12 +3725,10 @@ static int isx005_enum_mbus_fmt(struct v4l2_subdev *sd, unsigned int index,
 {
 	int num_entries;
 
-	num_entries = sizeof(capture_fmts)/sizeof(struct v4l2_mbus_framefmt);
+	num_entries = sizeof(capture_fmts) / sizeof(struct v4l2_mbus_framefmt);
 
-	if(index >= num_entries)
-	{
+	if (index >= num_entries)
 		return -EINVAL;
-	}
 
 	*code = capture_fmts[index].code;
 
@@ -3747,11 +3742,11 @@ static int isx005_try_mbus_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt
 
 	num_entries = sizeof(capture_fmts) / sizeof(struct v4l2_mbus_framefmt);
 
-	for(i = 0; i < num_entries; i++)
-	{
-	  if(capture_fmts[i].code == fmt->code &&
-	     capture_fmts[i].colorspace == fmt->colorspace)
+	for (i = 0; i < num_entries; i++) {
+		if (capture_fmts[i].code == fmt->code &&
+			capture_fmts[i].colorspace == fmt->colorspace) {
 			return 0;
+		}
 	}
 
 	return -EINVAL;
@@ -3780,25 +3775,25 @@ static int isx005_s_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *param)
 
 	int err = 0;
 
-	if(param->parm.capture.timeperframe.numerator != state->strm.parm.capture.timeperframe.numerator ||
-	   param->parm.capture.timeperframe.denominator != state->strm.parm.capture.timeperframe.denominator)
-	{
+	if (param->parm.capture.timeperframe.numerator
+			!= state->strm.parm.capture.timeperframe.numerator
+			|| param->parm.capture.timeperframe.denominator
+			!= state->strm.parm.capture.timeperframe.denominator ) {
 
 		int fps = 0;
 		int fps_max = 30;
 
-		if(param->parm.capture.timeperframe.numerator && param->parm.capture.timeperframe.denominator)
-		{
-			fps = (int)(param->parm.capture.timeperframe.denominator/param->parm.capture.timeperframe.numerator);
-		}
+		if (param->parm.capture.timeperframe.numerator
+				&& param->parm.capture.timeperframe.denominator)
+			fps = (int)(param->parm.capture.timeperframe.denominator
+					/ param->parm.capture.timeperframe.numerator);
 		else
-		{
 			fps = 0;
-		}
 
-		if(fps <= 0 || fps > fps_max)
-		{
-			dev_err(&client->dev, "%s: Framerate %d not supported, setting it to %d fps.\n",__func__, fps, fps_max);
+		if (fps <= 0 || fps > fps_max) {
+			dev_err(&client->dev, "%s: Framerate %d not supported, "
+					"setting it to %d fps.\n",
+					__func__, fps, fps_max);
 			fps = fps_max;
 		}
 

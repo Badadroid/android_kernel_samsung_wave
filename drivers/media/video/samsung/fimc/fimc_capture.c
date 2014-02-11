@@ -217,6 +217,7 @@ static int fimc_camera_init(struct fimc_control *ctrl)
 	/* do nothing if already initialized */
 	if (ctrl->cam->initialized)
 		return 0;
+
 #ifdef CONFIG_MACH_P1
 	if (camera_back_check < 0) {
 		printk(KERN_ERR "Camera init is failed.\n");
@@ -1794,99 +1795,112 @@ int fimc_streamon_capture(void *fh)
 
 	fimc_hwset_enable_irq(ctrl, 0, 1);
 
+#ifdef CONFIG_MACH_P1
+	if (!ctrl->cam->initialized) {
+		ret = fimc_camera_init(ctrl);
+		if (ret < 0) {
+			fimc_err("%s: Error in fimc_camera_init - start\n", __func__);
+			camera_back_check = 0;
+			mutex_unlock(&ctrl->v4l2_lock);
+			return ret;
+		} else {
+			if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+					ctrl->cam->window.left = 136;
+					ctrl->cam->window.top = 0;
+					ctrl->cam->window.width = 368;
+					ctrl->cam->window.height = 480;
+					ctrl->cam->width = cam_frmsize.discrete.width;
+					ctrl->cam->height = cam_frmsize.discrete.height;
+					printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+			} else if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
+				&& (fimc->active_camera == CAMERA_ID_BACK || fimc->active_camera == CAMERA_ID_MAX)
+				&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
+					ctrl->cam->window.left = 176;
+					ctrl->cam->window.top = 0;
+					ctrl->cam->window.width = 448;
+					ctrl->cam->window.height = 592;
+					ctrl->cam->width = cam_frmsize.discrete.width;
+					ctrl->cam->height = cam_frmsize.discrete.height;
+					printk("line(%d):vtmode = %d, rotate = %d, device = rear(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+			} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& (cam_frmsize.discrete.width == 640 && cam_frmsize.discrete.height == 480)) {
+					ctrl->cam->window.left = 136;
+					ctrl->cam->window.top = 0;
+					ctrl->cam->window.width = 368;
+					ctrl->cam->window.height = 480;
+					ctrl->cam->width = cam_frmsize.discrete.width;
+					ctrl->cam->height = cam_frmsize.discrete.height;
+					printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+			} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& ((cam_frmsize.discrete.width == 960) && (cam_frmsize.discrete.height == 1280))) {
+					ctrl->cam->window.left = 280;
+					ctrl->cam->window.top = 0;
+					ctrl->cam->window.width = 720;
+					ctrl->cam->window.height = 960;
+					ctrl->cam->width = cam_frmsize.discrete.width;
+					ctrl->cam->height = cam_frmsize.discrete.height;
+					printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+			} else if ((ctrl->vt_mode == 0)
+				&& (fimc->active_camera == CAMERA_ID_FRONT)
+				&& ((cam_frmsize.discrete.width == 1280) && (cam_frmsize.discrete.height == 960))) {
+					ctrl->cam->window.left = 280;
+					ctrl->cam->window.top = 0;
+					ctrl->cam->window.width = 720;
+					ctrl->cam->window.height = 960;
+					ctrl->cam->width = cam_frmsize.discrete.width;
+					ctrl->cam->height = cam_frmsize.discrete.height;
+					printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+			} else {
+				ctrl->cam->width = cam_frmsize.discrete.width;
+				ctrl->cam->height = cam_frmsize.discrete.height;
+				ctrl->cam->window.left = 0;
+				ctrl->cam->window.top = 0;
+				ctrl->cam->window.width = ctrl->cam->width;
+				ctrl->cam->window.height = ctrl->cam->height;
+				printk("line(%d):vtmode = %d, rotate = %d, device = %d, cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
+			}
+		}
+	}
+
+#else // CONFIG_MACH_ARIES
+
 	if (!ctrl->cam->initialized)
 		fimc_camera_init(ctrl);
 
 	ret = subdev_call(ctrl, video, enum_framesizes, &cam_frmsize);
 	if (ret < 0) {
 		dev_err(ctrl->dev, "%s: enum_framesizes failed\n", __func__);
-#ifdef CONFIG_MACH_P1
-		camera_back_check = 0;
-		mutex_unlock(&ctrl->v4l2_lock);
-#endif
 		if(ret != -ENOIOCTLCMD)
 			return ret;
 	} else {
-#ifdef CONFIG_MACH_ARIES
 		if (vtmode == 1 && device_id != 0 && (cap->rotate == 90 || cap->rotate == 270)) {
-#else // CONFIG_MACH_P1
-		if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
-			&& (fimc->active_camera == CAMERA_ID_FRONT)
-			&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
-#endif
 			ctrl->cam->window.left = 136;
 			ctrl->cam->window.top = 0;//
 			ctrl->cam->window.width = 368;
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height = cam_frmsize.discrete.height;
-#ifdef CONFIG_MACH_ARIES
 			dev_err(ctrl->dev, "vtmode = 1, rotate = %d, device = front, cam->width = %d, cam->height = %d\n", cap->rotate, ctrl->cam->width, ctrl->cam->height);
 		} else if (device_id != 0 && vtmode != 1) {
-#else // CONFIG_MACH_P1
-			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
-		} else if ((ctrl->vt_mode == 1 || ctrl->vt_mode == 2)
-				&& (fimc->active_camera == CAMERA_ID_BACK || fimc->active_camera == CAMERA_ID_MAX)
-				&& (ctrl->cap->rotate == 90 || ctrl->cap->rotate == 270)) {
-			ctrl->cam->window.left = 176;
-			ctrl->cam->window.top = 0;
-			ctrl->cam->window.width = 448;
-			ctrl->cam->window.height = 592;
-			ctrl->cam->width = cam_frmsize.discrete.width;
-			ctrl->cam->height = cam_frmsize.discrete.height;
-			printk("line(%d):vtmode = %d, rotate = %d, device = rear(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
-		} else if ((ctrl->vt_mode == 0)
-				&& (fimc->active_camera == CAMERA_ID_FRONT)
-				&& (cam_frmsize.discrete.width == 640 && cam_frmsize.discrete.height == 480)) {
-#endif
 			ctrl->cam->window.left = 136;
 			ctrl->cam->window.top = 0;
 			ctrl->cam->window.width = 368;
 			ctrl->cam->window.height = 480;
 			ctrl->cam->width = cam_frmsize.discrete.width;
 			ctrl->cam->height =cam_frmsize.discrete.height;
-#ifdef CONFIG_MACH_ARIES
 			dev_err(ctrl->dev, "%s, crop(368x480), vtmode = 0, device = front, cam->width = %d, cam->height = %d\n", __func__, ctrl->cam->width, ctrl->cam->height);
-#else // CONFIG_MACH_P1
-			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
-		} else if ((ctrl->vt_mode == 0)
-				&& (fimc->active_camera == CAMERA_ID_FRONT)
-				&& ((cam_frmsize.discrete.width == 960) && (cam_frmsize.discrete.height == 1280))) {
-			ctrl->cam->window.left = 280;
-			ctrl->cam->window.top = 0;
-			ctrl->cam->window.width = 720;
-			ctrl->cam->window.height = 960;
-			ctrl->cam->width = cam_frmsize.discrete.width;
-			ctrl->cam->height = cam_frmsize.discrete.height;
-			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
-		} else if ((ctrl->vt_mode == 0)
-				&& (fimc->active_camera == CAMERA_ID_FRONT)
-				&& ((cam_frmsize.discrete.width == 1280) && (cam_frmsize.discrete.height == 960))) {
-			ctrl->cam->window.left = 280;
-			ctrl->cam->window.top = 0;
-			ctrl->cam->window.width = 720;
-			ctrl->cam->window.height = 960;
-			ctrl->cam->width = cam_frmsize.discrete.width;
-			ctrl->cam->height = cam_frmsize.discrete.height;
-			printk("line(%d):vtmode = %d, rotate = %d, device = front(%d), cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
-#endif
 		} else {
-#ifdef CONFIG_MACH_P1
-			ctrl->cam->width = cam_frmsize.discrete.width;
-			ctrl->cam->height = cam_frmsize.discrete.height;
-#endif
 			ctrl->cam->window.left = 0;
 			ctrl->cam->window.top = 0;
-#ifdef CONFIG_MACH_ARIES
 			ctrl->cam->width = ctrl->cam->window.width = cam_frmsize.discrete.width;
 			ctrl->cam->height = ctrl->cam->window.height = cam_frmsize.discrete.height;
-#else // CONFIG_MACH_P1
-			ctrl->cam->window.width = ctrl->cam->width;
-			ctrl->cam->window.height = ctrl->cam->height;
-			printk("line(%d):vtmode = %d, rotate = %d, device = %d, cam->width = %d, cam->height = %d\n", __LINE__, ctrl->vt_mode, ctrl->cap->rotate, fimc->active_camera, ctrl->cam->width, ctrl->cam->height);
-#endif
 		}
 	}
+#endif
 
 	if (ctrl->id != 2 &&
 			ctrl->cap->fmt.colorspace != V4L2_COLORSPACE_JPEG) {
