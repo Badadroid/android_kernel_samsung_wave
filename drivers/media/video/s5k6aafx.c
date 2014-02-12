@@ -790,8 +790,6 @@ static int s5k6aafx_s_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *parms
 	return err;
 }
 
-#if defined (CONFIG_SAMSUNG_P1LN)
-//latin_cam VT CAM Antibanding
 static int s5k6aafx_set_60hz_antibanding(struct v4l2_subdev *sd)
 {
 	int err = -EINVAL;
@@ -821,8 +819,6 @@ static int s5k6aafx_set_60hz_antibanding(struct v4l2_subdev *sd)
 
 	return 0;
 }
-//hmin84.park - 100706
-#endif
 
 static int s5k6aafx_init(struct v4l2_subdev *sd, u32 val)
 {
@@ -868,8 +864,6 @@ static int s5k6aafx_init(struct v4l2_subdev *sd, u32 val)
 		return err;
 	}
 
-#if defined (CONFIG_SAMSUNG_P1LN)
-	//latin_cam VT Cam Antibanding
 	if (state->anti_banding == ANTI_BANDING_60HZ)
 	{
 		err = s5k6aafx_set_60hz_antibanding(sd);
@@ -879,8 +873,6 @@ static int s5k6aafx_init(struct v4l2_subdev *sd, u32 val)
 			return err;
 		}
 	}
-	//hmin84.park -10.07.06
-#endif
 
 	state->set_fmt.width = DEFAULT_WIDTH;
 	state->set_fmt.height = DEFAULT_HEIGHT;
@@ -1499,15 +1491,11 @@ static int s5k6aafx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 			break;
 			//CID_CAMERA_VGA_BLUR
 
-#if defined (CONFIG_SAMSUNG_P1LN)
-		//latin_cam VT Camera Antibanding
 		case V4L2_CID_CAMERA_ANTI_BANDING:
 			state->anti_banding = ctrl->value;
 			printk("V4L2_CID_CAMERA_ANTI_BANDING [%d],[%d]\n",state->anti_banding,ctrl->value);
 			err = 0;
 			break;
-		//hmin84.park - 10.07.06
-#endif
 
 		case V4L2_CID_CAMERA_CHECK_DATALINE:
 			state->check_dataline = ctrl->value;
@@ -1520,6 +1508,7 @@ static int s5k6aafx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 		case V4L2_CID_CAMERA_FRAME_RATE:
 			err = s5k6aafx_set_frame_rate(sd, ctrl);
+			state->fps = ctrl->value;
 			break;
 
 		case V4L2_CID_CAMERA_APP_CHECK:

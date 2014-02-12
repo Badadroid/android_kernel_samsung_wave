@@ -349,10 +349,10 @@ static struct s3cfb_lcd lvds = {
 	},
 };
 
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (8192 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (12288 * SZ_1K)
 // Disabled to save memory (we can't find where it's used)
 //#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC1 (8192 * SZ_1K)
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2 (8192 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2 (12288 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0 (14336 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1 (21504 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMD (S5PV210_LCD_WIDTH * \
@@ -1529,34 +1529,42 @@ static int isx005_ldo_en(bool en)
 		goto off;
 
 	/* Turn CAM_3M_1.2V on */
-	err = regulator_enable(cam_3m_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_3m_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_3m_regulator)) {
+		err = regulator_enable(cam_3m_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_3m_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	/* Turn CAM_IO_2.8V on */
-	err = regulator_enable(cam_io_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_io_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_io_regulator)) {
+		err = regulator_enable(cam_io_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_io_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	/* Turn CAM_A_2.8V on */
-	err = regulator_enable(cam_a_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_a_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_a_regulator)) {
+		err = regulator_enable(cam_a_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_a_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	/* Turn CAM_AF_3.0V on */
-	err = regulator_enable(cam_af_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_af_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_af_regulator)) {
+		err = regulator_enable(cam_af_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_af_regulator\n");
+			goto off;
+		}
 	}
 
 	return 0;
@@ -1564,28 +1572,37 @@ static int isx005_ldo_en(bool en)
 off:
 	result = err;
 
-	err = regulator_disable(cam_a_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_a_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_a_regulator)) {
+		err = regulator_disable(cam_a_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_a_regulator\n");
+			result = err;
+		}
 	}
 
-	err = regulator_disable(cam_af_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_af_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_af_regulator)) {
+		err = regulator_disable(cam_af_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_af_regulator\n");
+			result = err;
+		}
 	}
 
-	err = regulator_disable(cam_io_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_io_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_io_regulator)) {
+		err = regulator_disable(cam_io_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_io_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
-	udelay(50);
-	err = regulator_disable(cam_3m_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_3m_regulator\n");
-		result = err;
+
+	if (regulator_is_enabled(cam_3m_regulator)) {
+		err = regulator_disable(cam_3m_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_3m_regulator\n");
+			result = err;
+		}
 	}
 
 	return result;
@@ -1926,54 +1943,66 @@ static int s5k6aafx_ldo_en(bool en)
 		goto off;
 
 	/* Turn CAM_A_2.8V on */
-	err = regulator_enable(cam_io_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_io_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_io_regulator)) {
+		err = regulator_enable(cam_io_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_io_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	/* Turn CAM_CIF_1.8V on */
-	err = regulator_enable(cam_cif_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_cif_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_cif_regulator)) {
+		err = regulator_enable(cam_cif_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_cif_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	/* Turn CAM_A_2.8V on */
-	err = regulator_enable(cam_a_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_a_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_a_regulator)) {
+		err = regulator_enable(cam_a_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_a_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	return 0;
 
 off:
 	result = err;
 
-	err = regulator_disable(cam_io_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_io_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_io_regulator)) {
+		err = regulator_disable(cam_io_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_io_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
-	err = regulator_disable(cam_cif_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_cif_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_cif_regulator)) {
+		err = regulator_disable(cam_cif_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_cif_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
-	err = regulator_disable(cam_a_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator cam_a_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_a_regulator)) {
+		err = regulator_disable(cam_a_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator cam_a_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
-	udelay(50);
 
 	return result;
 
@@ -2220,41 +2249,54 @@ static int s5k5ccgx_ldo_en(bool en)
 		goto off;
 
 	/* Turn CAM_A_2.8V on */
-	err = regulator_enable(cam_a_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator s5k5ccgx_cam_a_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_a_regulator)) {
+		err = regulator_enable(cam_a_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator s5k5ccgx_cam_a_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
 
 #ifdef SOC_DUALCAM_POWERCTRL
-	/* Turn CAM_CIF_1.8V on */
-	err = regulator_enable(cam_cif_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator cam_cif_regulator\n");
-		goto off;
+		/* Turn CAM_CIF_1.8V on */
+	if (!regulator_is_enabled(cam_cif_regulator)) {
+		err = regulator_enable(cam_cif_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator cam_cif_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
-	udelay(50);
 #endif
 
 	/* Turn CAM_3M_1.2V on */
-	err = regulator_enable(cam_3m_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator s5k5ccgx_cam_3m_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_3m_regulator)) {
+		err = regulator_enable(cam_3m_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator s5k5ccgx_cam_3m_regulator\n");
+			goto off;
+		}
+		udelay(50);
 	}
 
 	/* Turn CAM_AF_3.0V on */
-	err = regulator_enable(cam_af_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator s5k5ccgx_cam_af_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_af_regulator)) {
+		err = regulator_enable(cam_af_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator s5k5ccgx_cam_af_regulator\n");
+			goto off;
+		udelay(50);
+		}
 	}
 
 	/* Turn CAM_IO_2.8V on */
-	err = regulator_enable(cam_io_regulator);
-	if (err) {
-		pr_err("Failed to enable regulator s5k5ccgx_cam_io_regulator\n");
-		goto off;
+	if (!regulator_is_enabled(cam_io_regulator)) {
+		err = regulator_enable(cam_io_regulator);
+		if (err) {
+			pr_err("Failed to enable regulator s5k5ccgx_cam_io_regulator\n");
+			goto off;
+		}
 	}
 
 	return 0;
@@ -2262,28 +2304,39 @@ static int s5k5ccgx_ldo_en(bool en)
 off:
 	result = err;
 
-	err = regulator_disable(cam_io_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator s5k5ccgx_cam_io_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_io_regulator)) {
+		err = regulator_disable(cam_io_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator s5k5ccgx_cam_io_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
 
-	err = regulator_disable(cam_af_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator s5k5ccgx_cam_af_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_af_regulator)) {
+		err = regulator_disable(cam_af_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator s5k5ccgx_cam_af_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
 
-	err = regulator_disable(cam_3m_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator s5k5ccgx_cam_3m_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_3m_regulator)) {
+		err = regulator_disable(cam_3m_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator s5k5ccgx_cam_3m_regulator\n");
+			result = err;
+		}
+		udelay(50);
 	}
 
-	err = regulator_disable(cam_a_regulator);
-	if (err) {
-		pr_err("Failed to disable regulator s5k5ccgx_cam_a_regulator\n");
-		result = err;
+	if (regulator_is_enabled(cam_a_regulator)) {
+		err = regulator_disable(cam_a_regulator);
+		if (err) {
+			pr_err("Failed to disable regulator s5k5ccgx_cam_a_regulator\n");
+			result = err;
+		}
 	}
 
 	return result;
@@ -2590,7 +2643,7 @@ static void check_gadget_vbus_connect(bool attached)
 {
 	struct usb_gadget *gadget = platform_get_drvdata(&s3c_device_usbgadget);
 
-	mdelay(10);
+	udelay(50);
 
 	if (gadget) {
 		if (attached)
@@ -2614,7 +2667,7 @@ static void fsa9480_usb_cb(bool attached)
 static void fsa9480_charger_cb(bool attached)
 {
 	set_cable_status = attached ? CABLE_TYPE_AC : CABLE_TYPE_NONE;
-	mdelay(10);
+	udelay(50);
 	if (callbacks && callbacks->set_cable)
 		callbacks->set_cable(callbacks, set_cable_status);
 }
@@ -2643,7 +2696,7 @@ static void fsa9480_cardock_cb(bool attached)
 	else
 		switch_set_state(&switch_dock, 0);
 
-	mdelay(10);
+	udelay(50);
 	set_cable_status = attached ? CABLE_TYPE_AC : CABLE_TYPE_NONE;
 	if (callbacks && callbacks->set_cable)
 		callbacks->set_cable(callbacks, set_cable_status);
