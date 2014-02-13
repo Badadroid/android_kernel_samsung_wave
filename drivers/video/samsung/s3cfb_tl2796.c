@@ -553,6 +553,22 @@ static s16 s9_to_s16(s16 v)
 	return (s16)(v << 7) >> 7;
 }
 
+static bool tl2796_verify_mtp(struct s5p_lcd *lcd) {
+	int c, i;
+
+	// Example of invalid data: 01 01 01 01 01 ffffff01 in all colors
+	for (c = 0; c < 3; c++) {
+		for (i = 0; i < 6; i++) {
+			if (lcd->gamma_reg_offsets.v[c][i] != 1 &&
+					lcd->gamma_reg_offsets.v[c][i] != 0xffffff01) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 static void tl2796_read_mtp_info(struct s5p_lcd *lcd)
 {
 	int c, i;
@@ -596,6 +612,14 @@ static void tl2796_read_mtp_info(struct s5p_lcd *lcd)
 
 		lcd->gamma_reg_offsets.v[c][5] =
 			s9_to_s16(data[c * 7 + 5] << 8 | data[c * 7 + 6]);
+	}
+
+	if (!tl2796_verify_mtp(lcd)) {
+		// Set some default values if the MTP data is corrupted
+		pr_warn("tl2796: invalid factory calibration info; using default values");
+		memcpy(lcd->gamma_reg_offsets.v[0], (s16[]) {0, 0, 0, 2, 0, 7}, 6 * sizeof(s16));
+		memcpy(lcd->gamma_reg_offsets.v[1], (s16[]) {0, 0, 0, 5, 0, 3}, 6 * sizeof(s16));
+		memcpy(lcd->gamma_reg_offsets.v[2], (s16[]) {0, 0, 0, 5, 0, -4}, 6 * sizeof(s16));
 	}
 
 	tl2796_parallel_setup_gpios(lcd, false);
