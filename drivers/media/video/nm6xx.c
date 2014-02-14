@@ -75,8 +75,10 @@ static int af_mode;
 #define CDBG(format, arg...) if (cdbg == 1) { printk("<NM6XX> %s " format, __func__, ## arg); }
 
 static int cdbg = 0;
+#ifndef CONFIG_VIDEO_NM6XX
 static int gLowLight = 0;
 static int gCurrentScene = SCENE_MODE_NONE;
+#endif
 
 /* Default resolution & pixelformat. plz ref nm6xx_platform.h */
 #define DEFAULT_PIX_FMT		V4L2_PIX_FMT_UYVY	/* YUV422 */
@@ -187,8 +189,8 @@ struct nm6xx_state {
 
 const static struct v4l2_mbus_framefmt capture_fmts[] = {
 	{
-	  .code    = V4L2_MBUS_FMT_FIXED,
-	  .colorspace  = V4L2_COLORSPACE_JPEG,
+		.code = V4L2_MBUS_FMT_FIXED,
+		.colorspace = V4L2_COLORSPACE_JPEG,
 	},
 };
 
@@ -516,6 +518,7 @@ static short nm6xx_regs_max_value(char *name)
 
 #endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_preview_stop(struct v4l2_subdev *sd)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -581,7 +584,9 @@ static int nm6xx_set_dzoom(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	}
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_preview_size(struct v4l2_subdev *sd)
 {
 	int err = 0;
@@ -626,7 +631,9 @@ static int nm6xx_set_preview_size(struct v4l2_subdev *sd)
 
 	return err;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_preview_start(struct v4l2_subdev *sd)
 {
 	int err, timeout_cnt;
@@ -688,7 +695,9 @@ static int nm6xx_set_preview_start(struct v4l2_subdev *sd)
 	dev_err(&client->dev, "%s: init setting~~~~~~~~~~~~~~\n", __func__);
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_capture_size(struct v4l2_subdev *sd)
 {
 	int err = 0;
@@ -744,7 +753,9 @@ static int nm6xx_set_capture_size(struct v4l2_subdev *sd)
 	printk("nm6xx_set_capture_size: %d\n", index);
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_jpeg_quality(struct v4l2_subdev *sd)
 {
 	struct nm6xx_state *state = to_state(sd);
@@ -789,7 +800,9 @@ static int nm6xx_set_jpeg_quality(struct v4l2_subdev *sd)
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_get_snapshot_data(struct v4l2_subdev *sd)
 {
 	int err;
@@ -819,7 +832,9 @@ static int nm6xx_get_snapshot_data(struct v4l2_subdev *sd)
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_get_LowLightCondition(struct v4l2_subdev *sd, int *Result)
 {
 	int err = 0;
@@ -853,7 +868,9 @@ static int nm6xx_get_LowLightCondition(struct v4l2_subdev *sd, int *Result)
 
 	return err;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_LowLightCondition_Off(struct v4l2_subdev *sd)
 {
 	int err = 0;
@@ -897,7 +914,9 @@ static int nm6xx_LowLightCondition_Off(struct v4l2_subdev *sd)
 
 	return err;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_capture_start(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err, timeout_cnt;
@@ -1032,7 +1051,9 @@ static int nm6xx_set_capture_start(struct v4l2_subdev *sd, struct v4l2_control *
 	}
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_change_scene_mode(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err = 0;
@@ -1153,7 +1174,9 @@ static int nm6xx_change_scene_mode(struct v4l2_subdev *sd, struct v4l2_control *
 	nm6xx_msg(&client->dev, "%s: done   CurrentScene : %d, Scene : %d\n", __func__, gCurrentScene, ctrl->value);
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_effect(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1190,7 +1213,9 @@ static int nm6xx_set_effect(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	}
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_saturation(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1244,7 +1269,9 @@ static int nm6xx_set_saturation(struct v4l2_subdev *sd, struct v4l2_control *ctr
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_contrast(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1298,7 +1325,9 @@ static int nm6xx_set_contrast(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_sharpness(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1352,7 +1381,9 @@ static int nm6xx_set_sharpness(struct v4l2_subdev *sd, struct v4l2_control *ctrl
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 /*Camcorder fix fps*/
 static int nm6xx_set_sensor_mode(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
@@ -1370,7 +1401,9 @@ static int nm6xx_set_sensor_mode(struct v4l2_subdev *sd, struct v4l2_control *ct
 	}
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_focus_mode(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
@@ -1413,7 +1446,9 @@ static int nm6xx_set_focus_mode(struct v4l2_subdev *sd, struct v4l2_control *ctr
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_white_balance(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1473,7 +1508,9 @@ static int nm6xx_set_white_balance(struct v4l2_subdev *sd, struct v4l2_control *
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_ev(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1561,7 +1598,9 @@ static int nm6xx_set_ev(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_metering(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -1605,7 +1644,9 @@ static int nm6xx_set_metering(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_set_iso(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err = 0;
@@ -1655,6 +1696,7 @@ static int nm6xx_set_iso(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	}
 	return 0;
 }
+#endif
 
 static void af_cancel_handler(unsigned long data)
 {
@@ -1662,6 +1704,7 @@ static void af_cancel_handler(unsigned long data)
 }
 
 static DEFINE_MUTEX(af_cancel_op);
+#ifndef CONFIG_VIDEO_NM6XX
 /* GAUDI Project([arun.c@samsung.com]) 2010.05.19. [Implemented AF cancel] */
 static int nm6xx_set_auto_focus(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
@@ -1835,6 +1878,7 @@ static int nm6xx_set_auto_focus(struct v4l2_subdev *sd, struct v4l2_control *ctr
 
 	return 0;
 }
+#endif
 
 static int nm6xx_get_auto_focus_status(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
@@ -2019,6 +2063,7 @@ static int nm6xx_get_auto_focus_status(struct v4l2_subdev *sd, struct v4l2_contr
 	return 0;
 }
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_aeawb_unlock(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	unsigned short read_value;
@@ -2064,7 +2109,9 @@ static int nm6xx_aeawb_unlock(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	mutex_unlock(&af_cancel_op);
 	return 0;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_get_iso(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -2080,7 +2127,9 @@ static int nm6xx_get_iso(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 
 	return err;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_get_shutterspeed(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	int err;
@@ -2094,6 +2143,7 @@ static int nm6xx_get_shutterspeed(struct v4l2_subdev *sd, struct v4l2_control *c
 
 	return err;
 }
+#endif
 
 static void nm6xx_init_parameters(struct v4l2_subdev *sd)
 {
@@ -2620,8 +2670,6 @@ static int nm6xx_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 static int nm6xx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct nm6xx_state *state = to_state(sd);
-	int err = 0;
 
 	nm6xx_info(&client->dev, "%s: V4l2 control ID =%d\n", __func__, ctrl->id - V4L2_CID_PRIVATE_BASE);
 
@@ -2823,6 +2871,7 @@ static int nm6xx_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 #endif//johnny
 }
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int nm6xx_calibration(struct v4l2_subdev *sd)
 {
 	unsigned long OTP00, OTP10;
@@ -2956,7 +3005,9 @@ static int nm6xx_calibration(struct v4l2_subdev *sd)
 	dev_err(&client->dev,"%s [cam] CALIBRATION : END \n", __func__);
 	return 1;
 }
+#endif
 
+#ifndef CONFIG_VIDEO_NM6XX
 static int  nm6xx_set_default_calibration(struct v4l2_subdev *sd)
 {
 	int err;
@@ -2975,12 +3026,15 @@ static int  nm6xx_set_default_calibration(struct v4l2_subdev *sd)
 	}
 	return 1;
 }
+#endif
 
 static int nm6xx_init(struct v4l2_subdev *sd, u32 val)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+#ifdef CONFIG_LOAD_FILE
 	int err = -EINVAL, i, count=0;
 	unsigned short read_value_1, read_value_2;
+#endif
 
 	dev_err(&client->dev, "%s: init setting~~~~~~~~~~~~~~\n", __func__);
 	printk("==================  nm6xx_init -----------------------------\n");

@@ -41,44 +41,34 @@
 #include <plat/gpio-cfg.h>
 #endif
 
-#if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
-#define TSI_BUF_SIZE	(256*1024)
-#elif defined (CONFIG_SAMSUNG_P1LN)
-#define TSI_BUF_SIZE	(128*1024)
-#define TSI_PKT_CNT      16
-#endif
+#define TSI_BUF_SIZE (256 * 1024)
+#define TSI_PKT_CNT 16
 
 static DEFINE_MUTEX(tsi_mutex);
 
-enum filter_mode
-{
- OFF,
- ON
+enum filter_mode {
+	OFF,
+	ON
 };
 
-enum pid_filter_mode
-{
+enum pid_filter_mode {
 	BYPASS=0,
-	 FILTERING
+	FILTERING
 };
 
-enum data_byte_order
-{
+enum data_byte_order {
 	MSB2LSB=0,
 	LSB2MSB
-
 };
-typedef struct
-{
-  struct list_head list;
-  dma_addr_t addr;
-  void *buf;
-  u32 len;
-}tsi_pkt;
 
+typedef struct {
+	struct list_head list;
+	dma_addr_t addr;
+	void *buf;
+	u32 len;
+} tsi_pkt;
 
-typedef struct
-{
+typedef struct {
 	enum filter_mode flt_mode;
 	enum pid_filter_mode pid_flt_mode;
 	enum data_byte_order byte_order;
@@ -87,11 +77,9 @@ typedef struct
 	u8  byte_swap;
 	u16 pad_pattern;
 	u16 num_packet;
-}s3c_tsi_conf;
+} s3c_tsi_conf;
 
-
-typedef struct
-{
+typedef struct {
 	spinlock_t tsi_lock;
 	struct clk *tsi_clk;
 	struct resource *tsi_mem;
@@ -99,7 +87,7 @@ typedef struct
 	void __iomem 	*tsi_base;
 	int tsi_irq;
 	int running;
-#if defined (CONFIG_PM) && defined (CONFIG_SAMSUNG_P1LN) //latin_cam:kihyung.nam, power management operation added
+#if defined(CONFIG_PM) && defined(CONFIG_SAMSUNG_P1LN)
 	int last_running_state;
 #endif
 	int new_pkt;
@@ -111,11 +99,11 @@ typedef struct
 	struct list_head full_list;
 	struct list_head partial_list;
 	wait_queue_head_t read_wq;
-}tsi_dev;
+} tsi_dev;
+
 tsi_dev *tsi_priv;
 
 static struct platform_device *s3c_tsi_dev;
-
 
 //#define DRIVER_LOGIC_CHK
 #ifdef DRIVER_LOGIC_CHK
@@ -160,41 +148,29 @@ static struct timer_list tsi_timer;
 #ifdef CONFIG_TSI_LIST_DEBUG
 void list_debug(struct list_head *head)
 {
-	int i;
+	int i = 1;
 	tsi_pkt *pkt;
-       //tsi_list_dbg("DEBUGGING FREE LIST\n");
-        i=1;
 
-        list_for_each_entry(pkt,head,list){
+	// tsi_list_dbg("DEBUGGING FREE LIST\n");
 
-                tsi_list_dbg(" node %d node_addr %x physical add %p virt add %p size %d\n ",i,pkt,pkt->addr,pkt->buf,pkt->len);
-                i++;
-
-                }
-
-
-
+	list_for_each_entry(pkt,head,list) {
+		tsi_list_dbg(" node %d node_addr %x physical add %p virt add %p "
+			"size %d\n ",i,pkt,pkt->addr,pkt->buf,pkt->len);
+		i++;
+	}
 }
-
-#endif //LIST_DEBUG
+#endif // LIST_DEBUG
 
 /*This should be done in platform*/
 void s3c_tsi_set_gpio(void)
 {
 	int i;
 
-	for(i=2;i< 7; i++)
-	{
-#if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
-		s3c_gpio_cfgpin(S5PC11X_GPJ0(i), S3C_GPIO_SFN(5));
-		s3c_gpio_setpull(S5PC11X_GPJ0(i), S3C_GPIO_PULL_NONE);
-#elif defined (CONFIG_SAMSUNG_P1LN)
+	for (i=2; i< 7; i++) {
 		s3c_gpio_cfgpin(S5PV210_GPJ0(i), S3C_GPIO_SFN(5));
 		s3c_gpio_setpull(S5PV210_GPJ0(i), S3C_GPIO_PULL_NONE);
-#endif
 	}
 }
-
 
 void s3c_tsi_reset(tsi_dev *tsi)
 {
@@ -215,11 +191,11 @@ tsi_pkt *tsi_get_pkt(tsi_dev *tsi, struct list_head *head)
 	tsi_pkt *pkt;
 	spin_lock_irqsave(&tsi->tsi_lock,flags);
 
-	if(list_empty(head)){
+	if (list_empty(head)) {
 		tsi_err("TSI %p list is null\n",head);
-	spin_unlock_irqrestore(&tsi->tsi_lock,flags);
+		spin_unlock_irqrestore(&tsi->tsi_lock,flags);
 		return NULL;
-		}
+	}
 	pkt = list_first_entry(head,tsi_pkt,list);
 	spin_unlock_irqrestore(&tsi->tsi_lock,flags);
 
@@ -239,8 +215,9 @@ void s3c_tsi_set_sync_mode(u8 mode,u32 reg)
 void s3c_tsi_set_clock(u8 enable,u32 reg)
 {
 	u32 val = 0;
-	if(enable)
+	if (enable)
 		val |= 0x1;
+
 	writel(val,reg);
 }
 
@@ -249,14 +226,12 @@ void tsi_enable_interrupts(tsi_dev *tsi)
 	u32 mask;
 	// Enable all the interrupts...
 	mask = 0xFF;
-	 writel(mask,(tsi->tsi_base + S3C_TS_INTMASK));
-
+	writel(mask,(tsi->tsi_base + S3C_TS_INTMASK));
 }
 
 void tsi_disable_interrupts(tsi_dev *tsi)
 {
-
-	 writel(0,(tsi->tsi_base + S3C_TS_INTMASK));
+	writel(0,(tsi->tsi_base + S3C_TS_INTMASK));
 }
 
 static int s3c_tsi_start(tsi_dev *tsi)
@@ -265,7 +240,7 @@ static int s3c_tsi_start(tsi_dev *tsi)
 	u32 pkt_size;
 	tsi_pkt *pkt1;
 	pkt1 =	tsi_get_pkt(tsi,&tsi->free_list);
-	if(pkt1 == NULL){
+	if (pkt1 == NULL) {
 		tsi_err("Failed to start TSI--No buffers avaialble\n");
 		return -1;
 	}
@@ -290,7 +265,7 @@ static int s3c_tsi_start(tsi_dev *tsi)
 	s3c_tsi_set_clock(TSI_CLK_START,(u32)(tsi->tsi_base+S3C_TS_CLKCON));
 	//set the next buffer immediatly
 	pkt1 =	tsi_get_pkt(tsi,&tsi->free_list);
-	if(pkt1 == NULL){
+	if (pkt1 == NULL) {
 		tsi_err("Failed to start TSI--No buffers avaialble\n");
 		return -1;
 	}
@@ -317,34 +292,31 @@ static int s3c_tsi_stop(tsi_dev *tsi)
 	struct list_head *partial = &tsi->partial_list;
 
 	spin_lock_irqsave(&tsi->tsi_lock,flags);
-	#ifdef DRIVER_LOGIC_CHK
+
+#ifdef DRIVER_LOGIC_CHK
 	del_timer(&tsi_timer);
-	#endif
+#endif
 
 	tsi_disable_interrupts(tsi);
 	s3c_tsi_set_clock(TSI_CLK_STOP,(u32)(tsi->tsi_base+S3C_TS_CLKCON));
 	//move all the packets from partial and full list to free list
-	while(!list_empty(full)){
-	pkt = list_entry(full->next,tsi_pkt,list);
-	list_move_tail(&pkt->list,&tsi->free_list);
+	while (!list_empty(full)) {
+		pkt = list_entry(full->next,tsi_pkt,list);
+		list_move_tail(&pkt->list,&tsi->free_list);
 
 	}
-	while(!list_empty(partial)){
-	pkt = list_entry(partial->next,tsi_pkt,list);
-	list_move_tail(&pkt->list,&tsi->free_list);
 
+	while (!list_empty(partial)) {
+		pkt = list_entry(partial->next,tsi_pkt,list);
+		list_move_tail(&pkt->list,&tsi->free_list);
 	}
+
 	tsi->running = 0;
 	tsi_priv->new_pkt = 0;
 	spin_unlock_irqrestore(&tsi->tsi_lock,flags);
 
 	return 0;
 }
-
-
-
-
-
 
 void s3c_tsi_setup(tsi_dev *tsi)
 {
@@ -355,10 +327,14 @@ void s3c_tsi_setup(tsi_dev *tsi)
 //set the tscon bits
 	tscon = readl((tsi->tsi_base+S3C_TS_CON));
 
-	tscon &= ~(S3C_TSI_SWRESET_MASK|S3C_TSI_CLKFILTER_MASK|S3C_TSI_BURST_LEN_MASK | S3C_TSI_INT_FIFO_FULL_INT_ENA_MASK |
-		S3C_TSI_SYNC_MISMATCH_INT_MASK |  S3C_TSI_PSUF_INT_MASK|S3C_TSI_PSOF_INT_MASK |S3C_TSI_TS_CLK_TIME_OUT_INT_MASK |
-		  S3C_TSI_TS_ERROR_MASK | S3C_TSI_PID_FILTER_MASK |S3C_TSI_ERROR_ACTIVE_MASK  |S3C_TSI_DATA_BYTE_ORDER_MASK |
-		S3C_TSI_TS_VALID_ACTIVE_MASK |S3C_TSI_SYNC_ACTIVE_MASK |S3C_TSI_CLK_INVERT_MASK    );
+	tscon &= ~(S3C_TSI_SWRESET_MASK | S3C_TSI_CLKFILTER_MASK
+			| S3C_TSI_BURST_LEN_MASK | S3C_TSI_INT_FIFO_FULL_INT_ENA_MASK
+			| S3C_TSI_SYNC_MISMATCH_INT_MASK | S3C_TSI_PSUF_INT_MASK
+			| S3C_TSI_PSOF_INT_MASK | S3C_TSI_TS_CLK_TIME_OUT_INT_MASK
+			| S3C_TSI_TS_ERROR_MASK | S3C_TSI_PID_FILTER_MASK
+			| S3C_TSI_ERROR_ACTIVE_MASK | S3C_TSI_DATA_BYTE_ORDER_MASK
+			| S3C_TSI_TS_VALID_ACTIVE_MASK | S3C_TSI_SYNC_ACTIVE_MASK
+			| S3C_TSI_CLK_INVERT_MASK);
 
 	tscon |= (conf->flt_mode << S3C_TSI_CLKFILTER_SHIFT);
 	tscon |= (conf->pid_flt_mode << S3C_TSI_PID_FILTER_SHIFT );
@@ -367,10 +343,12 @@ void s3c_tsi_setup(tsi_dev *tsi)
 	tscon |= (conf->pad_pattern << S3C_TSI_PAD_PATTERN_SHIFT);
 
 	tscon |= (S3C_TSI_OUT_BUF_FULL_INT_ENA | S3C_TSI_INT_FIFO_FULL_INT_ENA);
-	tscon |= (S3C_TSI_SYNC_MISMATCH_INT_SKIP | S3C_TSI_PSUF_INT_SKIP| S3C_TSI_PSOF_INT_SKIP);
+	tscon |= (S3C_TSI_SYNC_MISMATCH_INT_SKIP | S3C_TSI_PSUF_INT_SKIP
+			| S3C_TSI_PSOF_INT_SKIP);
 	tscon |= (S3C_TSI_TS_ERROR_SKIP_PKT_INT);
 	/*These values are bd dependent?*/
-	tscon |= (S3C_TSI_TS_VALID_ACTIVE_HIGH | S3C_TSI_CLK_INVERT_HIGH | S3C_TSI_TS_VALID_ACTIVE_HIGH);
+	tscon |= (S3C_TSI_TS_VALID_ACTIVE_HIGH | S3C_TSI_CLK_INVERT_HIGH
+			| S3C_TSI_TS_VALID_ACTIVE_HIGH);
 	tsi_dbg("Tscon is %x\n",tscon);
 	writel(tscon,(tsi->tsi_base+S3C_TS_CON));
 
@@ -380,38 +358,35 @@ void s3c_tsi_setup(tsi_dev *tsi)
 void s3c_tsi_rx_int(tsi_dev *tsi)
 {
 	tsi_pkt *pkt;
- //deque the pcket from partial list to full list
- //incase the free list is empty, stop the tsi..
-
-	//	if(list_empty(&tsi->partial_list))
-
+	//deque the pcket from partial list to full list
+	//incase the free list is empty, stop the tsi..
+	//	if (list_empty(&tsi->partial_list))
 
 	pkt = tsi_get_pkt(tsi,&tsi->partial_list);
-		if(pkt == NULL){
-				//this situation should not come.. stop_tsi
-			tsi_err("TSI..Receive interrupt without buffer\n");
-			s3c_tsi_stop(tsi);
-			return;
-		}
+	if (pkt == NULL) {
+		//this situation should not come.. stop_tsi
+		tsi_err("TSI..Receive interrupt without buffer\n");
+		s3c_tsi_stop(tsi);
+		return;
+	}
 
 	tsi_dbg("moving %p node %x phy %p virt to full list\n",pkt,pkt->addr,pkt->buf);
 
 	list_move_tail(&pkt->list,&tsi->full_list);
 
 	pkt = tsi_get_pkt(tsi,&tsi->free_list);
-	if(pkt == NULL){
-				//this situation should not come.. stop_tsi
-			tsi_err("TSI..No more free bufs..stopping channel\n");
-			s3c_tsi_stop(tsi);
-			return;
-		}
+	if (pkt == NULL) {
+		//this situation should not come.. stop_tsi
+		tsi_err("TSI..No more free bufs..stopping channel\n");
+		s3c_tsi_stop(tsi);
+		return;
+	}
 	list_move_tail(&pkt->list,&tsi->partial_list);
 
 #if defined (CONFIG_SAMSUNG_P1LN)
-	//namkh, request from Abraham
+	// namkh, request from Abraham
 	// If there arise a buffer-full interrupt,
 	// a new ts buffer address should be set.
-
 	s3c_tsi_set_dest_addr(pkt->addr,(u32)(tsi->tsi_base+S3C_TS_BASE));
 #endif
 
@@ -425,7 +400,6 @@ void s3c_tsi_rx_int(tsi_dev *tsi)
 	wake_up(&tsi->read_wq);
 }
 
-
 static irqreturn_t s3c_tsi_irq(int irq, void *dev_id)
 {
 	u32 intpnd;
@@ -434,7 +408,7 @@ static irqreturn_t s3c_tsi_irq(int irq, void *dev_id)
 	tsi_dbg("INTPND is %x\n",intpnd);
 	writel(intpnd,(tsi->tsi_base+S3C_TS_INT));
 
-	if(intpnd & S3C_TSI_OUT_BUF_FULL)
+	if (intpnd & S3C_TSI_OUT_BUF_FULL)
 		s3c_tsi_rx_int(tsi);
 	return IRQ_HANDLED;
 }
@@ -444,14 +418,12 @@ static int s3c_tsi_release(struct inode *inode, struct file *file)
 	int ret = 0;
 	tsi_dev *tsi = file->private_data;
 	tsi_dbg("TSI_RELEASE  \n");
-	if(tsi->running)
-	{
+	if (tsi->running) {
 		tsi_dbg("TSI_RELEASE stopping \n");
 		tsi->running = 0;
 		ret = s3c_tsi_stop(tsi);
 		tsi_dbg("TSI_RELEASE LIST cleaned \n");
 	}
-
 
 #ifdef CONFIG_TSI_LIST_DEBUG
 	tsi_list_dbg("Debugging Full list \n");
@@ -476,7 +448,7 @@ static unsigned int	s3c_tsi_poll(struct file *file, poll_table *wait)
 
 	poll_wait(file, &tsi->read_wq, wait);
 
-	if(tsi->new_pkt)
+	if (tsi->new_pkt)
 	{
 		mask |= (POLLIN | POLLRDNORM);
 	}
@@ -501,32 +473,27 @@ static ssize_t s3c_tsi_read(struct file *file, char *buf, size_t count, loff_t *
 #endif
 
 #if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
-	while(count > 0){
-//deque packet from full list
+	while (count > 0) {
+		//deque packet from full list
 		pkt = tsi_get_pkt(tsi,full);
-			if(pkt == NULL) {
-
-				ret = wait_event_interruptible(tsi->read_wq,tsi->new_pkt);
-
-				if(ret < 0)
-				{
-					tsi_dbg("woken up from signal..returning\n");
-					return ret;
-				}
-			//	if(ret == 0)
-					tsi_dbg("woken up proprt\n");
-				pkt = tsi_get_pkt(tsi,full);
-
+		if (pkt == NULL) {
+			ret = wait_event_interruptible(tsi->read_wq,tsi->new_pkt);
+			if (ret < 0) {
+				tsi_dbg("woken up from signal..returning\n");
+				return ret;
 			}
+			tsi_dbg("woken up proprt\n");
+			pkt = tsi_get_pkt(tsi,full);
+		}
 		pkt_size = pkt->len * 4;
-		if(pkt_size > count)
+		if (pkt_size > count)
 			pkt_size = count;
 
 		if (copy_to_user((buf+len), pkt->buf, pkt_size)) {
-					tsi_dbg("copy user fail\n");
-                                ret = -EFAULT;
-                                break;
-                        }
+			tsi_dbg("copy user fail\n");
+			ret = -EFAULT;
+			break;
+        }
 
 		len += pkt_size;
 		count -= pkt_size;
@@ -536,43 +503,41 @@ static ssize_t s3c_tsi_read(struct file *file, char *buf, size_t count, loff_t *
 		list_move(&pkt->list,&tsi->free_list);
 		spin_unlock_irqrestore(&tsi->tsi_lock,flags);
 
-		if(list_empty(full))
+		if (list_empty(full))
 			tsi->new_pkt =0;
-
 	}
 #elif defined (CONFIG_SAMSUNG_P1LN)
 	tsi_dbg("entered to s3c_tsi_read\n");
-				ret = wait_event_interruptible(tsi->read_wq,tsi->new_pkt);
-				if(ret < 0)
-				{
-					tsi_dbg("woken up from signal..returning\n");
-					return ret;
-				}
-				pkt = tsi_get_pkt(tsi,full);
 
-
-	pkt_size = pkt->len;		//pkt_size should be multiple of 188 bytes.
+	ret = wait_event_interruptible(tsi->read_wq,tsi->new_pkt);
+	if (ret < 0) {
+		tsi_dbg("woken up from signal..returning\n");
+		return ret;
+	}
+	pkt = tsi_get_pkt(tsi,full);
+	pkt_size = pkt->len; // pkt_size should be multiple of 188 bytes.
 
 	tsi_dbg("pkt_size is %d\n", pkt_size);
-		if(pkt_size > count)
-			pkt_size = count;
 
-		if (copy_to_user((buf+len), pkt->buf, pkt_size)) {
-					tsi_dbg("copy user fail\n");
-                                ret = -EFAULT;
+	if (pkt_size > count)
+		pkt_size = count;
+
+	if (copy_to_user((buf+len), pkt->buf, pkt_size)) {
+		tsi_dbg("copy user fail\n");
+		ret = -EFAULT;
 		return ret;
-                        }
+	}
 
-		len += pkt_size;
-		count -= pkt_size;
-		tsi_dbg("len is%d count %d pkt_size %d\n",len,count,pkt_size);
-		ret = len;
-		spin_lock_irqsave(&tsi->tsi_lock,flags);
-		list_move(&pkt->list,&tsi->free_list);
-		spin_unlock_irqrestore(&tsi->tsi_lock,flags);
+	len += pkt_size;
+	count -= pkt_size;
+	tsi_dbg("len is%d count %d pkt_size %d\n",len,count,pkt_size);
+	ret = len;
+	spin_lock_irqsave(&tsi->tsi_lock,flags);
+	list_move(&pkt->list,&tsi->free_list);
+	spin_unlock_irqrestore(&tsi->tsi_lock,flags);
 
-		if(list_empty(full))
-			tsi->new_pkt =0;
+	if (list_empty(full))
+		tsi->new_pkt =0;
 #endif  //defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
 
 #ifdef CONFIG_TSI_LIST_DEBUG1
@@ -592,39 +557,34 @@ static int s3c_tsi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	mutex_lock(&tsi_mutex);
 
 	tsi_dev *tsi = platform_get_drvdata(s3c_tsi_dev);
-//currently only two ioctl for tigger and stop are provided..
+	//currently only two ioctl for tigger and stop are provided..
 	tsi_dbg("TSI cmd is %x\n",cmd);
-	switch(cmd)
-	{
-		case TSI_TRIGGER:
-			if(tsi->running) {
-				mutex_unlock(&tsi_mutex);
-				return -EBUSY;
-			}
-			tsi->running = 1;
+	switch (cmd) {
+	case TSI_TRIGGER:
+		if (tsi->running) {
+			mutex_unlock(&tsi_mutex);
+			return -EBUSY;
+		}
+		tsi->running = 1;
 		ret = s3c_tsi_start(tsi);
 
-	#ifdef DRIVER_LOGIC_CHK
-		 tsi_timer.expires = jiffies + HZ/100;
-	        add_timer(&tsi_timer);
-	#endif //ifdef DRIVER_LOGIC_CHK
+#ifdef DRIVER_LOGIC_CHK
+		tsi_timer.expires = jiffies + HZ/100;
+		add_timer(&tsi_timer);
+#endif //ifdef DRIVER_LOGIC_CHK
 		break;
 
-		case TSI_STOP:
-			tsi->running = 0;
-			ret =	s3c_tsi_stop(tsi);
+	case TSI_STOP:
+		tsi->running = 0;
+		ret =	s3c_tsi_stop(tsi);
 
 		break;
-		default:
+	default:
 		break;
-
-
-
 	}
 	mutex_unlock(&tsi_mutex);
 	return ret;
 }
-
 
 static int s3c_tsi_open(struct inode *inode, struct file *file)
 {
@@ -637,17 +597,16 @@ static int s3c_tsi_open(struct inode *inode, struct file *file)
 }
 
 static struct file_operations tsi_fops = {
-	owner:		THIS_MODULE,
-	open:		s3c_tsi_open,
-	release:	s3c_tsi_release,
+	owner: THIS_MODULE,
+	open: s3c_tsi_open,
+	release: s3c_tsi_release,
 	unlocked_ioctl: s3c_tsi_ioctl,
-	read:		s3c_tsi_read,
+	read: s3c_tsi_read,
 #if defined (CONFIG_SAMSUNG_P1LN)
-	poll:		s3c_tsi_poll,
+	poll: s3c_tsi_poll,
 #endif
-	mmap:		s3c_tsi_mmap,
+	mmap: s3c_tsi_mmap,
 };
-
 
 static struct miscdevice s3c_tsi_miscdev = {
 	minor:		MISC_DYNAMIC_MINOR,
@@ -674,9 +633,9 @@ static int tsi_setup_bufs(tsi_dev *dev, struct list_head *head)
 #endif
 	num_buf = (tsi_size / buf_size);
 
-	for(i=0;i<num_buf;i++){
+	for (i=0;i<num_buf;i++) {
 		pkt = kmalloc(sizeof(tsi_pkt),GFP_KERNEL);
-		if(!pkt)
+		if (!pkt)
 			return list_empty(head) ? -ENOMEM : 0 ;
 #if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
 		pkt->addr = (tsi_phy + i*4*buf_size);
@@ -705,14 +664,9 @@ void tsi_timer_function( u32 dev)
 	tsi_dev *tsi = (tsi_dev *)(dev);
 	s3c_tsi_rx_int(tsi);
 	tsi_timer.expires = jiffies + HZ/100;
-        add_timer(&tsi_timer);
-
-
+	add_timer(&tsi_timer);
 }
-
 #endif
-
-
 
 static int s3c_tsi_probe(struct platform_device *pdev)
 {
@@ -724,35 +678,30 @@ static int s3c_tsi_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 
 	tsi_priv = kmalloc(sizeof( tsi_dev  ),GFP_KERNEL);
-	if(tsi_priv == NULL)
-		{
-			printk("NO Memory for tsi allocation\n");
-			return -ENOMEM;
-		}
+	if (tsi_priv == NULL) {
+		printk("NO Memory for tsi allocation\n");
+		return -ENOMEM;
+	}
 
 	conf = kmalloc(sizeof(s3c_tsi_conf),GFP_KERNEL);
-	if(conf == NULL)
-		{
+	if (conf == NULL) {
+		printk("NO Memory for tsi conf allocation\n");
+		kfree(tsi_priv);
+		return -ENOMEM;
+	}
 
-
-			printk("NO Memory for tsi conf allocation\n");
-			kfree(tsi_priv);
-			return -ENOMEM;
-
-		}
-		//Initialise the dafault conf parameters..this should be obtained from the platform data and ioctl
-//move this to platform later
+	//Initialise the dafault conf parameters..this should be obtained from the platform data and ioctl
+	//move this to platform later
 	conf->flt_mode    = OFF;
 	conf->pid_flt_mode = BYPASS;
 	conf->byte_order = MSB2LSB;
 	conf->sync_detect = S3C_TSI_SYNC_DET_MODE_TS_SYNC8;
 #if defined (CONFIG_SAMSUNG_P1) || defined (CONFIG_SAMSUNG_P1C)
-        conf->burst_len = 0;
+    conf->burst_len = 0;
 #elif defined (CONFIG_SAMSUNG_P1LN)
 	// to avoid making interrupt during getting the TS from TS buffer,
 	// we use the burst-length as 8 beat.
 	// This burst-length may be changed next time.
-
 	conf->burst_len = 2;
 #endif
 	conf->byte_swap = 1; //little endian
@@ -762,14 +711,11 @@ static int s3c_tsi_probe(struct platform_device *pdev)
 	tsi_priv->tsi_conf = conf;
 	tsi_priv->tsi_buf_size = TSI_BUF_SIZE;
 
-
 	tsi_priv->tsi_clk = clk_get(NULL,"tsi");
-	if(tsi_priv->tsi_clk == NULL)
-		{
-			printk(KERN_ERR "Failed to get TSI clock\n");
-			return -ENOENT;
-
-		}
+	if (tsi_priv->tsi_clk == NULL) {
+		printk(KERN_ERR "Failed to get TSI clock\n");
+		return -ENOENT;
+	}
 	clk_enable(tsi_priv->tsi_clk);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -818,23 +764,23 @@ static int s3c_tsi_probe(struct platform_device *pdev)
 	init_waitqueue_head(&tsi_priv->read_wq);
 	tsi_priv->new_pkt = 0;
 	tsi_priv->running = 0;
-#if defined (CONFIG_PM) && ( defined (CONFIG_SAMSUNG_P1LN) //latin_cam:kihyung.nam, power management operation added
+#if defined (CONFIG_PM) && defined (CONFIG_SAMSUNG_P1LN)
 	tsi_priv->last_running_state = tsi_priv->running;
 #endif
 //get the dma coherent mem
 	tsi_priv->tsi_buf_virt = dma_alloc_coherent(dev,tsi_priv->tsi_buf_size,&map_dma,GFP_KERNEL);
-	if(tsi_priv->tsi_buf_virt == NULL){
+	if (tsi_priv->tsi_buf_virt == NULL) {
 		tsi_err("Failed to claim TSI memory\n");
 		ret = -ENOMEM;
 		goto err_map;
-		}
+	}
 
 	tsi_dbg("TSI dev dma mem phy %x virt %p\n", map_dma,tsi_priv->tsi_buf_virt);
 
 	tsi_priv->tsi_buf_phy = map_dma;
 
 	ret = tsi_setup_bufs(tsi_priv,&tsi_priv->free_list);
-	if(ret)	{
+	if (ret) {
 		tsi_err("TSI failed to setup pkt list");
 		goto err_clk;
 	}
@@ -843,14 +789,15 @@ static int s3c_tsi_probe(struct platform_device *pdev)
 	s3c_tsi_setup(tsi_priv);
 	s3c_tsi_dev= pdev;
 	ret = misc_register(&s3c_tsi_miscdev);
-	if(ret){
+	if (ret) {
 		tsi_err("Unable to register the s3c-tsi driver\n");
 		goto err_clk;
 	}
+
 #ifdef DRIVER_LOGIC_CHK
 	init_timer(&tsi_timer);
-        tsi_timer.function=tsi_timer_function;
-        tsi_timer.data = (unsigned long) tsi_priv;
+	tsi_timer.function=tsi_timer_function;
+	tsi_timer.data = (unsigned long) tsi_priv;
 
 	//s3c_tsi_start(tsi_priv);
 	//s3c_tsi_rx_int(tsi_priv);
@@ -860,7 +807,6 @@ static int s3c_tsi_probe(struct platform_device *pdev)
 
 err_clk:
 	  clk_disable(tsi_priv->tsi_clk);
-
 err_map:
 	iounmap(tsi_priv->tsi_base);
 err_irq:
@@ -877,30 +823,24 @@ static void tsi_free_packets(tsi_dev *tsi)
 	tsi_pkt *pkt;
 	struct list_head *head = &(tsi->free_list);
 
-	  while (!list_empty(head)) {
-                pkt = list_entry(head->next, tsi_pkt, list);
-                list_del(&pkt->list);
+	while (!list_empty(head)) {
+		pkt = list_entry(head->next, tsi_pkt, list);
+		list_del(&pkt->list);
 		kfree(pkt);
-        }
-
-
+	}
 }
-
-
 
 static int s3c_tsi_remove(struct platform_device *dev)
 {
-
 	tsi_dev *tsi = platform_get_drvdata(( struct platform_device *)dev);
-	if(tsi->running)
+	if (tsi->running)
 		s3c_tsi_stop(tsi);
-//free allocated memory and nodes
+	//free allocated memory and nodes
 	tsi_free_packets(tsi);
 	free_irq(tsi->tsi_irq,dev);
 	dma_free_coherent(&dev->dev,tsi->tsi_buf_size,tsi->tsi_buf_virt,tsi->tsi_buf_phy);
 	kfree(tsi);
 	return 0;
-
 }
 
 
@@ -910,7 +850,7 @@ static int s3c_tsi_suspend(struct platform_device *pdev, pm_message_t state)
 	tsi_dev *tsi = platform_get_drvdata(s3c_tsi_dev);
 
 	tsi->last_running_state = tsi->running;
-	if(tsi_priv->last_running_state) {
+	if (tsi_priv->last_running_state) {
 		s3c_tsi_stop(tsi_priv);
 	}
 
@@ -927,7 +867,7 @@ static int s3c_tsi_resume(struct platform_device *pdev)
 	s3c_tsi_set_gpio();
 	s3c_tsi_setup(tsi_priv);
 
-	if(tsi->last_running_state){
+	if (tsi->last_running_state) {
 		tsi->running = 1;
 		s3c_tsi_start(tsi);
 		s3c_tsi_rx_int(tsi);
@@ -941,7 +881,7 @@ static struct platform_driver s3c_tsi_driver = {
 	.probe		= s3c_tsi_probe,
 	.remove		= s3c_tsi_remove,
 	.shutdown	= NULL,
-#if defined (CONFIG_PM) && defined (CONFIG_SAMSUNG_P1LN) //latin_cam:kihyung.nam, power management operation added
+#if defined (CONFIG_PM) && defined (CONFIG_SAMSUNG_P1LN)
 	.suspend	= s3c_tsi_suspend,
 	.resume		= s3c_tsi_resume,
 #else
@@ -954,8 +894,6 @@ static struct platform_driver s3c_tsi_driver = {
 	},
 };
 
-
-
 const char banner[] __initdata =  "TSI Driver Version 1.0\n";
 
 static int __init s3c_tsi_init(void)
@@ -964,16 +902,10 @@ static int __init s3c_tsi_init(void)
 	return platform_driver_register(&s3c_tsi_driver);
 }
 
-
-
-
 static void __exit s3c_tsi_exit(void)
 {
-
 	platform_driver_unregister(&s3c_tsi_driver);
 }
-
-
 
 module_init(s3c_tsi_init);
 module_exit(s3c_tsi_exit);

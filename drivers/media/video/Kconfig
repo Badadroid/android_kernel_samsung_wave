@@ -1050,6 +1050,12 @@ config VIDEO_S5K5CCGX
         ---help---
           This driver supports S5K5CCGX SoC camera module
 
+config VIDEO_NM6XX
+        tristate "NM6XX Camera Sensor"
+        depends on I2C && VIDEO_V4L2
+        ---help---
+          This driver supports NM6XX SoC camera module
+
 config VIDEO_CE147
         tristate "CE147 Camera Sensor"
         depends on I2C && VIDEO_V4L2
