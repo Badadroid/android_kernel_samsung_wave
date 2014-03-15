@@ -301,7 +301,7 @@ void blk_insert_flush(struct request *rq)
 	unsigned int policy = blk_flush_policy(fflags, rq);
 
 	BUG_ON(rq->end_io);
-	BUG_ON(!rq->bio || rq->bio != rq->biotail);
+	BUG_ON(rq->bio != rq->biotail); /*assumes zero or single bio rq */
 
 	/*
 	 * @policy now records what operations need to be done.  Adjust
