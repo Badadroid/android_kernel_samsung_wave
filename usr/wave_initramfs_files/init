@@ -79,12 +79,12 @@ busybox losetup /dev/loop1 /bada_system/cache.img
 busybox mount -t ext4 /dev/loop0 /system
 busybox mount -t ext4 /dev/loop1 /cache
 
-image=/stage1/ramdisk.img
+image=/stage1/ramdisk.cpio
 
 if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline || [ "$force_recovery" -eq "1" ] ; then
 	# recovery boot
 	busybox rm -fr /cache/.startrecovery
-	image=/stage1/ramdisk-recovery.img
+	image=/stage1/ramdisk-recovery.cpio
 
 	# disable lpm
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
@@ -104,7 +104,7 @@ elif ! busybox test -e /system/build.prop; then
 		fi
 	fi
 
-	image=/stage1/ramdisk-recovery.img
+	image=/stage1/ramdisk-recovery.cpio
 
 	# disable lpm
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
@@ -123,7 +123,7 @@ busybox rmdir /bada_user
 busybox rmdir /bada_app
 
 
-busybox zcat $image | busybox cpio -i
+busybox cpio -i < $image
 
 busybox umount /sys
 busybox umount /proc
