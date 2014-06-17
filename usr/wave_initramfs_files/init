@@ -14,74 +14,15 @@ busybox mount -t sysfs sysfs /sys
 
 while ! busybox test -d /sys/devices/platform/s3c-sdhci.0/mmc_host/mmc0/mmc0:0001 ; do
 	echo "Waiting for internal mmc..."
-busybox sleep 1
+	busybox sleep 1
 done
-busybox mkdir /bada_system
-busybox mkdir /bada_user
-busybox mkdir /bada_app
 
-busybox chmod 0777 /bada_system
-busybox chmod 0777 /bada_user
-busybox chmod 0777 /bada_app
-
-# 	aint no readyy
-# 	if smth ; then
-#		force_recovery="1"
-#		busybox mount -t vfat -o noatime /dev/block/platform/s3c-sdhci.0/by-num/p1 /bada_system
-#		busybox mount -t vfat -o noatime /dev/block/platform/s3c-sdhci.0/by-num/p2 /bada_user
-#		busybox mount -t vfat -o noatime /dev/block/platform/s3c-sdhci.0/by-num/p3 /bada_app
-#		mkdir /bada_system/app/
-#		mv /bada_app/* /bada_system/app/
-#		parted
-#		mkdir /bada_system/app/
-#		mkdir /bada_system/user/
-# 	fi
-
-
-busybox mount -t vfat -o noatime /dev/block/mmcblk0p1 /bada_system
-busybox mount -t vfat -o noatime /dev/block/mmcblk0p2 /bada_user
-busybox mount -t vfat -o noatime /dev/block/mmcblk0p3 /bada_app
-
-if ! busybox grep -q bootmode=2 /proc/cmdline ; then
-	if busybox mount | busybox grep -q /bada_system ;
-	then
-		#check partitions existance
-		if [ ! -f /bada_system/cache.img ] ; then
-			#18MB cache partition
-			make_ext4fs -l 18874368 /bada_system/cache.img
-		fi
-		if [ ! -f /bada_system/system.img ] ; then
-			# 270MB system partition
-			# make_ext4fs -l 283115520 /bada_system/system.img
-			# Don't make it - shorten bootup time. Recovery package will recreate this partition anyway.
-			force_recovery="1"
-		fi
-	else
-		#something went terriwrong
-		force_recovery="1"
-	fi
-
-	if busybox mount | busybox grep -q /bada_app ;
-	then
-		if [ ! -f /bada_app/data.img ] ; then
-			#400MB data partition
-			make_ext4fs -l 419430400 /bada_app/data.img
-		fi
-	else
-		#something went terriwrong
-		force_recovery="1"
-	fi
-fi
-busybox echo "force_recovery: $force_recovery"
-
-busybox losetup /dev/loop0 /bada_system/system.img
-busybox losetup /dev/loop1 /bada_system/cache.img
-busybox mount -t ext4 /dev/loop0 /system
-busybox mount -t ext4 /dev/loop1 /cache
+busybox mount -t ext4 /dev/block/mmcblk0p1 /system
+busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
 
 image=/stage1/ramdisk.cpio
 
-if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline || [ "$force_recovery" -eq "1" ] ; then
+if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmdline || busybox grep -q recovery /proc/cmdline ; then
 	# recovery boot
 	busybox rm -fr /cache/.startrecovery
 	image=/stage1/ramdisk-recovery.cpio
@@ -90,19 +31,10 @@ if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmd
 	busybox echo 0 > /sys/class/power_supply/battery/charging_mode_booting
 elif ! busybox test -e /system/build.prop; then
 	# emergency boot
-	busybox rm -fr /cache/*
-
-#	busybox mount -t vfat /dev/block/mmcblk0p2 /sdcard
-
-	UPDATE_INFO=/bada_user/cyanogenmod.cfg
-	if [ -e $UPDATE_INFO ]; then
-		UPDATE=$(busybox cat $UPDATE_INFO)
-
-		if [ -e $UPDATE ]; then
-			busybox mkdir /cache/recovery
-			busybox echo "install_zip(\"`echo $UPDATE`\");" > /cache/recovery/extendedcommand
-		fi
-	fi
+	busybox umount /cache
+	make_ext4fs /dev/block/mmcblk0p2
+	busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
+	busybox mkdir /cache/recovery
 
 	image=/stage1/ramdisk-recovery.cpio
 
@@ -112,16 +44,6 @@ fi
 
 busybox umount /cache
 busybox umount /system
-busybox losetup -d /dev/loop2
-busybox losetup -d /dev/loop1
-busybox losetup -d /dev/loop0
-busybox umount /bada_system
-busybox umount /bada_user
-busybox umount /bada_app
-busybox rmdir /bada_system
-busybox rmdir /bada_user
-busybox rmdir /bada_app
-
 
 busybox cpio -i < $image
 
