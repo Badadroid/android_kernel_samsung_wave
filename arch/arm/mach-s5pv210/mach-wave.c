@@ -4648,6 +4648,12 @@ static struct platform_device *wave_devices[] __initdata = {
 #if defined (CONFIG_SAMSUNG_CAPTIVATE)
 	&s3c_device_i2c13,
 #endif
+#if defined CONFIG_USB_S3C_OTG_HOST
+ 	&s3c_device_usb_otghcd,
+#endif
+#if defined CONFIG_USB_DWC_OTG
+	&s3c_device_usb_dwcotg,
+#endif
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
 #endif
@@ -4799,10 +4805,9 @@ static void wave_init_gpio(void)
 
 static void __init fsa9480_gpio_init(void)
 {
-	/*
 	s3c_gpio_cfgpin(GPIO_USB_SEL, S3C_GPIO_OUTPUT);
 	s3c_gpio_setpull(GPIO_USB_SEL, S3C_GPIO_PULL_NONE);
-	*/
+
 	s3c_gpio_cfgpin(GPIO_UART_SEL, S3C_GPIO_OUTPUT);
 	s3c_gpio_setpull(GPIO_UART_SEL, S3C_GPIO_PULL_NONE);
 
@@ -5172,6 +5177,44 @@ void usb_host_phy_off(void)
 			S5P_USB_PHY_CONTROL);
 }
 EXPORT_SYMBOL(usb_host_phy_off);
+#endif
+
+#if defined CONFIG_USB_S3C_OTG_HOST || defined CONFIG_USB_DWC_OTG
+
+/* Initializes OTG Phy */
+void otg_host_phy_init(void)
+{
+       __raw_writel(__raw_readl(S5P_USB_PHY_CONTROL)
+               |(0x1<<0), S5P_USB_PHY_CONTROL); /*USB PHY0 Enable */
+// from galaxy tab otg host:
+       __raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+             &~(0x3<<3)&~(0x1<<0))|(0x1<<5), S3C_USBOTG_PHYPWR);
+// from galaxy s2 otg host:
+//     __raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+//           &~(0x7<<3)&~(0x1<<0)), S3C_USBOTG_PHYPWR);
+       __raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
+               &~(0x1<<4))|(0x7<<0), S3C_USBOTG_PHYCLK);
+
+       __raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
+               &~(0x3<<1))|(0x1<<0), S3C_USBOTG_RSTCON);
+       mdelay(1);
+       __raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
+               &~(0x7<<0)), S3C_USBOTG_RSTCON);
+       mdelay(1);
+
+       __raw_writel((__raw_readl(S3C_UDC_OTG_GUSBCFG)
+               |(0x3<<8)), S3C_UDC_OTG_GUSBCFG);
+
+//     smb136_set_otg_mode(1);
+
+       printk("otg_host_phy_int : USBPHYCTL=0x%x,PHYPWR=0x%x,PHYCLK=0x%x,USBCFG=0x%x\n",
+               readl(S5P_USB_PHY_CONTROL),
+               readl(S3C_USBOTG_PHYPWR),
+               readl(S3C_USBOTG_PHYCLK),
+               readl(S3C_UDC_OTG_GUSBCFG)
+               );
+}
+EXPORT_SYMBOL(otg_host_phy_init);
 #endif
 
 void s3c_setup_uart_cfg_gpio(unsigned char port)
