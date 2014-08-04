@@ -20,6 +20,8 @@
 #include <mach/gpio-wave.h>
 #include <linux/delay.h>
 
+/* SAMOLED for S8500 */
+
 static const u16 s6e63m0_SEQ_STANDBY_ON[] = {
 	0x010,	/* Stand-by On Command */
 	SLEEPMSEC, 160,
@@ -257,7 +259,7 @@ static const struct gamma_entry gamma_table[] = {
 	{ 0xFFFFFFFF, { 1489879, 1576363, 1151415, }, },
 };
 
-static void reset_lcd(struct s5p_tl2796_panel_data *pdata)
+static void reset_lcd(struct s5p_panel_data *pdata)
 {
 	gpio_direction_output(pdata->gpio_rst, 1);
 	msleep(10);
@@ -269,7 +271,7 @@ static void reset_lcd(struct s5p_tl2796_panel_data *pdata)
 	msleep(10);
 }
 
-static int configure_mtp_gpios(struct s5p_tl2796_panel_data *pdata, bool enable)
+static int configure_mtp_gpios(struct s5p_panel_data *pdata, bool enable)
 {
 	int i;
 	int ret = 0;
@@ -327,7 +329,7 @@ err_rdx:
 	return ret;
 }
 
-struct s5p_tl2796_panel_data wave_tl2796_panel_data = {
+struct s5p_panel_data wave_tl2796_panel_data = {
 	.seq_display_set = s6e63m0_SEQ_DISPLAY_SETTING,
 	.seq_etc_set = s6e63m0_SEQ_ETC_SETTING,
 	.standby_on = s6e63m0_SEQ_STANDBY_ON,

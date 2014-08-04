@@ -39,11 +39,7 @@ struct tl2796_color_adj {
 	int rshift;
 };
 
-#ifdef CONFIG_MACH_WAVE
-struct s5p_tl2796_panel_data {
-#else
 struct s5p_panel_data {
-#endif
 	const u16 *seq_display_set;
 	const u16 *seq_etc_set;
 	const u16 *standby_on;
@@ -55,11 +51,7 @@ struct s5p_panel_data {
 	int gpio_wrx;
 	int gpio_rst;
 	int gpio_db[8];
-#ifdef CONFIG_MACH_WAVE
-	int (*configure_mtp_gpios)(struct s5p_tl2796_panel_data *pdata, bool enable);
-#else
 	int (*configure_mtp_gpios)(struct s5p_panel_data *pdata, bool enable);
-#endif
 	u16 factory_v255_regs[3];
 	struct tl2796_color_adj color_adj;
 
