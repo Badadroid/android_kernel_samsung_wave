@@ -257,7 +257,7 @@ static struct s3cfb_lcd lg4573 = {
 	.p_width 	= 52,	//  width of lcd in mm
 	.p_height 	= 86,	//  height of lcd in mm
 	.bpp 		= 24,   //
-	.freq 		= 68,	//
+	.freq 		= 60,	//
 	.timing = {
 
 		.h_fp 	= 17,
@@ -285,7 +285,7 @@ static struct s3cfb_lcd s6e63m0 = {
 	.p_width = 52,
 	.p_height = 86,
 	.bpp = 24,
-	.freq = 68,
+	.freq = 60,
 
 	.timing = {
 		.h_fp = 16,
