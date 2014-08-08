@@ -514,9 +514,9 @@ static struct regulator_consumer_supply esafeout2_consumer[] = {
 
 static struct regulator_init_data wave_ldo2_data = {
 	.constraints	= {
-		.name		= "VALIVE_1.2V",
-		.min_uV		= 1200000,
-		.max_uV		= 1200000,
+		.name		= "VALIVE_1.1V",
+		.min_uV		= 1100000,
+		.max_uV		= 1100000,
 		.apply_uV	= 1,
 		.always_on	= 1,
 		.state_mem	= {
