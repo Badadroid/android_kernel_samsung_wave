@@ -1229,10 +1229,10 @@ static int __init s3cfb_probe(struct platform_device *pdev)
 #endif
 
 	if(machine_is_wave()) {
-	/* FIXME: ugly hack around for configuring AMOLED */
-	s3cfb_early_suspend(&fbdev->early_suspend);
-	msleep(200);
-	s3cfb_late_resume(&fbdev->early_suspend);
+		/* FIXME: ugly hack around for configuring AMOLED */
+		s3cfb_early_suspend(&fbdev->early_suspend);
+		msleep(200);
+		s3cfb_late_resume(&fbdev->early_suspend);
 	}
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_win_power);

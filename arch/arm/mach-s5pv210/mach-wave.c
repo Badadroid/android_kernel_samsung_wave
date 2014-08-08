@@ -1030,6 +1030,7 @@ static int panel_reset_lcd(struct platform_device *pdev)
 		return err;
 	}
 
+	msleep(25); // wait 25ms to let chip boot up after VLCD went up
 	gpio_direction_output(GPIO_MLCD_RST, 1);
 	msleep(25);
 
