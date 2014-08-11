@@ -11,18 +11,15 @@
 
 
 #define SLEEPMSEC		0x1000
-#define ENDDEF			0x2000
+#define ENDDEF		0x2000
 #define DATAMASK		0x0100
-#define	DEFMASK			0xFF00
+#define DEFMASK		0xFF00
 
 struct s5p_lg4573_panel_data {
 	const u16 *seq_settings_type0;
-	const u16 *seq_settings_type1;
-	const u16 *seq_settings_type2;
 	const u16 *seq_settings_type3;
 	const u16 *seq_standby_on;
 	const u16 *seq_standby_off;
-
 	int (*get_lcdtype)(void);
 
 };
