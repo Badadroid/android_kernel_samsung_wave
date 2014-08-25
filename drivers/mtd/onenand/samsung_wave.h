@@ -10,10 +10,25 @@ struct mtd_partition wave_s8500_partition_info[] = {
 		.offset         = (1948*SZ_256K), //0x1E700000
 		.size           = (20*SZ_256K),
 	},
-	{
+/*	{
 		.name           = "fota",
-		.offset         = (204*SZ_256K),
+		.offset         = (204*SZ_256K), //0x033000000
 		.size           = (12*SZ_256K),
+	},
+	{
+		.name           = "rsrc1",
+		.offset         = (1632*SZ_256K),//0x19800000
+		.size           = (260*SZ_256K),
+	},*/
+	{
+		.name           = "boot",
+		.offset         = (1640*SZ_256K), //0x19A00000
+		.size           = (30*SZ_256K),
+	},
+	{
+		.name           = "cache",
+		.offset         = (1670*SZ_256K), //0x1A180000
+		.size           = (70*SZ_256K),
 	},
 };
 
@@ -23,7 +38,7 @@ struct mtd_partition wave_s8530_partition_info[] = {
 		.offset         = (1984*SZ_256K), //0x1F000000
 		.size           = (20*SZ_256K),
 	},
-	{
+/*	{
 		.name           = "fw_block",
 		.offset         = (16*SZ_256K), //0x00600000
 		.size           = (592*SZ_256K),
@@ -47,8 +62,18 @@ struct mtd_partition wave_s8530_partition_info[] = {
 		.name           = "rsrc1",
 		.offset         = (216*SZ_256K), //0x03600000
 		.size           = (260*SZ_256K),
+	}, */
+	{
+		.name           = "boot",
+		.offset         = (224*SZ_256K), //0x03800000
+		.size           = (30*SZ_256K),
 	},
 	{
+		.name           = "cache",
+		.offset         = (254*SZ_256K),//0x03F80000
+		.size           = (70*SZ_256K),
+	},
+/*	{
 		.name           = "csc",
 		.offset         = (476*SZ_256K), //0x07700000
 		.size           = (120*SZ_256K),
@@ -72,5 +97,5 @@ struct mtd_partition wave_s8530_partition_info[] = {
 		.name           = "secdata",
 		.offset         = (1968*SZ_256K), //0x1EC00000
 		.size           = (16*SZ_256K),
-	},
+	},*/
 };

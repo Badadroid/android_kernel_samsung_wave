@@ -17,8 +17,11 @@ while ! busybox test -d /sys/devices/platform/s3c-sdhci.0/mmc_host/mmc0/mmc0:000
 	busybox sleep 1
 done
 
-busybox mount -t ext4 /dev/block/mmcblk0p1 /system
-busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
+/lvm/sbin/lvm vgscan --mknodes --ignorelockingfailure
+/lvm/sbin/lvm vgchange -aly --ignorelockingfailure
+
+busybox mount -t ext4 /dev/lvpool/system /system
+busybox mount -t yaffs2 /dev/block/mtdblock2 /cache
 
 image=/stage1/ramdisk.cpio
 
@@ -32,8 +35,8 @@ if busybox test -e /cache/.startrecovery || busybox grep -q bootmode=2 /proc/cmd
 elif ! busybox test -e /system/build.prop; then
 	# emergency boot
 	busybox umount /cache
-	make_ext4fs /dev/block/mmcblk0p2
-	busybox mount -t ext4 /dev/block/mmcblk0p2 /cache
+	erase_image cache
+	busybox mount -t yaffs2 /dev/block/mtdblock2 /cache
 	busybox mkdir /cache/recovery
 
 	image=/stage1/ramdisk-recovery.cpio
