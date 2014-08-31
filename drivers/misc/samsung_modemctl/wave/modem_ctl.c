@@ -438,6 +438,7 @@ static irqreturn_t modemctl_cp_reset_handler(int irq, void *_mc)
 		filename,
 		*(u32*)(mc->mmio + OFF_CP_CRASH_INFO+4));
 
+		panic("Abnormal CP reset.");
 	}
 	return IRQ_HANDLED;
 }
